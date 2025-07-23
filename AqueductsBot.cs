@@ -170,6 +170,16 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             ImGui.Text($"Runtime: {runtime:hh\\:mm\\:ss}");
         }
         
+        // Show helpful instructions
+        if (_currentState == BotState.Disabled && _radarAvailable)
+        {
+            ImGui.TextColored(new System.Numerics.Vector4(0, 1, 0, 1), "✅ Ready! Press F1 or 'Start/Stop Bot' to begin");
+        }
+        else if (_currentState == BotState.Disabled && !_radarAvailable)
+        {
+            ImGui.TextColored(new System.Numerics.Vector4(1, 0.5f, 0, 1), "⚠️ Waiting for Radar connection...");
+        }
+        
         ImGui.Text($"Current Path Points: {_currentPath.Count}");
         ImGui.Text($"Path Progress: {_currentPathIndex}/{_currentPath.Count}");
         
@@ -243,6 +253,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             case BotState.GettingPath:
                 if (CanRequestNewPath())
                 {
+                    LogMessage("🎯 Player in Aqueducts and Radar available - requesting path to exit");
                     RequestPathToExit();
                 }
                 break;
@@ -347,9 +358,14 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 return;
             }
             
-            // Simple target: move in a direction (this is a placeholder)
+            // Better target: find a more strategic position
             var currentPos = playerPos.GridPos;
-            var targetPos = new Vector2(currentPos.X + 100, currentPos.Y + 100);
+            
+            // Try to find area exit or significant distance target
+            // For now, use a larger offset to ensure we get a meaningful path
+            var targetPos = new Vector2(currentPos.X + 200, currentPos.Y + 100);
+            
+            LogMessage($"Requesting path from ({currentPos.X:F0}, {currentPos.Y:F0}) to ({targetPos.X:F0}, {targetPos.Y:F0})");
             
             _radarLookForRoute(targetPos, OnPathReceived, _pathfindingCts.Token);
         }
@@ -374,7 +390,12 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             _currentPathIndex = 0;
             _currentState = BotState.MovingAlongPath;
             
-            LogMessage($"Received path with {path.Count} points");
+            LogMessage($"✅ Received path with {path.Count} points - starting movement!");
+            
+            if (Settings.DebugSettings.DebugMode)
+            {
+                LogMessage($"Path preview: Start({path[0].X}, {path[0].Y}) -> End({path[path.Count-1].X}, {path[path.Count-1].Y})");
+            }
         }
         catch (Exception ex)
         {
@@ -578,10 +599,35 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         LogMessage("Testing Radar connection...");
         try
         {
-            var testPos = new Vector2(0, 0);
-            _radarLookForRoute(testPos, (path) => {
-                LogMessage($"✅ Radar test successful - received {path?.Count ?? 0} path points");
-            }, CancellationToken.None);
+            // Use a more realistic test - get current player position and add small offset
+            var player = GameController.Game.IngameState.Data.LocalPlayer;
+            if (player?.GetComponent<Positioned>() is Positioned playerPos)
+            {
+                var currentPos = playerPos.GridPos;
+                var testPos = new Vector2(currentPos.X + 50, currentPos.Y + 50); // 50 units away
+                
+                LogMessage($"Testing with position: ({testPos.X:F0}, {testPos.Y:F0}) from player at ({currentPos.X:F0}, {currentPos.Y:F0})");
+                
+                _radarLookForRoute(testPos, (path) => {
+                    LogMessage($"✅ Radar test successful - received {path?.Count ?? 0} path points");
+                    if (path?.Count > 0)
+                    {
+                        LogMessage("🎯 Pathfinding is working! Bot should be ready to navigate.");
+                    }
+                    else
+                    {
+                        LogMessage("ℹ️ 0 path points received - target may be unreachable or too close");
+                    }
+                }, CancellationToken.None);
+            }
+            else
+            {
+                LogMessage("⚠️ Could not get player position for test - will test with (0,0)");
+                var testPos = new Vector2(0, 0);
+                _radarLookForRoute(testPos, (path) => {
+                    LogMessage($"✅ Radar test successful - received {path?.Count ?? 0} path points");
+                }, CancellationToken.None);
+            }
         }
         catch (Exception testEx)
         {
