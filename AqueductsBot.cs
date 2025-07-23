@@ -212,20 +212,20 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         ImGui.Separator();
         
         // Show settings status for debugging
-        bool useKeyboardMovement = Settings.UseMovementKey || Settings.MovementSettings.UseMovementKey;
-        Keys movementKey = Settings.MovementKey.Value != Keys.None ? Settings.MovementKey.Value : Settings.MovementSettings.MovementKey.Value;
+        bool keyboardEnabled = Settings.UseMovementKey || Settings.MovementSettings.UseMovementKey;
+        Keys currentMovementKey = Settings.MovementKey.Value != Keys.None ? Settings.MovementKey.Value : Settings.MovementSettings.MovementKey.Value;
         
-        ImGui.Text($"Movement Method: {(useKeyboardMovement ? $"Key({movementKey})" : "Mouse")}");
-        ImGui.Text($"Movement Key Enabled: {useKeyboardMovement}");
-        ImGui.Text($"Movement Key Value: {movementKey}");
+        ImGui.Text($"Movement Method: {(keyboardEnabled ? $"Key({currentMovementKey})" : "Mouse")}");
+        ImGui.Text($"Movement Key Enabled: {keyboardEnabled}");
+        ImGui.Text($"Movement Key Value: {currentMovementKey}");
         
-        if (useKeyboardMovement && movementKey == Keys.None)
+        if (keyboardEnabled && currentMovementKey == Keys.None)
         {
             ImGui.TextColored(new System.Numerics.Vector4(1, 0.5f, 0, 1), "⚠️ Movement key enabled but no key set!");
         }
         
         // Quick instructions
-        if (!useKeyboardMovement)
+        if (!keyboardEnabled)
         {
             ImGui.TextColored(new System.Numerics.Vector4(0.7f, 0.7f, 1, 1), "💡 Enable 'Movement' and set 'Movement Key' to use keyboard instead of mouse");
         }
@@ -476,8 +476,6 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 
                 if (Settings.DebugSettings.DebugMode)
                 {
-                    bool useKeyboardMovement = Settings.UseMovementKey || Settings.MovementSettings.UseMovementKey;
-                    Keys movementKey = Settings.MovementKey.Value != Keys.None ? Settings.MovementKey.Value : Settings.MovementSettings.MovementKey.Value;
                     var moveMethod = useKeyboardMovement ? $"Key({movementKey})" : "Mouse";
                     LogMessage($"Moving to point {_currentPathIndex} using {moveMethod}: ({targetPoint.X}, {targetPoint.Y}) -> Screen({screenPos.X:F0}, {screenPos.Y:F0})");
                 }
