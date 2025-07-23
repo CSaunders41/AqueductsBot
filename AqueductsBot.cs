@@ -221,6 +221,12 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         }
         
         ImGui.SameLine();
+        if (ImGui.Button("Test Click Here"))
+        {
+            TestClickAtCursor();
+        }
+        
+        ImGui.SameLine();
         if (ImGui.Button("Refresh Settings"))
         {
             LogMessage("Settings refreshed - check Movement Settings submenu");
@@ -655,7 +661,17 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             LogMessage("[KEYBOARD TEST] Method 2: SendInput");
             PressKeyAlternative(movementKey);
             
-            LogMessage("[KEYBOARD TEST] Both methods completed - check if character moved or any action occurred");
+            Thread.Sleep(1000);
+            
+            LogMessage("[KEYBOARD TEST] Method 3: PostMessage to PoE window");
+            PressKeyToWindow(movementKey);
+            
+            Thread.Sleep(1000);
+            
+            LogMessage("[KEYBOARD TEST] Method 4: Focus window + SendInput");
+            PressKeyWithFocus(movementKey);
+            
+            LogMessage("[KEYBOARD TEST] All methods completed - check if character moved or any action occurred");
         }
         catch (Exception ex)
         {
@@ -672,6 +688,27 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     
     [DllImport("user32.dll")]
     private static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder text, int count);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+    
+    [DllImport("user32.dll")]
+    private static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+    
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+    
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+    
+    [DllImport("user32.dll")]
+    private static extern bool IsWindowVisible(IntPtr hWnd);
+    
+    // Windows message constants
+    private const uint WM_KEYDOWN = 0x0100;
+    private const uint WM_KEYUP = 0x0101;
+    private const uint WM_CHAR = 0x0102;
+    private const int SW_RESTORE = 9;
     
     [StructLayout(LayoutKind.Sequential)]
     private struct INPUT
@@ -734,6 +771,131 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         catch (Exception ex)
         {
             LogError($"Error with alternative key press {key}: {ex.Message}");
+        }
+    }
+    
+    private void TestClickAtCursor()
+    {
+        try
+        {
+            LogMessage("[CLICK TEST] Testing mouse click at current cursor position");
+            
+            // Get current cursor position
+            POINT cursorPos;
+            GetCursorPos(out cursorPos);
+            
+            LogMessage($"[CLICK TEST] Current cursor position: ({cursorPos.X}, {cursorPos.Y})");
+            
+            // Perform a click at current position
+            ClickAt(cursorPos.X, cursorPos.Y);
+            
+            LogMessage("[CLICK TEST] Mouse click completed - check if character moved to that location");
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error in click test: {ex.Message}");
+        }
+    }
+    
+    [DllImport("user32.dll")]
+    private static extern bool GetCursorPos(out POINT lpPoint);
+    
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT
+    {
+        public int X;
+        public int Y;
+    }
+    
+    private void PressKeyToWindow(Keys key)
+    {
+        try
+        {
+            // Try to find Path of Exile window by common window titles
+            string[] poeWindowTitles = { "Path of Exile", "PathOfExile", "POE" };
+            IntPtr poeWindow = IntPtr.Zero;
+            
+            foreach (string title in poeWindowTitles)
+            {
+                poeWindow = FindWindow(null, title);
+                if (poeWindow != IntPtr.Zero)
+                {
+                    LogMessage($"[KEYBOARD WINDOW] Found PoE window with title: {title}");
+                    break;
+                }
+            }
+            
+            if (poeWindow == IntPtr.Zero)
+            {
+                // Fallback to current foreground window
+                poeWindow = GetForegroundWindow();
+                LogMessage("[KEYBOARD WINDOW] Using foreground window as fallback");
+            }
+            
+            var title = new System.Text.StringBuilder(256);
+            GetWindowText(poeWindow, title, 256);
+            LogMessage($"[KEYBOARD WINDOW] Sending key {key} to window: {title}");
+            LogMessage($"[KEYBOARD WINDOW] Window visible: {IsWindowVisible(poeWindow)}");
+            
+            // Send key down and key up messages directly to the window
+            ushort keyCode = (ushort)key;
+            bool result1 = PostMessage(poeWindow, WM_KEYDOWN, (IntPtr)keyCode, IntPtr.Zero);
+            Thread.Sleep(50);
+            bool result2 = PostMessage(poeWindow, WM_KEYUP, (IntPtr)keyCode, IntPtr.Zero);
+            
+            LogMessage($"[KEYBOARD WINDOW] PostMessage results - KeyDown: {result1}, KeyUp: {result2}");
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error with window key press {key}: {ex.Message}");
+        }
+    }
+    
+    private void PressKeyWithFocus(Keys key)
+    {
+        try
+        {
+            LogMessage("[KEYBOARD FOCUS] Attempting to focus and send key");
+            
+            // Get current window
+            var foregroundWindow = GetForegroundWindow();
+            var title = new System.Text.StringBuilder(256);
+            GetWindowText(foregroundWindow, title, 256);
+            
+            LogMessage($"[KEYBOARD FOCUS] Current window: {title}");
+            
+            // Ensure window is focused and visible
+            bool focused = SetForegroundWindow(foregroundWindow);
+            bool shown = ShowWindow(foregroundWindow, SW_RESTORE);
+            
+            LogMessage($"[KEYBOARD FOCUS] SetForegroundWindow: {focused}, ShowWindow: {shown}");
+            
+            // Wait a moment for window to be ready
+            Thread.Sleep(200);
+            
+            // Now try SendInput again
+            INPUT[] inputs = new INPUT[2];
+            
+            inputs[0].Type = INPUT_KEYBOARD;
+            inputs[0].Data.Keyboard.VirtualKeyCode = (ushort)key;
+            inputs[0].Data.Keyboard.ScanCode = 0;
+            inputs[0].Data.Keyboard.Flags = 0;
+            inputs[0].Data.Keyboard.Time = 0;
+            inputs[0].Data.Keyboard.ExtraInfo = IntPtr.Zero;
+            
+            inputs[1].Type = INPUT_KEYBOARD;
+            inputs[1].Data.Keyboard.VirtualKeyCode = (ushort)key;
+            inputs[1].Data.Keyboard.ScanCode = 0;
+            inputs[1].Data.Keyboard.Flags = KEYEVENTF_KEYUP_SENDINPUT;
+            inputs[1].Data.Keyboard.Time = 0;
+            inputs[1].Data.Keyboard.ExtraInfo = IntPtr.Zero;
+            
+            uint result = SendInput(2, inputs, Marshal.SizeOf(typeof(INPUT)));
+            LogMessage($"[KEYBOARD FOCUS] SendInput with focus result: {result}");
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error with focused key press {key}: {ex.Message}");
         }
     }
     
