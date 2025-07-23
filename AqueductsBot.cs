@@ -26,8 +26,12 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     [DllImport("user32.dll")]
     private static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwData, int dwExtraInfo);
     
+    [DllImport("user32.dll")]
+    private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
+    
     private const uint MOUSEEVENTF_LEFTDOWN = 0x02;
     private const uint MOUSEEVENTF_LEFTUP = 0x04;
+    private const uint KEYEVENTF_KEYUP = 0x02;
     
     // Bot state
     private enum BotState
@@ -61,19 +65,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         {
             LogMessage("AqueductsBot initializing...");
             
-            // Try to get Radar's pathfinding method
-            var radarMethod = GameController.PluginBridge.GetMethod<Action<Vector2, Action<List<Vector2i>>, CancellationToken>>("Radar.LookForRoute");
-            if (radarMethod != null)
-            {
-                _radarLookForRoute = radarMethod;
-                _radarAvailable = true;
-                LogMessage("Successfully connected to Radar plugin");
-            }
-            else
-            {
-                LogMessage("WARNING: Could not connect to Radar plugin. Make sure Radar is loaded.");
-                _radarAvailable = false;
-            }
+            // Try to connect to Radar
+            TryConnectToRadar();
             
             // Register hotkeys
             Input.RegisterKey(Settings.StartStopHotkey);
@@ -201,6 +194,11 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 {
                     _currentState = BotState.WaitingForAqueducts;
                     LogMessage("Radar available, waiting for Aqueducts area");
+                }
+                else
+                {
+                    // Try to reconnect to Radar (in case of load order issues)
+                    TryConnectToRadar();
                 }
                 break;
                 
@@ -391,13 +389,26 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             
             if (timeSinceLastAction >= requiredDelay)
             {
-                // Perform the move
-                ClickAt((int)screenPos.X, (int)screenPos.Y);
+                // Perform the move using selected method
+                if (Settings.MovementSettings.UseMovementKey && Settings.MovementSettings.MovementKey.Value != Keys.None)
+                {
+                    // Use keyboard movement
+                    SetCursorPos((int)screenPos.X, (int)screenPos.Y);
+                    Thread.Sleep(10);
+                    PressKey(Settings.MovementSettings.MovementKey.Value);
+                }
+                else
+                {
+                    // Use mouse click movement
+                    ClickAt((int)screenPos.X, (int)screenPos.Y);
+                }
+                
                 _lastActionTime = DateTime.Now;
                 
                 if (Settings.DebugSettings.DebugMode)
                 {
-                    LogMessage($"Moving to point {_currentPathIndex}: ({targetPoint.X}, {targetPoint.Y}) -> Screen({screenPos.X:F0}, {screenPos.Y:F0})");
+                    var moveMethod = Settings.MovementSettings.UseMovementKey ? $"Key({Settings.MovementSettings.MovementKey.Value})" : "Mouse";
+                    LogMessage($"Moving to point {_currentPathIndex} using {moveMethod}: ({targetPoint.X}, {targetPoint.Y}) -> Screen({screenPos.X:F0}, {screenPos.Y:F0})");
                 }
             }
         }
@@ -438,6 +449,54 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         catch (Exception ex)
         {
             LogError($"Error clicking at ({x}, {y}): {ex.Message}");
+        }
+    }
+    
+    private void PressKey(Keys key)
+    {
+        try
+        {
+            byte vkCode = (byte)key;
+            keybd_event(vkCode, 0, 0, 0); // Key down
+            Thread.Sleep(50); // Hold key briefly
+            keybd_event(vkCode, 0, KEYEVENTF_KEYUP, 0); // Key up
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error pressing key {key}: {ex.Message}");
+        }
+    }
+    
+    private void TryConnectToRadar()
+    {
+        if (_radarAvailable) return; // Already connected
+        
+        try
+        {
+            LogMessage("Attempting to connect to Radar plugin...");
+            LogMessage($"Available bridge methods: {string.Join(", ", GameController.PluginBridge.Methods.Keys)}");
+            
+            var radarMethod = GameController.PluginBridge.GetMethod<Action<Vector2, Action<List<Vector2i>>, CancellationToken>>("Radar.LookForRoute");
+            if (radarMethod != null)
+            {
+                _radarLookForRoute = radarMethod;
+                _radarAvailable = true;
+                LogMessage("Successfully connected to Radar plugin");
+            }
+            else
+            {
+                LogMessage("WARNING: Could not connect to Radar plugin. Will retry...");
+                LogMessage("This could be due to:");
+                LogMessage("1. Radar plugin not loaded yet");
+                LogMessage("2. Bridge method signature mismatch");
+                LogMessage("3. Plugin load order (AqueductsBot loaded before Radar)");
+                _radarAvailable = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error connecting to Radar: {ex.Message}");
+            _radarAvailable = false;
         }
     }
     

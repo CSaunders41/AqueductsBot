@@ -18,6 +18,12 @@ public class BotSettings
 [Submenu]
 public class MovementSettings
 {
+    [Menu(null, "Use keyboard key for movement instead of mouse clicks")]
+    public ToggleNode UseMovementKey { get; set; } = new ToggleNode(false);
+    
+    [Menu(null, "Movement key to use (requires UseMovementKey enabled)")]
+    public HotkeyNode MovementKey { get; set; } = new HotkeyNode(Keys.None);
+    
     [Menu(null, "Minimum delay between movements in milliseconds")]
     public RangeNode<int> MinMoveDelayMs { get; set; } = new RangeNode<int>(100, 50, 1000);
     
