@@ -145,7 +145,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             }
             
             // Debug rendering
-            if (Settings.DebugMode && Settings.ShowPathPoints && _currentPath.Count > 0)
+            if (Settings.DebugSettings.DebugMode && Settings.DebugSettings.ShowPathPoints && _currentPath.Count > 0)
             {
                 DrawPathDebug();
             }
@@ -372,7 +372,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             {
                 var distance = Vector2.Distance(screenPos, playerScreenPos.Value);
                 
-                if (distance < Settings.MovementPrecision)
+                if (distance < Settings.MovementSettings.MovementPrecision)
                 {
                     // Close enough, move to next point
                     _currentPathIndex++;
@@ -383,7 +383,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             
             // Check if enough time has passed since last action
             var timeSinceLastAction = (DateTime.Now - _lastActionTime).TotalMilliseconds;
-            var requiredDelay = _random.Next(Settings.MinMoveDelayMs, Settings.MaxMoveDelayMs);
+            var requiredDelay = _random.Next(Settings.MovementSettings.MinMoveDelayMs, Settings.MovementSettings.MaxMoveDelayMs);
             
             if (timeSinceLastAction >= requiredDelay)
             {
@@ -391,7 +391,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 ClickAt((int)screenPos.X, (int)screenPos.Y);
                 _lastActionTime = DateTime.Now;
                 
-                if (Settings.DebugMode)
+                if (Settings.DebugSettings.DebugMode)
                 {
                     LogMessage($"Moving to point {_currentPathIndex}: ({targetPoint.X}, {targetPoint.Y}) -> Screen({screenPos.X:F0}, {screenPos.Y:F0})");
                 }
