@@ -870,12 +870,12 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             string[] poeWindowTitles = { "Path of Exile", "PathOfExile", "POE" };
             IntPtr poeWindow = IntPtr.Zero;
             
-            foreach (string title in poeWindowTitles)
+            foreach (string windowTitle in poeWindowTitles)
             {
-                poeWindow = FindWindow(null, title);
+                poeWindow = FindWindow(null, windowTitle);
                 if (poeWindow != IntPtr.Zero)
                 {
-                    LogMessage($"[KEYBOARD WINDOW] Found PoE window with title: {title}");
+                    LogMessage($"[KEYBOARD WINDOW] Found PoE window with title: {windowTitle}");
                     break;
                 }
             }
