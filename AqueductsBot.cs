@@ -209,6 +209,13 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             LogMessage("Settings refreshed - check Movement Settings submenu");
         }
         
+        ImGui.SameLine();
+        if (ImGui.Button(keyboardEnabled ? "Disable Keyboard Movement" : "Enable Keyboard Movement"))
+        {
+            Settings.UseMovementKey.Value = !Settings.UseMovementKey.Value;
+            LogMessage($"Keyboard movement {(Settings.UseMovementKey.Value ? "enabled" : "disabled")} - using key: {currentMovementKey}");
+        }
+        
         ImGui.Separator();
         
         // Show settings status for debugging
@@ -224,11 +231,23 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             ImGui.TextColored(new System.Numerics.Vector4(1, 0.5f, 0, 1), "⚠️ Movement key enabled but no key set!");
         }
         
-        // Quick instructions
+        // Quick instructions and controls
         if (!keyboardEnabled)
         {
-            ImGui.TextColored(new System.Numerics.Vector4(0.7f, 0.7f, 1, 1), "💡 Enable 'Movement' and set 'Movement Key' to use keyboard instead of mouse");
+            ImGui.TextColored(new System.Numerics.Vector4(0.7f, 0.7f, 1, 1), "💡 Click 'Enable Keyboard Movement' button above to use 'T' key instead of mouse");
         }
+        else
+        {
+            ImGui.TextColored(new System.Numerics.Vector4(0, 1, 0, 1), $"✅ Keyboard movement active - Bot will press '{currentMovementKey}' key");
+        }
+        
+        // Movement key selector in main UI
+        ImGui.Text("Change Movement Key:");
+        if (ImGui.Button("Set to 'T'")) { Settings.MovementKey.Value = Keys.T; LogMessage("Movement key set to 'T'"); }
+        ImGui.SameLine();
+        if (ImGui.Button("Set to Space")) { Settings.MovementKey.Value = Keys.Space; LogMessage("Movement key set to 'Space'"); }
+        ImGui.SameLine();
+        if (ImGui.Button("Set to 'W'")) { Settings.MovementKey.Value = Keys.W; LogMessage("Movement key set to 'W'"); }
         
         ImGui.Separator();
         ImGui.Text("Recent Log:");
