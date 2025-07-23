@@ -73,10 +73,12 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             // Register hotkeys
             Input.RegisterKey(Settings.StartStopHotkey);
             Input.RegisterKey(Settings.EmergencyStopHotkey);
-            Input.RegisterKey(Settings.MovementSettings.MovementKey);
+            Input.RegisterKey(Settings.MovementKey);
+            Input.RegisterKey(Settings.MovementSettings.MovementKey); // Keep nested one too
             
             Settings.StartStopHotkey.OnValueChanged += () => Input.RegisterKey(Settings.StartStopHotkey);
             Settings.EmergencyStopHotkey.OnValueChanged += () => Input.RegisterKey(Settings.EmergencyStopHotkey);
+            Settings.MovementKey.OnValueChanged += () => Input.RegisterKey(Settings.MovementKey);
             Settings.MovementSettings.MovementKey.OnValueChanged += () => Input.RegisterKey(Settings.MovementSettings.MovementKey);
             
             LogMessage("AqueductsBot initialized successfully");
@@ -210,13 +212,22 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         ImGui.Separator();
         
         // Show settings status for debugging
-        ImGui.Text($"Movement Method: {(Settings.MovementSettings.UseMovementKey ? $"Key({Settings.MovementSettings.MovementKey.Value})" : "Mouse")}");
-        ImGui.Text($"Movement Key Enabled: {Settings.MovementSettings.UseMovementKey}");
-        ImGui.Text($"Movement Key Value: {Settings.MovementSettings.MovementKey.Value}");
+        bool useKeyboardMovement = Settings.UseMovementKey || Settings.MovementSettings.UseMovementKey;
+        Keys movementKey = Settings.MovementKey.Value != Keys.None ? Settings.MovementKey.Value : Settings.MovementSettings.MovementKey.Value;
         
-        if (Settings.MovementSettings.UseMovementKey && Settings.MovementSettings.MovementKey.Value == Keys.None)
+        ImGui.Text($"Movement Method: {(useKeyboardMovement ? $"Key({movementKey})" : "Mouse")}");
+        ImGui.Text($"Movement Key Enabled: {useKeyboardMovement}");
+        ImGui.Text($"Movement Key Value: {movementKey}");
+        
+        if (useKeyboardMovement && movementKey == Keys.None)
         {
             ImGui.TextColored(new System.Numerics.Vector4(1, 0.5f, 0, 1), "⚠️ Movement key enabled but no key set!");
+        }
+        
+        // Quick instructions
+        if (!useKeyboardMovement)
+        {
+            ImGui.TextColored(new System.Numerics.Vector4(0.7f, 0.7f, 1, 1), "💡 Enable 'Movement' and set 'Movement Key' to use keyboard instead of mouse");
         }
         
         ImGui.Separator();
@@ -428,7 +439,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             {
                 var distance = Vector2.Distance(screenPos, playerScreenPos.Value);
                 
-                if (distance < Settings.MovementSettings.MovementPrecision)
+                var precision = Settings.MovementSettings.MovementPrecision; // Keep using nested for precision setting
+                if (distance < precision)
                 {
                     // Close enough, move to next point
                     _currentPathIndex++;
@@ -439,17 +451,20 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             
             // Check if enough time has passed since last action
             var timeSinceLastAction = (DateTime.Now - _lastActionTime).TotalMilliseconds;
-            var requiredDelay = _random.Next(Settings.MovementSettings.MinMoveDelayMs, Settings.MovementSettings.MaxMoveDelayMs);
+            var requiredDelay = _random.Next(Settings.MovementSettings.MinMoveDelayMs, Settings.MovementSettings.MaxMoveDelayMs); // Keep using nested for timing settings
             
             if (timeSinceLastAction >= requiredDelay)
             {
                 // Perform the move using selected method
-                if (Settings.MovementSettings.UseMovementKey && Settings.MovementSettings.MovementKey.Value != Keys.None)
+                bool useKeyboardMovement = Settings.UseMovementKey || Settings.MovementSettings.UseMovementKey;
+                Keys movementKey = Settings.MovementKey.Value != Keys.None ? Settings.MovementKey.Value : Settings.MovementSettings.MovementKey.Value;
+                
+                if (useKeyboardMovement && movementKey != Keys.None)
                 {
-                    // Use keyboard movement
+                    // Use keyboard movement: Move cursor to target, then press key
                     SetCursorPos((int)screenPos.X, (int)screenPos.Y);
                     Thread.Sleep(10);
-                    PressKey(Settings.MovementSettings.MovementKey.Value);
+                    PressKey(movementKey);
                 }
                 else
                 {
@@ -461,7 +476,9 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 
                 if (Settings.DebugSettings.DebugMode)
                 {
-                    var moveMethod = Settings.MovementSettings.UseMovementKey ? $"Key({Settings.MovementSettings.MovementKey.Value})" : "Mouse";
+                    bool useKeyboardMovement = Settings.UseMovementKey || Settings.MovementSettings.UseMovementKey;
+                    Keys movementKey = Settings.MovementKey.Value != Keys.None ? Settings.MovementKey.Value : Settings.MovementSettings.MovementKey.Value;
+                    var moveMethod = useKeyboardMovement ? $"Key({movementKey})" : "Mouse";
                     LogMessage($"Moving to point {_currentPathIndex} using {moveMethod}: ({targetPoint.X}, {targetPoint.Y}) -> Screen({screenPos.X:F0}, {screenPos.Y:F0})");
                 }
             }

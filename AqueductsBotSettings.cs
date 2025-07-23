@@ -48,13 +48,24 @@ public class AqueductsBotSettings : ISettings
 {
     public ToggleNode Enable { get; set; } = new ToggleNode(false);
     
+    [Menu("Movement", "Use keyboard key for movement instead of mouse clicks")]
+    public ToggleNode UseMovementKey { get; set; } = new ToggleNode(false);
+    
+    [Menu("Movement Key", "Key to press for movement (leave as None to use mouse clicks)")]
+    public HotkeyNode MovementKey { get; set; } = new HotkeyNode(Keys.T);
+    
+    [Menu("Bot Settings", "")]
     public BotSettings BotSettings { get; set; } = new BotSettings();
+    
+    [Menu("Movement Settings", "")]
     public MovementSettings MovementSettings { get; set; } = new MovementSettings();
+    
+    [Menu("Debug Settings", "")]
     public DebugSettings DebugSettings { get; set; } = new DebugSettings();
     
-    [Menu(null, "Start or stop the bot")]
+    [Menu("Start/Stop Hotkey", "Start or stop the bot")]
     public HotkeyNode StartStopHotkey { get; set; } = new HotkeyNode(Keys.F1);
     
-    [Menu(null, "Emergency stop the bot immediately")]
+    [Menu("Emergency Stop Hotkey", "Emergency stop the bot immediately")]
     public HotkeyNode EmergencyStopHotkey { get; set; } = new HotkeyNode(Keys.F2);
 } 
