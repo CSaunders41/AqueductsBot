@@ -221,7 +221,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         }
         
         ImGui.SameLine();
-        if (ImGui.Button("Test Click Here"))
+        if (ImGui.Button("Test Mouse Click"))
         {
             TestClickAtCursor();
         }
@@ -251,14 +251,21 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             ImGui.TextColored(new System.Numerics.Vector4(1, 0.5f, 0, 1), "⚠️ Movement key enabled but no key set!");
         }
         
+        ImGui.Separator();
+        ImGui.TextColored(new System.Numerics.Vector4(0.7f, 0.9f, 0.7f, 1), "TESTING INSTRUCTIONS:");
+        ImGui.Text("- 'Test Mouse Click': Tests direct mouse clicking movement");  
+        ImGui.Text("- 'Test Keyboard': Positions cursor + presses movement key");
+        ImGui.Text("- Both should move your character if working correctly");
+        
         // Quick instructions and controls
         if (!keyboardEnabled)
         {
-            ImGui.TextColored(new System.Numerics.Vector4(0.7f, 0.7f, 1, 1), "💡 Click 'Enable Keyboard Movement' button above to use 'T' key instead of mouse");
+            ImGui.TextColored(new System.Numerics.Vector4(0.7f, 0.7f, 1, 1), "TIP: Click 'Enable Keyboard Movement' button above to use 'T' key instead of mouse");
         }
         else
         {
             ImGui.TextColored(new System.Numerics.Vector4(0, 1, 0, 1), $"[OK] Keyboard movement active - Bot will press '{currentMovementKey}' key");
+            ImGui.TextColored(new System.Numerics.Vector4(0.8f, 0.8f, 0.4f, 1), "NOTE: Keyboard movement requires cursor positioned over destination");
         }
         
         // Movement key selector in main UI
@@ -645,7 +652,37 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 return;
             }
             
-            LogMessage($"[KEYBOARD TEST] Testing key {movementKey} without mouse movement");
+            LogMessage($"[KEYBOARD TEST] Testing key {movementKey} - positioning cursor first");
+            
+            // CRITICAL: Position cursor over game world before testing keyboard
+            var player = GameController.Game.IngameState.Data.LocalPlayer;
+            if (player?.GetComponent<Positioned>() is Positioned playerPos)
+            {
+                var render = player.GetComponent<Render>();
+                if (render != null)
+                {
+                    var worldPos = render.PosNum;
+                    var screenPos = GameController.IngameState.Camera.WorldToScreen(worldPos);
+                    
+                    // Position cursor slightly away from player for movement test
+                    var testX = (int)(screenPos.X + 100);
+                    var testY = (int)(screenPos.Y + 50);
+                    
+                    LogMessage($"[KEYBOARD TEST] Moving cursor to game position: ({testX}, {testY})");
+                    SetCursorPos(testX, testY);
+                    Thread.Sleep(200); // Wait for cursor to settle
+                }
+                else
+                {
+                    LogMessage("[KEYBOARD TEST] ERROR: Could not get player render component");
+                    return;
+                }
+            }
+            else
+            {
+                LogMessage("[KEYBOARD TEST] ERROR: Could not get player position");
+                return;
+            }
             
             // Get active window info
             var foregroundWindow = GetForegroundWindow();
@@ -778,22 +815,40 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     {
         try
         {
-            LogMessage("[CLICK TEST] Testing mouse click at current cursor position");
+            LogMessage("[MOUSE CLICK TEST] Testing mouse movement vs keyboard movement");
             
-            // Get current cursor position
-            POINT cursorPos;
-            GetCursorPos(out cursorPos);
-            
-            LogMessage($"[CLICK TEST] Current cursor position: ({cursorPos.X}, {cursorPos.Y})");
-            
-            // Perform a click at current position
-            ClickAt(cursorPos.X, cursorPos.Y);
-            
-            LogMessage("[CLICK TEST] Mouse click completed - check if character moved to that location");
+            // Get player position and calculate a test location
+            var player = GameController.Game.IngameState.Data.LocalPlayer;
+            if (player?.GetComponent<Positioned>() is Positioned playerPos)
+            {
+                var render = player.GetComponent<Render>();
+                if (render != null)
+                {
+                    var worldPos = render.PosNum;
+                    var screenPos = GameController.IngameState.Camera.WorldToScreen(worldPos);
+                    
+                    // Click slightly away from player
+                    var testX = (int)(screenPos.X + 120);
+                    var testY = (int)(screenPos.Y + 80);
+                    
+                    LogMessage($"[MOUSE CLICK TEST] Clicking at game position: ({testX}, {testY})");
+                    ClickAt(testX, testY);
+                    
+                    LogMessage("[MOUSE CLICK TEST] Mouse click completed - character should move to clicked location");
+                }
+                else
+                {
+                    LogMessage("[MOUSE CLICK TEST] ERROR: Could not get player render component");
+                }
+            }
+            else
+            {
+                LogMessage("[MOUSE CLICK TEST] ERROR: Could not get player position");
+            }
         }
         catch (Exception ex)
         {
-            LogError($"Error in click test: {ex.Message}");
+            LogError($"Error in mouse click test: {ex.Message}");
         }
     }
     
