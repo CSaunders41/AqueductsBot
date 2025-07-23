@@ -239,7 +239,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         }
         else
         {
-            ImGui.TextColored(new System.Numerics.Vector4(0, 1, 0, 1), $"✅ Keyboard movement active - Bot will press '{currentMovementKey}' key");
+            ImGui.TextColored(new System.Numerics.Vector4(0, 1, 0, 1), $"[OK] Keyboard movement active - Bot will press '{currentMovementKey}' key");
         }
         
         // Movement key selector in main UI
@@ -284,8 +284,12 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             case BotState.GettingPath:
                 if (CanRequestNewPath())
                 {
-                    LogMessage("🎯 Player in Aqueducts and Radar available - requesting path to exit");
-                    RequestPathToExit();
+                    // Only request path if we haven't requested one recently (prevent spam)
+                    if ((DateTime.Now - _lastActionTime).TotalSeconds >= 3)
+                    {
+                        LogMessage("[TARGET] Player in Aqueducts and Radar available - requesting path to exit");
+                        RequestPathToExit();
+                    }
                 }
                 break;
                 
@@ -377,15 +381,23 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     {
         try
         {
-            LogMessage("Requesting path to area exit...");
+            LogMessage("[DEBUG] RequestPathToExit started");
             _lastActionTime = DateTime.Now;
+            
+            // Check if radar is still available
+            if (!_radarAvailable || _radarLookForRoute == null)
+            {
+                LogMessage("[ERROR] Radar not available when trying to request path");
+                _currentState = BotState.WaitingForRadar;
+                return;
+            }
             
             // For now, use a simple target point. Later we can make this smarter
             // by finding actual area transitions
             var player = GameController.Game.IngameState.Data.LocalPlayer;
             if (player?.GetComponent<Positioned>() is not Positioned playerPos)
             {
-                LogMessage("Could not get player position");
+                LogMessage("[ERROR] Could not get player position");
                 return;
             }
             
@@ -396,9 +408,11 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             // For now, use a larger offset to ensure we get a meaningful path
             var targetPos = new Vector2(currentPos.X + 200, currentPos.Y + 100);
             
-            LogMessage($"Requesting path from ({currentPos.X:F0}, {currentPos.Y:F0}) to ({targetPos.X:F0}, {targetPos.Y:F0})");
+            LogMessage($"[DEBUG] Calling Radar pathfinding from ({currentPos.X:F0}, {currentPos.Y:F0}) to ({targetPos.X:F0}, {targetPos.Y:F0})");
             
             _radarLookForRoute(targetPos, OnPathReceived, _pathfindingCts.Token);
+            
+            LogMessage("[DEBUG] Radar pathfinding call completed - waiting for callback");
         }
         catch (Exception ex)
         {
@@ -411,9 +425,12 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     {
         try
         {
+            LogMessage($"[DEBUG] OnPathReceived called - path is {(path == null ? "null" : $"not null with {path.Count} points")}");
+            
             if (path == null || path.Count == 0)
             {
-                LogMessage("No path received from Radar");
+                LogMessage("[WARNING] No path received from Radar - will retry pathfinding");
+                // Instead of stopping, let it retry pathfinding on next tick
                 return;
             }
             
@@ -421,7 +438,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             _currentPathIndex = 0;
             _currentState = BotState.MovingAlongPath;
             
-            LogMessage($"✅ Received path with {path.Count} points - starting movement!");
+            LogMessage($"[SUCCESS] Received path with {path.Count} points - starting movement!");
             
             if (Settings.DebugSettings.DebugMode)
             {
