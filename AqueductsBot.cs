@@ -190,22 +190,16 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         ImGui.Text($"Current Path Points: {_currentPath.Count}");
         ImGui.Text($"Path Progress: {_currentPathIndex}/{_currentPath.Count}");
         
-        if (ImGui.Button("Start/Stop Bot"))
+        // Debug and testing buttons
+        if (ImGui.Button("Start Bot") && _radarLookForRoute != null)
         {
-            ToggleBot();
+            StartBot();
         }
         
         ImGui.SameLine();
-        if (ImGui.Button("Emergency Stop"))
+        if (ImGui.Button("Stop Bot"))
         {
-            EmergencyStop();
-        }
-        
-        ImGui.SameLine();
-        if (ImGui.Button("Force Radar Reconnect"))
-        {
-            _radarAvailable = false;
-            TryConnectToRadar();
+            StopBot();
         }
         
         ImGui.SameLine();
@@ -215,15 +209,21 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         }
         
         ImGui.SameLine();
-        if (ImGui.Button("Test Keyboard"))
+        if (ImGui.Button("Test Radar"))
         {
-            TestKeyboardOnly();
+            TestRadarConnection();
+        }
+        
+        // NEW: Add coordinate debugging button
+        if (ImGui.Button("Debug Coordinates"))
+        {
+            DebugCoordinateSystem();
         }
         
         ImGui.SameLine();
-        if (ImGui.Button("Test Mouse Click"))
+        if (ImGui.Button("Test Keyboard"))
         {
-            TestClickAtCursor();
+            TestKeyboardOnly();
         }
         
         ImGui.SameLine();
@@ -231,7 +231,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         {
             Settings.UseMovementKey.Value = false;
             Settings.MovementSettings.UseMovementKey.Value = false;
-            LogMessage("Switched to mouse-only movement (since keyboard input may not work with PoE)");
+            LogMessage("Switched to mouse-only movement (most reliable)");
         }
         
         ImGui.SameLine();
@@ -787,6 +787,9 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     [DllImport("user32.dll")]
     private static extern bool IsWindowVisible(IntPtr hWnd);
     
+    [DllImport("user32.dll")]
+    private static extern bool GetCursorPos(out POINT lpPoint);
+    
     // Windows message constants
     private const uint WM_KEYDOWN = 0x0100;
     private const uint WM_KEYUP = 0x0101;
@@ -819,6 +822,13 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     
     private const uint INPUT_KEYBOARD = 1;
     private const uint KEYEVENTF_KEYUP_SENDINPUT = 0x0002;
+    
+    [StructLayout(LayoutKind.Sequential)]
+    public struct POINT
+    {
+        public int X;
+        public int Y;
+    }
     
     private void PressKeyAlternative(Keys key)
     {
@@ -896,16 +906,6 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         {
             LogError($"Error in mouse click test: {ex.Message}");
         }
-    }
-    
-    [DllImport("user32.dll")]
-    private static extern bool GetCursorPos(out POINT lpPoint);
-    
-    [StructLayout(LayoutKind.Sequential)]
-    private struct POINT
-    {
-        public int X;
-        public int Y;
     }
     
     private void PressKeyToWindow(Keys key)
@@ -1199,20 +1199,90 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                         LogMessage("[TEST CALLBACK] 0 path points received - target may be unreachable or too close");
                     }
                 }, CancellationToken.None);
+                
+                LogMessage("Radar pathfinding request sent - waiting for callback...");
             }
             else
             {
-                LogMessage("⚠️ Could not get player position for test - will test with (0,0)");
-                var testPos = new Vector2(0, 0);
-                _radarLookForRoute(testPos, (path) => {
-                    LogMessage($"✅ Radar test successful - received {path?.Count ?? 0} path points");
-                }, CancellationToken.None);
+                LogMessage("Could not get player position for test");
             }
         }
-        catch (Exception testEx)
+        catch (Exception ex)
         {
-            LogError($"❌ Radar connection test failed: {testEx.Message}");
-            _radarAvailable = false;
+            LogError($"Error testing Radar connection: {ex.Message}");
+        }
+    }
+
+    private void DebugCoordinateSystem()
+    {
+        try
+        {
+            LogMessage("=== COORDINATE SYSTEM DEBUG ===");
+            
+            // Get window information
+            var windowRect = GameController.Window.GetWindowRectangle();
+            LogMessage($"Game window: X={windowRect.X}, Y={windowRect.Y}, Width={windowRect.Width}, Height={windowRect.Height}");
+            
+            // Get current cursor position
+            if (GetCursorPos(out POINT cursorPoint))
+            {
+                LogMessage($"Current cursor position: ({cursorPoint.X}, {cursorPoint.Y})");
+            }
+            
+            // Get player position
+            var player = GameController.Game.IngameState.Data.LocalPlayer;
+            if (player?.GetComponent<Positioned>() is Positioned playerPos)
+            {
+                var render = player.GetComponent<Render>();
+                if (render != null)
+                {
+                    var worldPos = render.PosNum;
+                    var screenPos = GameController.IngameState.Camera.WorldToScreen(worldPos);
+                    
+                    LogMessage($"Player world position: ({worldPos.X:F1}, {worldPos.Y:F1}, {worldPos.Z:F1})");
+                    LogMessage($"Player screen position: ({screenPos.X:F1}, {screenPos.Y:F1})");
+                    
+                    // Test coordinate calculations
+                    var testX = (int)(screenPos.X + 100);
+                    var testY = (int)(screenPos.Y + 50);
+                    
+                    // Calculate absolute screen coordinates
+                    int absoluteX = testX + (int)windowRect.X;
+                    int absoluteY = testY + (int)windowRect.Y;
+                    
+                    LogMessage($"Test target: game({testX}, {testY}) -> absolute({absoluteX}, {absoluteY})");
+                    
+                    // Get foreground window info
+                    var foregroundWindow = GetForegroundWindow();
+                    var windowTitle = new System.Text.StringBuilder(256);
+                    GetWindowText(foregroundWindow, windowTitle, 256);
+                    LogMessage($"Foreground window: {windowTitle}");
+                    
+                    // Test cursor move
+                    LogMessage($"Moving cursor to test position...");
+                    SetCursorPos(absoluteX, absoluteY);
+                    Thread.Sleep(100);
+                    
+                    if (GetCursorPos(out POINT newCursorPoint))
+                    {
+                        LogMessage($"Cursor after SetCursorPos: ({newCursorPoint.X}, {newCursorPoint.Y})");
+                        if (newCursorPoint.X == absoluteX && newCursorPoint.Y == absoluteY)
+                        {
+                            LogMessage("✓ Cursor positioning SUCCESSFUL");
+                        }
+                        else
+                        {
+                            LogMessage($"✗ Cursor positioning FAILED - expected ({absoluteX}, {absoluteY}), got ({newCursorPoint.X}, {newCursorPoint.Y})");
+                        }
+                    }
+                }
+            }
+            
+            LogMessage("=== END COORDINATE DEBUG ===");
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error in coordinate debug: {ex.Message}");
         }
     }
     
