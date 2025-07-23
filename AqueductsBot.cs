@@ -507,43 +507,85 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         try
         {
             LogMessage("Attempting to connect to Radar plugin...");
+            LogMessage("Trying multiple signature variations...");
             
-            // Try the exact signature from Radar source
-            var radarMethod = GameController.PluginBridge.GetMethod<Action<Vector2, Action<List<Vector2i>>, CancellationToken>>("Radar.LookForRoute");
-            if (radarMethod != null)
+            // Try variation 1: System.Numerics.Vector2
+            LogMessage("1. Trying Action<Vector2, Action<List<Vector2i>>, CancellationToken>");
+            var method1 = GameController.PluginBridge.GetMethod<Action<Vector2, Action<List<Vector2i>>, CancellationToken>>("Radar.LookForRoute");
+            if (method1 != null)
             {
-                _radarLookForRoute = radarMethod;
+                LogMessage("✅ Found signature 1!");
+                _radarLookForRoute = method1;
                 _radarAvailable = true;
-                LogMessage("✅ Successfully connected to Radar plugin!");
-                
-                // Test the connection
-                LogMessage("Testing Radar connection...");
-                try
-                {
-                    var testPos = new Vector2(0, 0);
-                    _radarLookForRoute(testPos, (path) => {
-                        LogMessage($"✅ Radar test successful - received {path?.Count ?? 0} path points");
-                    }, CancellationToken.None);
-                }
-                catch (Exception testEx)
-                {
-                    LogError($"❌ Radar connection test failed: {testEx.Message}");
-                    _radarAvailable = false;
-                }
+                TestRadarConnection();
+                return;
             }
-            else
+            
+            // Try variation 2: SharpDX.Vector2  
+            LogMessage("2. Trying Action<SharpDX.Vector2, Action<List<Vector2i>>, CancellationToken>");
+            var method2 = GameController.PluginBridge.GetMethod<Action<SharpDX.Vector2, Action<List<Vector2i>>, CancellationToken>>("Radar.LookForRoute");
+            if (method2 != null)
             {
-                LogMessage("❌ Could not find 'Radar.LookForRoute' bridge method");
-                LogMessage("Possible causes:");
-                LogMessage("1. Radar plugin not loaded yet (will retry every 2 seconds)");
-                LogMessage("2. Bridge method name changed");
-                LogMessage("3. Bridge method signature mismatch");
-                _radarAvailable = false;
+                LogMessage("✅ Found signature 2 with SharpDX.Vector2!");
+                // Need to create a wrapper since our internal Vector2 is System.Numerics
+                _radarLookForRoute = (v2, callback, token) => method2(new SharpDX.Vector2(v2.X, v2.Y), callback, token);
+                _radarAvailable = true;
+                TestRadarConnection();
+                return;
             }
+
+            // Try variation 3: Maybe it returns Task
+            LogMessage("3. Trying Func<Vector2, Action<List<Vector2i>>, CancellationToken, Task>");
+            var method3 = GameController.PluginBridge.GetMethod<Func<Vector2, Action<List<Vector2i>>, CancellationToken, Task>>("Radar.LookForRoute");
+            if (method3 != null)
+            {
+                LogMessage("✅ Found signature 3 with Task return!");
+                _radarLookForRoute = (v2, callback, token) => { _ = method3(v2, callback, token); };
+                _radarAvailable = true;
+                TestRadarConnection();
+                return;
+            }
+
+            // Try variation 4: Maybe different parameter order
+            LogMessage("4. Trying Action<Action<List<Vector2i>>, Vector2, CancellationToken>");
+            var method4 = GameController.PluginBridge.GetMethod<Action<Action<List<Vector2i>>, Vector2, CancellationToken>>("Radar.LookForRoute");
+            if (method4 != null)
+            {
+                LogMessage("✅ Found signature 4 with different parameter order!");
+                _radarLookForRoute = (v2, callback, token) => method4(callback, v2, token);
+                _radarAvailable = true;
+                TestRadarConnection();
+                return;
+            }
+
+            LogMessage("❌ Could not find any matching 'Radar.LookForRoute' signature");
+            LogMessage("All 4 signature variations failed:");
+            LogMessage("  1. Action<Vector2, Action<List<Vector2i>>, CancellationToken>");
+            LogMessage("  2. Action<SharpDX.Vector2, Action<List<Vector2i>>, CancellationToken>");
+            LogMessage("  3. Func<Vector2, Action<List<Vector2i>>, CancellationToken, Task>");
+            LogMessage("  4. Action<Action<List<Vector2i>>, Vector2, CancellationToken>");
+            _radarAvailable = false;
         }
         catch (Exception ex)
         {
             LogError($"Error connecting to Radar: {ex.Message}");
+            _radarAvailable = false;
+        }
+    }
+    
+    private void TestRadarConnection()
+    {
+        LogMessage("Testing Radar connection...");
+        try
+        {
+            var testPos = new Vector2(0, 0);
+            _radarLookForRoute(testPos, (path) => {
+                LogMessage($"✅ Radar test successful - received {path?.Count ?? 0} path points");
+            }, CancellationToken.None);
+        }
+        catch (Exception testEx)
+        {
+            LogError($"❌ Radar connection test failed: {testEx.Message}");
             _radarAvailable = false;
         }
     }
