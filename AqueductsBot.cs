@@ -54,6 +54,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     private int _runsCompleted = 0;
     private Random _random = new();
     private string _lastLogMessage = "";
+    private DateTime _lastRadarRetry = DateTime.MinValue;
     
     // Radar integration
     private Action<Vector2, Action<List<Vector2i>>, CancellationToken> _radarLookForRoute;
@@ -72,9 +73,11 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             // Register hotkeys
             Input.RegisterKey(Settings.StartStopHotkey);
             Input.RegisterKey(Settings.EmergencyStopHotkey);
+            Input.RegisterKey(Settings.MovementSettings.MovementKey);
             
             Settings.StartStopHotkey.OnValueChanged += () => Input.RegisterKey(Settings.StartStopHotkey);
             Settings.EmergencyStopHotkey.OnValueChanged += () => Input.RegisterKey(Settings.EmergencyStopHotkey);
+            Settings.MovementSettings.MovementKey.OnValueChanged += () => Input.RegisterKey(Settings.MovementSettings.MovementKey);
             
             LogMessage("AqueductsBot initialized successfully");
             return true;
@@ -181,6 +184,31 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             EmergencyStop();
         }
         
+        ImGui.SameLine();
+        if (ImGui.Button("Force Radar Reconnect"))
+        {
+            _radarAvailable = false;
+            TryConnectToRadar();
+        }
+        
+        ImGui.SameLine();
+        if (ImGui.Button("Refresh Settings"))
+        {
+            LogMessage("Settings refreshed - check Movement Settings submenu");
+        }
+        
+        ImGui.Separator();
+        
+        // Show settings status for debugging
+        ImGui.Text($"Movement Method: {(Settings.MovementSettings.UseMovementKey ? $"Key({Settings.MovementSettings.MovementKey.Value})" : "Mouse")}");
+        ImGui.Text($"Movement Key Enabled: {Settings.MovementSettings.UseMovementKey}");
+        ImGui.Text($"Movement Key Value: {Settings.MovementSettings.MovementKey.Value}");
+        
+        if (Settings.MovementSettings.UseMovementKey && Settings.MovementSettings.MovementKey.Value == Keys.None)
+        {
+            ImGui.TextColored(new System.Numerics.Vector4(1, 0.5f, 0, 1), "⚠️ Movement key enabled but no key set!");
+        }
+        
         ImGui.Separator();
         ImGui.Text("Recent Log:");
         ImGui.TextWrapped(_lastLogMessage);
@@ -198,8 +226,12 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 }
                 else
                 {
-                    // Try to reconnect to Radar (in case of load order issues)
-                    TryConnectToRadar();
+                    // Try to reconnect to Radar every 2 seconds (in case of load order issues)
+                    if ((DateTime.Now - _lastRadarRetry).TotalSeconds >= 2)
+                    {
+                        TryConnectToRadar();
+                        _lastRadarRetry = DateTime.Now;
+                    }
                 }
                 break;
                 
@@ -476,20 +508,36 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         {
             LogMessage("Attempting to connect to Radar plugin...");
             
+            // Try the exact signature from Radar source
             var radarMethod = GameController.PluginBridge.GetMethod<Action<Vector2, Action<List<Vector2i>>, CancellationToken>>("Radar.LookForRoute");
             if (radarMethod != null)
             {
                 _radarLookForRoute = radarMethod;
                 _radarAvailable = true;
-                LogMessage("Successfully connected to Radar plugin");
+                LogMessage("✅ Successfully connected to Radar plugin!");
+                
+                // Test the connection
+                LogMessage("Testing Radar connection...");
+                try
+                {
+                    var testPos = new Vector2(0, 0);
+                    _radarLookForRoute(testPos, (path) => {
+                        LogMessage($"✅ Radar test successful - received {path?.Count ?? 0} path points");
+                    }, CancellationToken.None);
+                }
+                catch (Exception testEx)
+                {
+                    LogError($"❌ Radar connection test failed: {testEx.Message}");
+                    _radarAvailable = false;
+                }
             }
             else
             {
-                LogMessage("WARNING: Could not connect to Radar plugin. Will retry...");
-                LogMessage("This could be due to:");
-                LogMessage("1. Radar plugin not loaded yet");
-                LogMessage("2. Bridge method signature mismatch");
-                LogMessage("3. Plugin load order (AqueductsBot loaded before Radar)");
+                LogMessage("❌ Could not find 'Radar.LookForRoute' bridge method");
+                LogMessage("Possible causes:");
+                LogMessage("1. Radar plugin not loaded yet (will retry every 2 seconds)");
+                LogMessage("2. Bridge method name changed");
+                LogMessage("3. Bridge method signature mismatch");
                 _radarAvailable = false;
             }
         }
