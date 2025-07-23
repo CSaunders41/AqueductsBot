@@ -475,7 +475,6 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         try
         {
             LogMessage("Attempting to connect to Radar plugin...");
-            LogMessage($"Available bridge methods: {string.Join(", ", GameController.PluginBridge.Methods.Keys)}");
             
             var radarMethod = GameController.PluginBridge.GetMethod<Action<Vector2, Action<List<Vector2i>>, CancellationToken>>("Radar.LookForRoute");
             if (radarMethod != null)
