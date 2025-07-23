@@ -51,7 +51,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     private string _lastLogMessage = "";
     
     // Radar integration
-    private Func<Vector2, Action<List<Vector2i>>, CancellationToken, Task> _radarLookForRoute;
+    private Action<Vector2, Action<List<Vector2i>>, CancellationToken> _radarLookForRoute;
     private bool _radarAvailable = false;
     private CancellationTokenSource _pathfindingCts = new();
     
@@ -62,7 +62,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             LogMessage("AqueductsBot initializing...");
             
             // Try to get Radar's pathfinding method
-            var radarMethod = GameController.PluginBridge.GetMethod<Func<Vector2, Action<List<Vector2i>>, CancellationToken, Task>>("Radar.LookForRoute");
+            var radarMethod = GameController.PluginBridge.GetMethod<Action<Vector2, Action<List<Vector2i>>, CancellationToken>>("Radar.LookForRoute");
             if (radarMethod != null)
             {
                 _radarLookForRoute = radarMethod;
@@ -300,7 +300,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         return (DateTime.Now - _lastActionTime).TotalMilliseconds > 1000;
     }
     
-    private async void RequestPathToExit()
+    private void RequestPathToExit()
     {
         try
         {
@@ -320,7 +320,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var currentPos = playerPos.GridPos;
             var targetPos = new Vector2(currentPos.X + 100, currentPos.Y + 100);
             
-            await _radarLookForRoute(targetPos, OnPathReceived, _pathfindingCts.Token);
+            _radarLookForRoute(targetPos, OnPathReceived, _pathfindingCts.Token);
         }
         catch (Exception ex)
         {
