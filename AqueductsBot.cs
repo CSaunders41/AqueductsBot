@@ -335,6 +335,11 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             _botStartTime = DateTime.Now;
             _runsCompleted = 0;
             
+            // Create new cancellation token source for the new bot session
+            _pathfindingCts?.Cancel(); // Cancel old one if it exists
+            _pathfindingCts = new CancellationTokenSource();
+            LogMessage("[DEBUG] Created new cancellation token source");
+            
             if (!_radarAvailable)
             {
                 _currentState = BotState.WaitingForRadar;
@@ -409,6 +414,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var targetPos = new Vector2(currentPos.X + 200, currentPos.Y + 100);
             
             LogMessage($"[DEBUG] Calling Radar pathfinding from ({currentPos.X:F0}, {currentPos.Y:F0}) to ({targetPos.X:F0}, {targetPos.Y:F0})");
+            LogMessage($"[DEBUG] Cancellation token status - IsCancelled: {_pathfindingCts.Token.IsCancellationRequested}");
             
             _radarLookForRoute(targetPos, OnPathReceived, _pathfindingCts.Token);
             
@@ -423,6 +429,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     
     private void OnPathReceived(List<Vector2i> path)
     {
+        LogMessage("[DEBUG] *** OnPathReceived CALLBACK TRIGGERED ***");
+        
         try
         {
             LogMessage($"[DEBUG] OnPathReceived called - path is {(path == null ? "null" : $"not null with {path.Count} points")}");
