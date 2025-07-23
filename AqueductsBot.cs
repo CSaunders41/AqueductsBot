@@ -55,6 +55,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     private Random _random = new();
     private string _lastLogMessage = "";
     private DateTime _lastRadarRetry = DateTime.MinValue;
+    private DateTime _lastPathRequest = DateTime.MinValue;
     
     // Radar integration
     private Action<Vector2, Action<List<Vector2i>>, CancellationToken> _radarLookForRoute;
@@ -208,6 +209,12 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         }
         
         ImGui.SameLine();
+        if (ImGui.Button("Test Movement"))
+        {
+            TestMovementSystem();
+        }
+        
+        ImGui.SameLine();
         if (ImGui.Button("Refresh Settings"))
         {
             LogMessage("Settings refreshed - check Movement Settings submenu");
@@ -289,6 +296,22 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                     {
                         LogMessage("[TARGET] Player in Aqueducts and Radar available - requesting path to exit");
                         RequestPathToExit();
+                        _lastPathRequest = DateTime.Now;
+                    }
+                }
+                else if (_lastPathRequest != DateTime.MinValue)
+                {
+                    // Check for timeout - if no callback after 10 seconds, something is wrong
+                    var timeSinceRequest = (DateTime.Now - _lastPathRequest).TotalSeconds;
+                    if (timeSinceRequest > 10)
+                    {
+                        LogMessage($"[TIMEOUT] No callback received after {timeSinceRequest:F1} seconds - retrying pathfinding");
+                        _lastPathRequest = DateTime.MinValue;
+                        _lastActionTime = DateTime.MinValue; // Allow immediate retry
+                    }
+                    else if (timeSinceRequest > 5)
+                    {
+                        LogMessage($"[WAITING] Still waiting for callback... {timeSinceRequest:F1}s elapsed");
                     }
                 }
                 break;
@@ -416,7 +439,15 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             LogMessage($"[DEBUG] Calling Radar pathfinding from ({currentPos.X:F0}, {currentPos.Y:F0}) to ({targetPos.X:F0}, {targetPos.Y:F0})");
             LogMessage($"[DEBUG] Cancellation token status - IsCancelled: {_pathfindingCts.Token.IsCancellationRequested}");
             
-            _radarLookForRoute(targetPos, OnPathReceived, _pathfindingCts.Token);
+            // Try multiple callback approaches to see which one works
+            LogMessage("[DEBUG] Testing callback with immediate result...");
+            
+            // Test 1: Simple lambda with CancellationToken.None
+            LogMessage("[DEBUG] Trying with CancellationToken.None...");
+            _radarLookForRoute(targetPos, (path) => {
+                LogMessage($"[CALLBACK TEST] Lambda callback triggered with {path?.Count ?? -1} points");
+                OnPathReceived(path);
+            }, CancellationToken.None);
             
             LogMessage("[DEBUG] Radar pathfinding call completed - waiting for callback");
         }
@@ -433,6 +464,9 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         
         try
         {
+            // Reset timeout tracking
+            _lastPathRequest = DateTime.MinValue;
+            
             LogMessage($"[DEBUG] OnPathReceived called - path is {(path == null ? "null" : $"not null with {path.Count} points")}");
             
             if (path == null || path.Count == 0)
@@ -654,6 +688,60 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         }
     }
     
+    private void TestMovementSystem()
+    {
+        try
+        {
+            LogMessage("[MOVEMENT TEST] Testing movement system...");
+            
+            // Get current player position to click near it
+            var player = GameController.Game.IngameState.Data.LocalPlayer;
+            if (player?.GetComponent<Positioned>() is Positioned playerPos)
+            {
+                var render = player.GetComponent<Render>();
+                if (render != null)
+                {
+                    var worldPos = render.PosNum;
+                    var screenPos = GameController.IngameState.Camera.WorldToScreen(worldPos);
+                    
+                    // Add a small offset to avoid clicking on the player
+                    var testX = (int)(screenPos.X + 100);
+                    var testY = (int)(screenPos.Y + 50);
+                    
+                    bool useKeyboardMovement = Settings.UseMovementKey || Settings.MovementSettings.UseMovementKey;
+                    Keys movementKey = Settings.MovementKey.Value != Keys.None ? Settings.MovementKey.Value : Settings.MovementSettings.MovementKey.Value;
+                    
+                    if (useKeyboardMovement && movementKey != Keys.None)
+                    {
+                        LogMessage($"[MOVEMENT TEST] Using keyboard movement - moving cursor to ({testX}, {testY}) then pressing {movementKey}");
+                        SetCursorPos(testX, testY);
+                        Thread.Sleep(100);
+                        PressKey(movementKey);
+                    }
+                    else
+                    {
+                        LogMessage($"[MOVEMENT TEST] Using mouse click at ({testX}, {testY})");
+                        ClickAt(testX, testY);
+                    }
+                    
+                    LogMessage("[MOVEMENT TEST] Movement command executed - check if character moved!");
+                }
+                else
+                {
+                    LogMessage("[MOVEMENT TEST] Could not get player render component");
+                }
+            }
+            else
+            {
+                LogMessage("[MOVEMENT TEST] Could not get player position");
+            }
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error in movement test: {ex.Message}");
+        }
+    }
+    
     private void TestRadarConnection()
     {
         LogMessage("Testing Radar connection...");
@@ -669,14 +757,14 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 LogMessage($"Testing with position: ({testPos.X:F0}, {testPos.Y:F0}) from player at ({currentPos.X:F0}, {currentPos.Y:F0})");
                 
                 _radarLookForRoute(testPos, (path) => {
-                    LogMessage($"✅ Radar test successful - received {path?.Count ?? 0} path points");
+                    LogMessage($"[TEST CALLBACK] Radar test callback triggered - received {path?.Count ?? 0} path points");
                     if (path?.Count > 0)
                     {
-                        LogMessage("🎯 Pathfinding is working! Bot should be ready to navigate.");
+                        LogMessage("[TEST CALLBACK] Pathfinding is working! Bot should be ready to navigate.");
                     }
                     else
                     {
-                        LogMessage("ℹ️ 0 path points received - target may be unreachable or too close");
+                        LogMessage("[TEST CALLBACK] 0 path points received - target may be unreachable or too close");
                     }
                 }, CancellationToken.None);
             }
