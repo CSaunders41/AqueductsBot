@@ -264,7 +264,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         ImGui.Text("- 'Test Mouse Click': Tests direct mouse clicking movement");  
         ImGui.Text("- 'Test Keyboard': Positions cursor + tries 5 keyboard methods");
         ImGui.Text("- 'Force Mouse Only': Disables keyboard, uses reliable mouse movement");
-        ImGui.Text("- Mouse movement is 100% reliable - keyboard may be blocked by PoE");
+        ImGui.TextColored(new System.Numerics.Vector4(0.4f, 1.0f, 0.4f, 1), "FIXED: Now uses window offset (like working Aim-Bot plugin)!");
         
         ImGui.Separator();
         ImGui.TextColored(new System.Numerics.Vector4(0.9f, 0.7f, 0.7f, 1), "BOT STATUS:");
@@ -585,13 +585,17 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 if (useKeyboardMovement && movementKey != Keys.None)
                 {
                     // Use keyboard movement: Move cursor to target, then press key
-                    SetCursorPos((int)screenPos.X, (int)screenPos.Y);
+                    var windowRect = GameController.Window.GetWindowRectangle();
+                    int absoluteX = (int)screenPos.X + (int)windowRect.X;
+                    int absoluteY = (int)screenPos.Y + (int)windowRect.Y;
+                    
+                    SetCursorPos(absoluteX, absoluteY);
                     Thread.Sleep(10);
                     PressKey(movementKey);
                 }
                 else
                 {
-                    // Use mouse click movement
+                    // Use mouse click movement (ClickAt already handles window offset)
                     ClickAt((int)screenPos.X, (int)screenPos.Y);
                 }
                 
@@ -631,7 +635,14 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     {
         try
         {
-            SetCursorPos(x, y);
+            // CRITICAL FIX: Add window offset for absolute screen coordinates
+            var windowRect = GameController.Window.GetWindowRectangle();
+            int absoluteX = x + (int)windowRect.X;
+            int absoluteY = y + (int)windowRect.Y;
+            
+            LogMessage($"[MOUSE] Clicking at game coords ({x}, {y}) -> screen coords ({absoluteX}, {absoluteY})");
+            
+            SetCursorPos(absoluteX, absoluteY);
             Thread.Sleep(10); // Small delay between cursor move and click
             
             mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
@@ -693,9 +704,14 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                     var testX = (int)(screenPos.X + 100);
                     var testY = (int)(screenPos.Y + 50);
                     
-                    LogMessage($"[KEYBOARD TEST] Moving cursor to game position: ({testX}, {testY})");
-                    SetCursorPos(testX, testY);
-                    Thread.Sleep(200); // Wait for cursor to settle
+                                         // CRITICAL FIX: Add window offset for absolute screen coordinates
+                     var windowRect = GameController.Window.GetWindowRectangle();
+                     int absoluteX = testX + (int)windowRect.X;
+                     int absoluteY = testY + (int)windowRect.Y;
+                     
+                     LogMessage($"[KEYBOARD TEST] Moving cursor: game({testX}, {testY}) -> screen({absoluteX}, {absoluteY})");
+                     SetCursorPos(absoluteX, absoluteY);
+                     Thread.Sleep(200); // Wait for cursor to settle
                 }
                 else
                 {
@@ -1116,8 +1132,13 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                     
                     if (useKeyboardMovement && movementKey != Keys.None)
                     {
-                        LogMessage($"[MOVEMENT TEST] Using keyboard movement - moving cursor to ({testX}, {testY}) then pressing {movementKey}");
-                        SetCursorPos(testX, testY);
+                        // Add window offset for keyboard movement
+                        var windowRect = GameController.Window.GetWindowRectangle();
+                        int absoluteX = testX + (int)windowRect.X;
+                        int absoluteY = testY + (int)windowRect.Y;
+                        
+                        LogMessage($"[MOVEMENT TEST] Using keyboard: game({testX}, {testY}) -> screen({absoluteX}, {absoluteY}) then pressing {movementKey}");
+                        SetCursorPos(absoluteX, absoluteY);
                         Thread.Sleep(100);
                         
                         // Try both methods
@@ -1132,7 +1153,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                     else
                     {
                         LogMessage($"[MOVEMENT TEST] Using mouse click at ({testX}, {testY})");
-                        ClickAt(testX, testY);
+                        ClickAt(testX, testY); // ClickAt already handles window offset
                     }
                     
                     LogMessage("[MOVEMENT TEST] Movement command executed - check if character moved!");
