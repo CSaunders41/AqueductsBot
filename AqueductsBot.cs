@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,6 +11,9 @@ using ExileCore.Shared;
 using ExileCore.Shared.Enums;
 using GameOffsets.Native;
 using ImGuiNET;
+using SharpDX;
+using Vector2 = System.Numerics.Vector2;
+using Vector3 = System.Numerics.Vector3;
 
 namespace AqueductsBot;
 
@@ -60,7 +62,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             LogMessage("AqueductsBot initializing...");
             
             // Try to get Radar's pathfinding method
-            if (GameController.PluginBridge.GetMethod("Radar.LookForRoute") is Func<Vector2, Action<List<Vector2i>>, CancellationToken, Task> radarMethod)
+            var radarMethod = GameController.PluginBridge.GetMethod<Func<Vector2, Action<List<Vector2i>>, CancellationToken, Task>>("Radar.LookForRoute");
+            if (radarMethod != null)
             {
                 _radarLookForRoute = radarMethod;
                 _radarAvailable = true;
@@ -364,7 +367,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 0
             );
             
-            var screenPos = GameController.IngameState.Camera.WorldToScreen(worldPos);
+            var screenPosSharp = GameController.IngameState.Camera.WorldToScreen(worldPos);
+            var screenPos = new Vector2(screenPosSharp.X, screenPosSharp.Y);
             
             // Check if we need to move
             var playerScreenPos = GetPlayerScreenPosition();
@@ -411,7 +415,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var render = player?.GetComponent<Render>();
             if (render == null) return null;
             
-            return GameController.IngameState.Camera.WorldToScreen(render.PosNum);
+            var worldPos = GameController.IngameState.Camera.WorldToScreen(render.PosNum);
+            return new Vector2(worldPos.X, worldPos.Y);
         }
         catch
         {
