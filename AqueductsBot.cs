@@ -161,6 +161,10 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     
     public override void DrawSettings()
     {
+        // Declare variables early for UI usage
+        bool keyboardEnabled = Settings.UseMovementKey || Settings.MovementSettings.UseMovementKey;
+        Keys currentMovementKey = Settings.MovementKey.Value != Keys.None ? Settings.MovementKey.Value : Settings.MovementSettings.MovementKey.Value;
+        
         // Show current bot status
         ImGui.Text($"Bot State: {_currentState}");
         ImGui.Text($"Radar Available: {_radarAvailable}");
@@ -219,9 +223,6 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         ImGui.Separator();
         
         // Show settings status for debugging
-        bool keyboardEnabled = Settings.UseMovementKey || Settings.MovementSettings.UseMovementKey;
-        Keys currentMovementKey = Settings.MovementKey.Value != Keys.None ? Settings.MovementKey.Value : Settings.MovementSettings.MovementKey.Value;
-        
         ImGui.Text($"Movement Method: {(keyboardEnabled ? $"Key({currentMovementKey})" : "Mouse")}");
         ImGui.Text($"Movement Key Enabled: {keyboardEnabled}");
         ImGui.Text($"Movement Key Value: {currentMovementKey}");
