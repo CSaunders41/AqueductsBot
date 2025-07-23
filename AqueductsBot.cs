@@ -215,6 +215,12 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         }
         
         ImGui.SameLine();
+        if (ImGui.Button("Test Keyboard"))
+        {
+            TestKeyboardOnly();
+        }
+        
+        ImGui.SameLine();
         if (ImGui.Button("Refresh Settings"))
         {
             LogMessage("Settings refreshed - check Movement Settings submenu");
@@ -605,13 +611,129 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         try
         {
             byte vkCode = (byte)key;
+            LogMessage($"[KEYBOARD] Pressing key {key} (VK Code: {vkCode})");
+            
+            // Method 1: Try keybd_event
             keybd_event(vkCode, 0, 0, 0); // Key down
             Thread.Sleep(50); // Hold key briefly
             keybd_event(vkCode, 0, KEYEVENTF_KEYUP, 0); // Key up
+            
+            LogMessage($"[KEYBOARD] Key press sequence completed for {key}");
         }
         catch (Exception ex)
         {
             LogError($"Error pressing key {key}: {ex.Message}");
+        }
+    }
+    
+    private void TestKeyboardOnly()
+    {
+        try
+        {
+            bool useKeyboardMovement = Settings.UseMovementKey || Settings.MovementSettings.UseMovementKey;
+            Keys movementKey = Settings.MovementKey.Value != Keys.None ? Settings.MovementKey.Value : Settings.MovementSettings.MovementKey.Value;
+            
+            if (!useKeyboardMovement || movementKey == Keys.None)
+            {
+                LogMessage("[KEYBOARD TEST] Keyboard movement not enabled or no key set");
+                return;
+            }
+            
+            LogMessage($"[KEYBOARD TEST] Testing key {movementKey} without mouse movement");
+            
+            // Get active window info
+            var foregroundWindow = GetForegroundWindow();
+            var windowTitle = new System.Text.StringBuilder(256);
+            GetWindowText(foregroundWindow, windowTitle, 256);
+            LogMessage($"[KEYBOARD TEST] Active window: {windowTitle}");
+            
+            LogMessage("[KEYBOARD TEST] Method 1: keybd_event");
+            PressKey(movementKey);
+            
+            Thread.Sleep(1000);
+            
+            LogMessage("[KEYBOARD TEST] Method 2: SendInput");
+            PressKeyAlternative(movementKey);
+            
+            LogMessage("[KEYBOARD TEST] Both methods completed - check if character moved or any action occurred");
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error in keyboard test: {ex.Message}");
+        }
+    }
+    
+    // Alternative keyboard input method using SendInput (more reliable)
+    [DllImport("user32.dll")]
+    private static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
+    
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
+    
+    [DllImport("user32.dll")]
+    private static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder text, int count);
+    
+    [StructLayout(LayoutKind.Sequential)]
+    private struct INPUT
+    {
+        public uint Type;
+        public MOUSEKEYBDINPUT Data;
+    }
+    
+    [StructLayout(LayoutKind.Explicit)]
+    private struct MOUSEKEYBDINPUT
+    {
+        [FieldOffset(0)]
+        public KEYBDINPUT Keyboard;
+    }
+    
+    [StructLayout(LayoutKind.Sequential)]
+    private struct KEYBDINPUT
+    {
+        public ushort VirtualKeyCode;
+        public ushort ScanCode;
+        public uint Flags;
+        public uint Time;
+        public IntPtr ExtraInfo;
+    }
+    
+    private const uint INPUT_KEYBOARD = 1;
+    private const uint KEYEVENTF_KEYUP_SENDINPUT = 0x0002;
+    
+    private void PressKeyAlternative(Keys key)
+    {
+        try
+        {
+            var foregroundWindow = GetForegroundWindow();
+            var windowTitle = new System.Text.StringBuilder(256);
+            GetWindowText(foregroundWindow, windowTitle, 256);
+            
+            LogMessage($"[KEYBOARD ALT] Pressing {key} to window: {windowTitle}");
+            
+            INPUT[] inputs = new INPUT[2];
+            
+            // Key down
+            inputs[0].Type = INPUT_KEYBOARD;
+            inputs[0].Data.Keyboard.VirtualKeyCode = (ushort)key;
+            inputs[0].Data.Keyboard.ScanCode = 0;
+            inputs[0].Data.Keyboard.Flags = 0;
+            inputs[0].Data.Keyboard.Time = 0;
+            inputs[0].Data.Keyboard.ExtraInfo = IntPtr.Zero;
+            
+            // Key up
+            inputs[1].Type = INPUT_KEYBOARD;
+            inputs[1].Data.Keyboard.VirtualKeyCode = (ushort)key;
+            inputs[1].Data.Keyboard.ScanCode = 0;
+            inputs[1].Data.Keyboard.Flags = KEYEVENTF_KEYUP_SENDINPUT;
+            inputs[1].Data.Keyboard.Time = 0;
+            inputs[1].Data.Keyboard.ExtraInfo = IntPtr.Zero;
+            
+            uint result = SendInput(2, inputs, Marshal.SizeOf(typeof(INPUT)));
+            LogMessage($"[KEYBOARD ALT] SendInput result: {result} (should be 2)");
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error with alternative key press {key}: {ex.Message}");
         }
     }
     
@@ -716,7 +838,15 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                         LogMessage($"[MOVEMENT TEST] Using keyboard movement - moving cursor to ({testX}, {testY}) then pressing {movementKey}");
                         SetCursorPos(testX, testY);
                         Thread.Sleep(100);
+                        
+                        // Try both methods
+                        LogMessage("[MOVEMENT TEST] Testing standard keybd_event method...");
                         PressKey(movementKey);
+                        
+                        Thread.Sleep(500);
+                        
+                        LogMessage("[MOVEMENT TEST] Testing alternative SendInput method...");
+                        PressKeyAlternative(movementKey);
                     }
                     else
                     {
