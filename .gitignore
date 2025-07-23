@@ -1,0 +1,57 @@
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+build/
+bld/
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# Visual Studio Code
+.vscode/
+
+# NuGet
+*.nupkg
+*.nuget.props
+*.nuget.targets
+packages/
+
+# MSBuild Binary and Structured Log
+*.binlog
+
+# JetBrains Rider
+.idea/
+
+# User-specific files (MonoDevelop/Xamarin Studio)
+*.userprefs
+
+# Windows image file caches
+Thumbs.db
+ehthumbs.db
+
+# Folder config file
+Desktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# Mac
+.DS_Store
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp 
