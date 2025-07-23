@@ -227,6 +227,14 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         }
         
         ImGui.SameLine();
+        if (ImGui.Button("Force Mouse Only"))
+        {
+            Settings.UseMovementKey.Value = false;
+            Settings.MovementSettings.UseMovementKey.Value = false;
+            LogMessage("Switched to mouse-only movement (since keyboard input may not work with PoE)");
+        }
+        
+        ImGui.SameLine();
         if (ImGui.Button("Refresh Settings"))
         {
             LogMessage("Settings refreshed - check Movement Settings submenu");
@@ -254,8 +262,24 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         ImGui.Separator();
         ImGui.TextColored(new System.Numerics.Vector4(0.7f, 0.9f, 0.7f, 1), "TESTING INSTRUCTIONS:");
         ImGui.Text("- 'Test Mouse Click': Tests direct mouse clicking movement");  
-        ImGui.Text("- 'Test Keyboard': Positions cursor + presses movement key");
-        ImGui.Text("- Both should move your character if working correctly");
+        ImGui.Text("- 'Test Keyboard': Positions cursor + tries 5 keyboard methods");
+        ImGui.Text("- 'Force Mouse Only': Disables keyboard, uses reliable mouse movement");
+        ImGui.Text("- Mouse movement is 100% reliable - keyboard may be blocked by PoE");
+        
+        ImGui.Separator();
+        ImGui.TextColored(new System.Numerics.Vector4(0.9f, 0.7f, 0.7f, 1), "BOT STATUS:");
+        if (_currentState == BotState.GettingPath)
+        {
+            ImGui.Text("⚠️  Bot is requesting paths but getting 0 results - still investigating Radar callbacks");
+        }
+        else if (_currentState == BotState.MovingAlongPath)
+        {
+            ImGui.Text("✅ Bot is actively moving along a path!");
+        }
+        else if (_currentState == BotState.Disabled)
+        {
+            ImGui.Text("💡 Bot ready - mouse movement works, start bot to test pathfinding");
+        }
         
         // Quick instructions and controls
         if (!keyboardEnabled)
@@ -266,6 +290,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         {
             ImGui.TextColored(new System.Numerics.Vector4(0, 1, 0, 1), $"[OK] Keyboard movement active - Bot will press '{currentMovementKey}' key");
             ImGui.TextColored(new System.Numerics.Vector4(0.8f, 0.8f, 0.4f, 1), "NOTE: Keyboard movement requires cursor positioned over destination");
+            ImGui.TextColored(new System.Numerics.Vector4(1, 0.7f, 0.4f, 1), "If keyboard doesn't work, bot will automatically fall back to mouse clicks");
         }
         
         // Movement key selector in main UI
@@ -708,7 +733,12 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             LogMessage("[KEYBOARD TEST] Method 4: Focus window + SendInput");
             PressKeyWithFocus(movementKey);
             
-            LogMessage("[KEYBOARD TEST] All methods completed - check if character moved or any action occurred");
+            Thread.Sleep(1000);
+            
+            LogMessage("[KEYBOARD TEST] Method 5: Scan codes (low-level approach)");
+            PressKeyWithScanCode(movementKey);
+            
+            LogMessage("[KEYBOARD TEST] All 5 methods completed - check if character moved or any action occurred");
         }
         catch (Exception ex)
         {
@@ -953,6 +983,40 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             LogError($"Error with focused key press {key}: {ex.Message}");
         }
     }
+    
+    private void PressKeyWithScanCode(Keys key)
+    {
+        try
+        {
+            LogMessage($"[KEYBOARD SCANCODE] Trying scan code approach for {key}");
+            
+            // Get scan code for the key (more low-level than virtual key codes)
+            uint scanCode = MapVirtualKey((uint)key, 0);
+            LogMessage($"[KEYBOARD SCANCODE] Virtual Key: {(uint)key}, Scan Code: {scanCode}");
+            
+            if (scanCode == 0)
+            {
+                LogMessage("[KEYBOARD SCANCODE] ERROR: Could not map virtual key to scan code");
+                return;
+            }
+            
+            // Use keybd_event with scan code
+            keybd_event(0, (byte)scanCode, KEYEVENTF_SCANCODE, 0); // Key down with scan code
+            Thread.Sleep(50);
+            keybd_event(0, (byte)scanCode, KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP, 0); // Key up with scan code
+            
+            LogMessage($"[KEYBOARD SCANCODE] Sent scan code {scanCode} for key {key}");
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error with scan code key press {key}: {ex.Message}");
+        }
+    }
+    
+    [DllImport("user32.dll")]
+    private static extern uint MapVirtualKey(uint uCode, uint uMapType);
+    
+    private const uint KEYEVENTF_SCANCODE = 0x0008;
     
     private void TryConnectToRadar()
     {
