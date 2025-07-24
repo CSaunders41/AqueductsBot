@@ -1572,8 +1572,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     {
         try
         {
-            bool useKeyboardMovement = Settings.UseMovementKey || Settings.MovementSettings.UseMovementKey;
-            Keys movementKey = Settings.MovementKey.Value != Keys.None ? Settings.MovementKey.Value : Settings.MovementSettings.MovementKey.Value;
+            bool useKeyboardMovement = Settings.MovementSettings.UseMovementKey.Value;
+            Keys movementKey = Settings.MovementSettings.MovementKey.Value;
             
             if (!useKeyboardMovement || movementKey == Keys.None)
             {
@@ -2051,8 +2051,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                     var testX = (int)(screenPos.X + 100);
                     var testY = (int)(screenPos.Y + 50);
                     
-                    bool useKeyboardMovement = Settings.UseMovementKey || Settings.MovementSettings.UseMovementKey;
-                    Keys movementKey = Settings.MovementKey.Value != Keys.None ? Settings.MovementKey.Value : Settings.MovementSettings.MovementKey.Value;
+                    bool useKeyboardMovement = Settings.MovementSettings.UseMovementKey.Value;
+                    Keys movementKey = Settings.MovementSettings.MovementKey.Value;
                     
                     if (useKeyboardMovement && movementKey != Keys.None)
                     {
