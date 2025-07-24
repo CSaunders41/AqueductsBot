@@ -102,6 +102,26 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     private DateTime _lastWaypointSkip = DateTime.MinValue;
     private int _lastOptimizedWaypoint = -1;
     
+    // RADIUS-BASED PATH INTERSECTION: Pure pursuit algorithm for smooth navigation
+    private System.Numerics.Vector2 _lastIntersectionPoint = System.Numerics.Vector2.Zero;
+    
+    /// <summary>
+    /// Update progress tracking along the current path
+    /// </summary>
+    private void UpdatePathProgress(System.Numerics.Vector2 targetPoint, float distanceToTarget)
+    {
+        // Find approximate position along path based on distance to intersection point
+        var progressPercentage = Math.Max(0, Math.Min(100, (float)_currentPathIndex / _currentPath.Count * 100));
+        
+        if (DateTime.Now.Subtract(_lastProgressLog).TotalSeconds >= 2) // Log progress every 2 seconds
+        {
+            LogMessage($"[PROGRESS] 📍 Path progress: {progressPercentage:F0}% (index {_currentPathIndex}/{_currentPath.Count})");
+            _lastProgressLog = DateTime.Now;
+        }
+    }
+    
+    private DateTime _lastProgressLog = DateTime.MinValue;
+    
     private void InitializeLogging()
     {
         try
@@ -675,6 +695,12 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             _lastOptimizedWaypoint = -1;
             LogMessage("[WAYPOINT STABILITY] 🔄 Reset waypoint stability tracking for new bot session");
             
+            // PURSUIT NAVIGATION: Reset tracking for new session
+            _lastIntersectionPoint = System.Numerics.Vector2.Zero;
+            _lastMovementTime = DateTime.MinValue;
+            _lastProgressLog = DateTime.MinValue;
+            LogMessage("[PURSUIT] 🔄 Reset pursuit navigation tracking for new bot session");
+            
             if (!_radarAvailable)
             {
                 TryConnectToRadar();
@@ -993,148 +1019,83 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     
     private void MoveAlongPath()
     {
-        try
+        if (_currentPath == null || _currentPath.Count == 0)
         {
-            if (_currentPathIndex >= _currentPath.Count)
-                return;
-                
-            // PATH OPTIMIZATION: Skip intermediate waypoints if we can see far ahead
-            // BUT: Add stability delay to prevent rapid re-evaluation
-            var timeSinceLastSkip = (DateTime.Now - _lastWaypointSkip).TotalMilliseconds;
-            var shouldOptimize = timeSinceLastSkip >= 1500; // Wait at least 1.5 seconds between optimizations
-            
-            if (shouldOptimize)
-            {
-                var optimizedIndex = GetOptimizedWaypointIndex();
-                if (optimizedIndex > _currentPathIndex)
-                {
-                    var skippedCount = optimizedIndex - _currentPathIndex;
-                    LogMessage($"[PATH OPTIMIZATION] ⚡ Skipping to waypoint {optimizedIndex + 1}/{_currentPath.Count} (skipped {skippedCount} intermediate points)");
-                    _currentPathIndex = optimizedIndex;
-                    _lastWaypointSkip = DateTime.Now;
-                    _lastOptimizedWaypoint = optimizedIndex;
-                }
-            }
-            else
-            {
-                var remainingDelay = 1500 - timeSinceLastSkip;
-                LogMessage($"[WAYPOINT STABILITY] ⏸️ Waiting {remainingDelay:F0}ms before next waypoint optimization (preventing rapid re-evaluation)");
-            }
-                
-            var targetPoint = _currentPath[_currentPathIndex];
-            
-            // Convert grid coordinates to screen coordinates
-            var worldPos = new Vector3(
-                targetPoint.X * 250f / 23f, // GridToWorldMultiplier from Radar
-                targetPoint.Y * 250f / 23f,
-                0
-            );
-            
-            var screenPosSharp = GameController.IngameState.Camera.WorldToScreen(worldPos);
-            var screenPos = new Vector2(screenPosSharp.X, screenPosSharp.Y);
-            
-            // IMPROVED PRECISION: Check if we need to move with dynamic precision
-            var playerScreenPos = GetPlayerScreenPosition();
-            if (playerScreenPos.HasValue)
-            {
-                var distance = Vector2.Distance(screenPos, playerScreenPos.Value);
-                
-                // FIXED: Much more generous precision for final waypoints to prevent oscillation
-                var precision = CalculateImprovedPrecision(distance, _currentPathIndex, _currentPath.Count);
-                
-                LogMessage($"[WAYPOINT DEBUG] Waypoint {_currentPathIndex + 1}/{_currentPath.Count}: distance={distance:F1}, precision={precision:F1}, target=({screenPos.X:F0},{screenPos.Y:F0})");
-                
-                if (distance < precision)
-                {
-                    // Close enough, move to next point
-                    _currentPathIndex++;
-                    LogMessage($"[WAYPOINT] ✅ Reached waypoint {_currentPathIndex}/{_currentPath.Count} (distance: {distance:F1} < precision: {precision:F1})");
-                    
-                    // Check if we've reached the end
-                    if (_currentPathIndex >= _currentPath.Count)
-                    {
-                        LogMessage("[PATH COMPLETE] ✅ Reached end of path! Transitioning to area exit detection.");
-                        _currentState = BotState.AtAreaExit;
-                    }
-                    return;
-                }
-                
-                // STUCK DETECTION: Check if we're not making progress
-                var playerPos = GetPlayerPosition();
-                if (playerPos != null)
-                {
-                    var playerWorldPos = new System.Numerics.Vector2(playerPos.GridPos.X, playerPos.GridPos.Y);
-                    if (IsStuckDetected(playerWorldPos, distance))
-                    {
-                        HandleStuckSituation();
-                        return;
-                    }
-                }
-            }
-            
-            // FIXED: More conservative movement timing to prevent rapid oscillation
-            var timeSinceLastAction = (DateTime.Now - _lastActionTime).TotalMilliseconds;
-            var requiredDelay = CalculateImprovedMovementDelay(Vector2.Distance(screenPos, playerScreenPos ?? Vector2.Zero));
-            
-            if (timeSinceLastAction >= requiredDelay)
-            {
-                // ADDITIONAL CHECK: Don't move if we're very close to target (prevents micro-oscillations)
-                var distanceToTarget = Vector2.Distance(screenPos, playerScreenPos ?? Vector2.Zero);
-                if (distanceToTarget < 15) // Very close - let character movement settle
-                {
-                    LogMessage($"[MOVEMENT] ⏸️ Skipping movement - too close to target (distance: {distanceToTarget:F1})");
-                    _lastActionTime = DateTime.Now; // Update time to prevent spam
-                    return;
-                }
-                
-                // Perform the move using selected method
-                bool useKeyboardMovement = Settings.UseMovementKey || Settings.MovementSettings.UseMovementKey;
-                Keys movementKey = Settings.MovementKey.Value != Keys.None ? Settings.MovementKey.Value : Settings.MovementSettings.MovementKey.Value;
-                
-                if (useKeyboardMovement && movementKey != Keys.None)
-                {
-                    LogMessage($"[MOVEMENT] 🎮 Keyboard: cursor to ({screenPos.X:F0}, {screenPos.Y:F0}) + press {movementKey}");
-                    
-                    // Step 1: Position cursor at target (like working bot)
-                    SetCursorPos((int)screenPos.X, (int)screenPos.Y);
-                    Thread.Sleep(40); // Optimized timing
-                    
-                    // Step 2: Press and hold movement key (like working bot)
-                    PressAndHoldKey(movementKey);
-                }
-                else
-                {
-                    LogMessage($"[MOVEMENT] 🖱️ Mouse click at ({screenPos.X:F0}, {screenPos.Y:F0})");
-                    ClickAt((int)screenPos.X, (int)screenPos.Y);
-                }
-                
-                _lastActionTime = DateTime.Now;
-                
-                // Update stuck detection with world position
-                var currentPlayerPos = GetPlayerPosition();
-                if (currentPlayerPos != null)
-                {
-                    var playerWorldPos = new System.Numerics.Vector2(currentPlayerPos.GridPos.X, currentPlayerPos.GridPos.Y);
-                    UpdateStuckDetection(playerWorldPos);
-                }
-                
-                if (Settings.DebugSettings.DebugMode)
-                {
-                    var moveMethod = useKeyboardMovement ? $"Key({movementKey})" : "Mouse";
-                    var remainingDistance = playerScreenPos.HasValue ? Vector2.Distance(screenPos, playerScreenPos.Value) : -1;
-                    LogMessage($"[MOVEMENT DEBUG] Point {_currentPathIndex + 1}/{_currentPath.Count} using {moveMethod}: Grid({targetPoint.X}, {targetPoint.Y}) -> Screen({screenPos.X:F0}, {screenPos.Y:F0}) [Distance: {remainingDistance:F1}]");
-                }
-            }
-            else
-            {
-                var remainingDelay = requiredDelay - timeSinceLastAction;
-                LogMessage($"[MOVEMENT] ⏳ Waiting {remainingDelay:F0}ms before next movement (preventing oscillation)");
-            }
+            LogMessage("[PATH] ❌ No current path to follow");
+            _currentState = BotState.WaitingForAqueducts;
+            return;
         }
-        catch (Exception ex)
+
+        var playerPos = GetPlayerPosition();
+        if (playerPos == null)
         {
-            LogError($"Error in MoveAlongPath: {ex.Message}");
+            LogMessage("[POSITION] ❌ Cannot get player position");
+            return;
         }
+
+        var playerWorldPos = new System.Numerics.Vector2(playerPos.GridPos.X, playerPos.GridPos.Y);
+
+        // RADIUS-BASED NAVIGATION: Use pure pursuit algorithm instead of waypoint chasing
+        var targetPoint = FindPathIntersectionWithRadius(_currentPath, _currentPathIndex);
+        
+        if (!targetPoint.HasValue)
+        {
+            LogMessage("[PURSUIT] ❌ No valid intersection point found - path may be complete");
+            _currentState = BotState.WaitingForAqueducts;
+            return;
+        }
+
+        // Convert world position to screen coordinates for clicking
+        var worldPos = new Vector3(targetPoint.Value.X * 250f / 23f, targetPoint.Value.Y * 250f / 23f, 0);
+        var screenPosSharp = GameController.IngameState.Camera.WorldToScreen(worldPos);
+        var screenPos = new Vector2(screenPosSharp.X, screenPosSharp.Y);
+        
+        var distanceToTarget = System.Numerics.Vector2.Distance(playerWorldPos, targetPoint.Value);
+        
+        // Update path progress tracking
+        UpdatePathProgress(targetPoint.Value, distanceToTarget);
+        
+        LogMessage($"[PURSUIT] 🎯 Moving to intersection point ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {distanceToTarget:F1}");
+
+        // Calculate movement delay based on distance
+        var movementDelay = CalculateImprovedMovementDelay(distanceToTarget);
+        
+        // Check if we're close enough to consider this target "reached"
+        if (distanceToTarget < 50f) // More generous than waypoint precision
+        {
+            LogMessage($"[PURSUIT] ✅ Close to intersection point (distance: {distanceToTarget:F1} < 50), advancing along path");
+            
+            // Advance our position along the path
+            _currentPathIndex = Math.Min(_currentPathIndex + 5, _currentPath.Count - 10);
+            _lastIntersectionPoint = targetPoint.Value;
+            return;
+        }
+
+        // Perform the movement
+        if (distanceToTarget < 15)
+        {
+            LogMessage($"[PURSUIT] ⏸️ Very close to target, skipping movement to avoid micro-adjustments");
+            return;
+        }
+
+        // Check movement delay timing
+        var timeSinceLastMovement = (DateTime.Now - _lastMovementTime).TotalMilliseconds;
+        if (timeSinceLastMovement < movementDelay)
+        {
+            var remainingDelay = movementDelay - timeSinceLastMovement;
+            LogMessage($"[MOVEMENT] ⏳ Waiting {remainingDelay:F0}ms before next movement (preventing oscillation)");
+            return;
+        }
+
+        // Execute the movement
+        _lastMovementTime = DateTime.Now;
+        
+        LogMessage($"[MOVEMENT] 🎮 Keyboard: cursor to ({screenPos.X:F0}, {screenPos.Y:F0}) + press T");
+        ClickAt((int)screenPos.X, (int)screenPos.Y);
+        PressAndHoldKey(Keys.T);
+
+        // Update stuck detection
+        UpdateStuckDetection(playerWorldPos);
     }
     
     private float CalculateImprovedPrecision(float distanceToTarget, int currentIndex, int totalPoints)
@@ -2439,5 +2400,95 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         LogMessage($"[DIRECTION ANALYSIS] {pathName}: distance to start={distanceToStart:F1}, distance to end={distanceToEnd:F1}, progress={directionalProgress:F1}, score={score:F2}");
         
         return score;
+    }
+    
+    /// <summary>
+    /// Find where the path intersects with a circle around the player (Pure Pursuit Algorithm)
+    /// This provides much smoother navigation than chasing exact waypoints
+    /// </summary>
+    private System.Numerics.Vector2? FindPathIntersectionWithRadius(List<Vector2i> path, int startIndex = 0)
+    {
+        var playerPos = GetPlayerPosition();
+        if (playerPos == null || path.Count == 0) return null;
+        
+        var playerWorldPos = new System.Numerics.Vector2(playerPos.GridPos.X, playerPos.GridPos.Y);
+        var bestIntersection = System.Numerics.Vector2.Zero;
+        var bestDistance = float.MaxValue;
+        var foundIntersection = false;
+        
+        // Look ahead from current position in path
+        for (int i = Math.Max(startIndex, 1); i < path.Count; i++)
+        {
+            var currentPoint = new System.Numerics.Vector2(path[i - 1].X, path[i - 1].Y);
+            var nextPoint = new System.Numerics.Vector2(path[i].X, path[i].Y);
+            
+            // Find intersection of line segment with circle around player
+            var pursuitRadius = Settings.MovementSettings.PursuitRadius.Value;
+            var intersection = FindLineCircleIntersection(currentPoint, nextPoint, playerWorldPos, pursuitRadius);
+            
+            if (intersection.HasValue)
+            {
+                // Prefer intersections that are further along the path
+                var distanceAlongPath = i;
+                if (distanceAlongPath < bestDistance)
+                {
+                    bestDistance = distanceAlongPath;
+                    bestIntersection = intersection.Value;
+                    foundIntersection = true;
+                }
+            }
+        }
+        
+        if (foundIntersection)
+        {
+            var pursuitRadius = Settings.MovementSettings.PursuitRadius.Value;
+            LogMessage($"[PURSUIT] 🎯 Found path intersection at ({bestIntersection.X:F0}, {bestIntersection.Y:F0}) with radius {pursuitRadius}");
+            return bestIntersection;
+        }
+        
+        // Fallback: if no intersection found, use a point further along the path
+        if (startIndex + 10 < path.Count)
+        {
+            var fallbackPoint = new System.Numerics.Vector2(path[startIndex + 10].X, path[startIndex + 10].Y);
+            LogMessage($"[PURSUIT] ⚠️ No intersection found, using fallback point at ({fallbackPoint.X:F0}, {fallbackPoint.Y:F0})");
+            return fallbackPoint;
+        }
+        
+        return null;
+    }
+    
+    /// <summary>
+    /// Find intersection point between a line segment and a circle
+    /// </summary>
+    private System.Numerics.Vector2? FindLineCircleIntersection(
+        System.Numerics.Vector2 lineStart, 
+        System.Numerics.Vector2 lineEnd, 
+        System.Numerics.Vector2 circleCenter, 
+        float radius)
+    {
+        var direction = lineEnd - lineStart;
+        var toCenter = lineStart - circleCenter;
+        
+        var a = System.Numerics.Vector2.Dot(direction, direction);
+        var b = 2 * System.Numerics.Vector2.Dot(toCenter, direction);
+        var c = System.Numerics.Vector2.Dot(toCenter, toCenter) - radius * radius;
+        
+        var discriminant = b * b - 4 * a * c;
+        
+        if (discriminant < 0) return null; // No intersection
+        
+        var sqrtDiscriminant = (float)Math.Sqrt(discriminant);
+        var t1 = (-b - sqrtDiscriminant) / (2 * a);
+        var t2 = (-b + sqrtDiscriminant) / (2 * a);
+        
+        // Choose the intersection point that's further along the line (prefer forward movement)
+        var t = (t2 > t1 && t2 >= 0 && t2 <= 1) ? t2 : t1;
+        
+        if (t >= 0 && t <= 1) // Intersection is within the line segment
+        {
+            return lineStart + t * direction;
+        }
+        
+        return null;
     }
 }

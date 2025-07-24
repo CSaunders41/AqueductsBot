@@ -24,14 +24,17 @@ public class MovementSettings
     [Menu(null, "Movement key to use (requires UseMovementKey enabled)")]
     public HotkeyNode MovementKey { get; set; } = new HotkeyNode(Keys.None);
     
-    [Menu(null, "Minimum delay between movements in milliseconds")]
-    public RangeNode<int> MinMoveDelayMs { get; set; } = new RangeNode<int>(100, 50, 1000);
+    [Menu("Movement Precision", "Precision for waypoint detection (pixels)", 51)]
+    public RangeNode<float> MovementPrecision { get; set; } = new RangeNode<float>(10f, 5f, 50f);
+
+    [Menu("Min Move Delay", "Minimum delay between movements (ms)", 52)]
+    public RangeNode<int> MinMoveDelayMs { get; set; } = new RangeNode<int>(200, 50, 1000);
+
+    [Menu("Max Move Delay", "Maximum delay between movements (ms)", 53)]
+    public RangeNode<int> MaxMoveDelayMs { get; set; } = new RangeNode<int>(800, 200, 2000);
     
-    [Menu(null, "Maximum delay between movements in milliseconds")]
-    public RangeNode<int> MaxMoveDelayMs { get; set; } = new RangeNode<int>(500, 100, 2000);
-    
-    [Menu(null, "How close to reach each waypoint in pixels")]
-    public RangeNode<int> MovementPrecision { get; set; } = new RangeNode<int>(10, 5, 50);
+    [Menu("Pursuit Radius", "Radius for path intersection navigation (larger = smoother, smaller = more precise)", 54)]
+    public RangeNode<float> PursuitRadius { get; set; } = new RangeNode<float>(200f, 100f, 400f);
 }
 
 [Submenu]
