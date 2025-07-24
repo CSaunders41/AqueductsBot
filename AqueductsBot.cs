@@ -1085,16 +1085,38 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         
         // STUCK DETECTION: Force advancement if targeting same point repeatedly
         var targetDistance = System.Numerics.Vector2.Distance(_lastTargetPoint, targetPoint.Value);
+        var remainingPathWaypoints = _currentPath.Count - _currentPathIndex - 1;
+        
         if (targetDistance < 5f) // Same target (within 5 units)
         {
             _stuckTargetCount++;
-            if (_stuckTargetCount >= 10) // Stuck on same target for 10+ attempts
+            
+            // DYNAMIC STUCK THRESHOLD: Be more sensitive near end of path
+            var stuckThreshold = remainingPathWaypoints <= 5 ? 5 : 10; // More sensitive near end
+            
+            if (_stuckTargetCount >= stuckThreshold)
             {
-                LogMessage($"[STUCK DETECTION] 🚨 Stuck on same target for {_stuckTargetCount} attempts - forcing advancement!");
-                _currentPathIndex = Math.Min(_currentPathIndex + 8, _currentPath.Count - 1);
+                LogMessage($"[STUCK DETECTION] 🚨 Stuck on same target for {_stuckTargetCount} attempts (threshold: {stuckThreshold}) - forcing advancement!");
+                
+                // SMART ADVANCEMENT: Less aggressive near end of path
+                var forceAdvancement = remainingPathWaypoints <= 5 ? 2 : 8;
+                _currentPathIndex = Math.Min(_currentPathIndex + forceAdvancement, _currentPath.Count - 1);
                 _stuckTargetCount = 0;
                 _lastPathAdvancement = DateTime.Now;
-                LogMessage($"[FORCED ADVANCEMENT] 📍 Forced advance to path index {_currentPathIndex}/{_currentPath.Count}");
+                
+                LogMessage($"[FORCED ADVANCEMENT] 📍 Forced advance by {forceAdvancement} to path index {_currentPathIndex}/{_currentPath.Count}");
+                
+                // If we're at the very end after forced advancement, check for completion
+                if (_currentPathIndex >= _currentPath.Count - 1)
+                {
+                    var distanceToFinalDestination = System.Numerics.Vector2.Distance(playerWorldPos, new System.Numerics.Vector2(_currentPath[_currentPath.Count - 1].X, _currentPath[_currentPath.Count - 1].Y));
+                    if (distanceToFinalDestination < 30f)
+                    {
+                        LogMessage($"[STUCK RESOLUTION] 🎉 Forced to path end and close enough ({distanceToFinalDestination:F1} < 30) - completing path!");
+                        _currentState = BotState.AtAreaExit;
+                        return;
+                    }
+                }
             }
         }
         else
@@ -1108,17 +1130,47 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         // CONSERVATIVE ADVANCEMENT: Only advance path index when we're very close and have actually moved
         if (distanceToTarget < 30f) // Much more conservative than 50f
         {
-            LogMessage($"[PURSUIT] ✅ Close to intersection point (distance: {distanceToTarget:F1} < 30), advancing slowly along path");
+            LogMessage($"[PURSUIT] ✅ Close to intersection point (distance: {distanceToTarget:F1} < 30), advancing along path");
             
-            // IMPROVED ADVANCEMENT: Advance more aggressively to prevent getting stuck
-            var advancementAmount = distanceToTarget < 15f ? 5 : 3; // Advance more when very close
-            _currentPathIndex = Math.Min(_currentPathIndex + advancementAmount, _currentPath.Count - 1);
+            // IMPROVED END-OF-PATH HANDLING: Be more conservative near the end
+            var remainingWaypoints = _currentPath.Count - _currentPathIndex - 1;
+            int advancementAmount;
             
+            if (remainingWaypoints <= 3)
+            {
+                // Very close to end - minimal advancement to avoid overshooting
+                advancementAmount = 1;
+                LogMessage($"[PATH ADVANCEMENT] 🎯 Near path end ({remainingWaypoints} remaining) - advancing cautiously by {advancementAmount}");
+            }
+            else if (remainingWaypoints <= 10)
+            {
+                // Approaching end - moderate advancement
+                advancementAmount = distanceToTarget < 15f ? 3 : 2;
+                LogMessage($"[PATH ADVANCEMENT] 🎯 Approaching path end ({remainingWaypoints} remaining) - advancing by {advancementAmount}");
+            }
+            else
+            {
+                // Normal advancement for middle of path
+                advancementAmount = distanceToTarget < 15f ? 5 : 3;
+                LogMessage($"[PATH ADVANCEMENT] 📍 Normal advancement ({remainingWaypoints} remaining) - advancing by {advancementAmount}");
+            }
+            
+            var newIndex = Math.Min(_currentPathIndex + advancementAmount, _currentPath.Count - 1);
+            
+            // Check if we're actually at the final destination
+            if (newIndex >= _currentPath.Count - 1 && distanceToTarget < 25f)
+            {
+                LogMessage($"[PATH COMPLETION] 🎉 Reached final destination! Distance: {distanceToTarget:F1} < 25");
+                _currentState = BotState.AtAreaExit;
+                return;
+            }
+            
+            _currentPathIndex = newIndex;
             LogMessage($"[PATH ADVANCEMENT] 📍 Advanced path index to {_currentPathIndex}/{_currentPath.Count} (advanced by {advancementAmount})");
             _lastIntersectionPoint = targetPoint.Value;
             
             // Still try to move to get even closer if not extremely close
-            if (distanceToTarget > 10f)
+            if (distanceToTarget > 8f) // Reduced threshold for final movements
             {
                 // Execute movement to get closer
                 LogMessage($"[MOVEMENT] 🎮 Fine-tuning: cursor to ({screenPos.X:F0}, {screenPos.Y:F0}) + press T");
@@ -2473,9 +2525,13 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         if (playerPos == null || path.Count == 0) return null;
         
         var playerWorldPos = new System.Numerics.Vector2(playerPos.GridPos.X, playerPos.GridPos.Y);
-        var pursuitRadius = Settings.MovementSettings.PursuitRadius.Value;
+        var basePursuitRadius = Settings.MovementSettings.PursuitRadius.Value;
         
-        LogMessage($"[PURSUIT DEBUG] Player at ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}), looking from index {startIndex}/{path.Count}, radius {pursuitRadius}");
+        // DYNAMIC RADIUS: Increase radius near end of path for better targeting
+        var remainingWaypoints = path.Count - startIndex;
+        var dynamicRadius = remainingWaypoints <= 10 ? basePursuitRadius * 1.5f : basePursuitRadius;
+        
+        LogMessage($"[PURSUIT DEBUG] Player at ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}), looking from index {startIndex}/{path.Count}, radius {dynamicRadius:F0} (base: {basePursuitRadius:F0})");
         
         // Look ahead from current position in path
         System.Numerics.Vector2? bestIntersection = null;
@@ -2491,15 +2547,18 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             if (segmentLength < 2f) continue;
             
             // Find intersection of line segment with circle around player
-            var intersection = FindLineCircleIntersection(currentPoint, nextPoint, playerWorldPos, pursuitRadius);
+            var intersection = FindLineCircleIntersection(currentPoint, nextPoint, playerWorldPos, dynamicRadius);
             
             if (intersection.HasValue)
             {
                 var distanceToIntersection = System.Numerics.Vector2.Distance(playerWorldPos, intersection.Value);
                 LogMessage($"[PURSUIT DEBUG] Intersection at segment {i}: ({intersection.Value.X:F0}, {intersection.Value.Y:F0}), distance: {distanceToIntersection:F1}");
                 
-                // Accept intersections within a reasonable range (more lenient)
-                if (distanceToIntersection >= pursuitRadius * 0.5f && distanceToIntersection <= pursuitRadius * 1.5f)
+                // Accept intersections within a reasonable range (more lenient for end of path)
+                var minRadius = dynamicRadius * 0.4f; // More lenient minimum
+                var maxRadius = dynamicRadius * 1.6f; // More lenient maximum
+                
+                if (distanceToIntersection >= minRadius && distanceToIntersection <= maxRadius)
                 {
                     LogMessage($"[PURSUIT] 🎯 Found valid path intersection at ({intersection.Value.X:F0}, {intersection.Value.Y:F0}) with distance {distanceToIntersection:F1}");
                     return intersection.Value;
@@ -2510,8 +2569,17 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         // AGGRESSIVE FALLBACK LOGIC: Always find a target!
         LogMessage($"[PURSUIT DEBUG] No circle intersection found, trying fallback options...");
         
+        // END-OF-PATH SPECIAL HANDLING: If very close to end, just target the final destination
+        if (remainingWaypoints <= 5)
+        {
+            var finalPoint = new System.Numerics.Vector2(path[path.Count - 1].X, path[path.Count - 1].Y);
+            var finalDistance = System.Numerics.Vector2.Distance(playerWorldPos, finalPoint);
+            LogMessage($"[PURSUIT] 🎯 Near path end - targeting final destination ({finalPoint.X:F0}, {finalPoint.Y:F0}), distance {finalDistance:F1}");
+            return finalPoint;
+        }
+        
         // Option 1: Look for any point that's far enough ahead
-        for (int distance = 5; distance <= 30; distance += 5)
+        for (int distance = 3; distance <= 20; distance += 3) // Increased granularity
         {
             int fallbackIndex = Math.Min(startIndex + distance, path.Count - 1);
             if (fallbackIndex <= startIndex) continue;
@@ -2519,7 +2587,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var fallbackPoint = new System.Numerics.Vector2(path[fallbackIndex].X, path[fallbackIndex].Y);
             var fallbackDistance = System.Numerics.Vector2.Distance(playerWorldPos, fallbackPoint);
             
-            if (fallbackDistance >= 30f) // Much more lenient minimum distance
+            if (fallbackDistance >= 20f) // Reduced minimum distance for better responsiveness
             {
                 LogMessage($"[PURSUIT] ⚡ Using distance-based fallback: index {fallbackIndex}, point ({fallbackPoint.X:F0}, {fallbackPoint.Y:F0}), distance {fallbackDistance:F1}");
                 return fallbackPoint;
@@ -2532,7 +2600,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var point = new System.Numerics.Vector2(path[i].X, path[i].Y);
             var distance = System.Numerics.Vector2.Distance(playerWorldPos, point);
             
-            if (distance >= 10f) // Minimum distance to avoid clicking on self
+            if (distance >= 8f) // Reduced minimum distance
             {
                 LogMessage($"[PURSUIT] 🔧 Emergency fallback: index {i}, point ({point.X:F0}, {point.Y:F0}), distance {distance:F1}");
                 return point;

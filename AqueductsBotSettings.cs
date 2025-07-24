@@ -34,7 +34,7 @@ public class MovementSettings
     public RangeNode<int> MaxMoveDelayMs { get; set; } = new RangeNode<int>(800, 200, 2000);
     
     [Menu("Pursuit Radius", "Radius for path intersection navigation (larger = smoother, smaller = more precise)", 54)]
-    public RangeNode<float> PursuitRadius { get; set; } = new RangeNode<float>(200f, 100f, 400f);
+    public RangeNode<float> PursuitRadius { get; set; } = new RangeNode<float>(300f, 150f, 500f);
 }
 
 [Submenu]
