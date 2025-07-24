@@ -1177,44 +1177,65 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             LogMovementDebug($"[PURSUIT] 🔧 Using manual waypoint {_currentPathIndex}: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {distanceToFallback:F1}");
         }
 
-        // 🎯 CRITICAL FIX: ENFORCE CIRCLE RADIUS DISTANCE
+        // 🎯 CAMERA-AWARE RADIUS ENFORCEMENT
         var expectedRadius = Settings.MovementSettings.PursuitRadius.Value;
         var currentDistance = System.Numerics.Vector2.Distance(playerWorldPos, targetPoint.Value);
         
         LogMovementDebug($"[RADIUS ENFORCEMENT] Target distance: {currentDistance:F1}, Expected radius: {expectedRadius:F1}");
         
-        // If target is too close to player, move it outward to the proper radius
-        if (currentDistance < expectedRadius * 0.8f) // Less than 80% of expected radius
+        // If target needs adjustment (too close or too far), find a camera-visible position
+        if (currentDistance < expectedRadius * 0.8f || currentDistance > expectedRadius * 2.0f)
         {
-            LogMovementDebug($"[RADIUS ENFORCEMENT] ⚠️ Target too close ({currentDistance:F1} < {expectedRadius * 0.8f:F1}) - moving to proper radius");
+            LogMovementDebug($"[RADIUS ENFORCEMENT] ⚠️ Target needs adjustment ({currentDistance:F1}) - finding camera-visible position");
             
-            // Find direction from player to target
-            var directionToTarget = targetPoint.Value - playerWorldPos;
-            if (directionToTarget.Length() > 0)
+            var originalDirection = targetPoint.Value - playerWorldPos;
+            if (originalDirection.Length() > 0)
             {
-                // Normalize and scale to expected radius
-                directionToTarget = System.Numerics.Vector2.Normalize(directionToTarget);
-                var correctedTarget = playerWorldPos + (directionToTarget * expectedRadius);
+                originalDirection = System.Numerics.Vector2.Normalize(originalDirection);
                 
-                LogMovementDebug($"[RADIUS ENFORCEMENT] ✅ Corrected target: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}) → ({correctedTarget.X:F0}, {correctedTarget.Y:F0})");
-                targetPoint = correctedTarget;
-            }
-        }
-        // If target is way too far, bring it closer (but still at proper radius)
-        else if (currentDistance > expectedRadius * 2.0f) // More than 200% of expected radius
-        {
-            LogMovementDebug($"[RADIUS ENFORCEMENT] ⚠️ Target too far ({currentDistance:F1} > {expectedRadius * 2.0f:F1}) - bringing to proper radius");
-            
-            // Find direction from player to target
-            var directionToTarget = targetPoint.Value - playerWorldPos;
-            if (directionToTarget.Length() > 0)
-            {
-                // Normalize and scale to expected radius
-                directionToTarget = System.Numerics.Vector2.Normalize(directionToTarget);
-                var correctedTarget = playerWorldPos + (directionToTarget * expectedRadius);
+                // Try multiple angles to find a position that's visible on screen
+                var bestTarget = targetPoint.Value;
+                bool foundVisibleTarget = false;
+                var gameWindow = GameController.Window.GetWindowRectangle();
                 
-                LogMovementDebug($"[RADIUS ENFORCEMENT] ✅ Corrected target: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}) → ({correctedTarget.X:F0}, {correctedTarget.Y:F0})");
-                targetPoint = correctedTarget;
+                // Try angles in 45-degree increments around the original direction
+                for (int angleDeg = 0; angleDeg <= 315; angleDeg += 45)
+                {
+                    var angleRad = angleDeg * (Math.PI / 180.0);
+                    var testDirection = new System.Numerics.Vector2(
+                        (float)(originalDirection.X * Math.Cos(angleRad) - originalDirection.Y * Math.Sin(angleRad)),
+                        (float)(originalDirection.X * Math.Sin(angleRad) + originalDirection.Y * Math.Cos(angleRad))
+                    );
+                    
+                    var candidateTarget = playerWorldPos + testDirection * expectedRadius;
+                    
+                    // Test if this position would be visible on screen
+                    var testWorldPos = new Vector3(candidateTarget.X * 250f / 23f, candidateTarget.Y * 250f / 23f, 0);
+                    var testScreenPos = GameController.IngameState.Camera.WorldToScreen(testWorldPos);
+                    
+                    var margin = 100f; // Safe margin from screen edges
+                    var isVisible = testScreenPos.X >= margin && testScreenPos.X <= gameWindow.Width - margin && 
+                                   testScreenPos.Y >= margin && testScreenPos.Y <= gameWindow.Height - margin;
+                    
+                    if (isVisible)
+                    {
+                        bestTarget = candidateTarget;
+                        foundVisibleTarget = true;
+                        LogMovementDebug($"[RADIUS ENFORCEMENT] ✅ Found camera-visible target at {angleDeg}°: ({candidateTarget.X:F0}, {candidateTarget.Y:F0})");
+                        break;
+                    }
+                }
+                
+                if (!foundVisibleTarget)
+                {
+                    // Fallback: Use a smaller radius that's more likely to be visible
+                    var fallbackRadius = Math.Min(expectedRadius * 0.5f, 100f);
+                    bestTarget = playerWorldPos + originalDirection * fallbackRadius;
+                    LogMovementDebug($"[RADIUS ENFORCEMENT] ⚠️ No camera-visible position found, using fallback radius {fallbackRadius:F1}");
+                }
+                
+                LogMovementDebug($"[RADIUS ENFORCEMENT] ✅ Corrected target: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}) → ({bestTarget.X:F0}, {bestTarget.Y:F0})");
+                targetPoint = bestTarget;
             }
         }
         else
