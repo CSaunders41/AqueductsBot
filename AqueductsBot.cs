@@ -1080,7 +1080,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         
         if (!targetPoint.HasValue)
         {
-            LogMessage("[PURSUIT] ❌ CRITICAL: Even aggressive fallback failed - advancing manually along path");
+            LogImportant("[PURSUIT] ❌ CRITICAL: Even aggressive fallback failed - advancing manually along path");
+            LogImportant($"[PURSUIT DEBUG] This means the radius-based targeting is not working - fallback to close waypoint");
             
             // Manual advancement: skip ahead in the path and try again
             _currentPathIndex = Math.Min(_currentPathIndex + 5, _currentPath.Count - 1);
@@ -1095,7 +1096,13 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             // Try to get a simple waypoint as target
             var waypoint = _currentPath[_currentPathIndex];
             targetPoint = new System.Numerics.Vector2(waypoint.X, waypoint.Y);
-            LogMessage($"[PURSUIT] 🔧 Using manual waypoint {_currentPathIndex}: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0})");
+            var distanceToFallback = System.Numerics.Vector2.Distance(playerWorldPos, targetPoint.Value);
+            LogImportant($"[PURSUIT] 🔧 Using manual waypoint {_currentPathIndex}: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {distanceToFallback:F1}");
+        }
+        else
+        {
+            var distanceToTarget = System.Numerics.Vector2.Distance(playerWorldPos, targetPoint.Value);
+            LogImportant($"[PURSUIT] ✅ Found radius-based target: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {distanceToTarget:F1}");
         }
 
         // Convert world position to screen coordinates for clicking
@@ -2568,13 +2575,13 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         var basePursuitRadius = Settings.MovementSettings.PursuitRadius.Value;
         
         // DEBUG: Show actual settings values
-        LogMessage($"[SETTINGS DEBUG] 🔧 Pursuit radius setting: {basePursuitRadius} (min: {Settings.MovementSettings.PursuitRadius.Min}, max: {Settings.MovementSettings.PursuitRadius.Max})");
+        LogImportant($"[SETTINGS DEBUG] 🔧 Pursuit radius setting: {basePursuitRadius} (min: {Settings.MovementSettings.PursuitRadius.Min}, max: {Settings.MovementSettings.PursuitRadius.Max})");
         
         // DYNAMIC RADIUS: Increase radius near end of path for better targeting
         var remainingWaypoints = path.Count - startIndex;
         var dynamicRadius = remainingWaypoints <= 10 ? basePursuitRadius * 1.5f : basePursuitRadius;
         
-        LogMessage($"[PURSUIT DEBUG] Player at ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}), looking from index {startIndex}/{path.Count}, radius {dynamicRadius:F0} (base: {basePursuitRadius:F0}, remaining: {remainingWaypoints})");
+        LogImportant($"[PURSUIT DEBUG] Player at ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}), looking from index {startIndex}/{path.Count}, radius {dynamicRadius:F0} (base: {basePursuitRadius:F0}, remaining: {remainingWaypoints})");
         
         // Look ahead from current position in path
         System.Numerics.Vector2? bestIntersection = null;
@@ -2760,14 +2767,11 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 }
             }
             
-            // Only log debug info on first successful draw (and only if debug is enabled)
-            if (Settings.DebugSettings.DebugMode.Value && !_firstCircleDrawLogged)
-            {
-                LogMessage($"[CIRCLE DEBUG] Drawing pursuit radius circle with radius: {radius}");
-                _firstCircleDrawLogged = true;
-            }
+            // Always log debug info to see what's happening
+            LogImportant($"[CIRCLE DEBUG] DrawPlayerCircle called - Player at ({playerPos.GridPos.X:F0}, {playerPos.GridPos.Y:F0}), radius: {radius}");
             
             // Use Aim-Bot's approach: Draw circle using ExileCore Graphics.DrawLine
+            LogImportant($"[CIRCLE DEBUG] Calling DrawEllipseToWorld with radius {radius}");
             DrawEllipseToWorld(new Vector3(playerPos.GridPos.X, playerPos.GridPos.Y, 0), (int)radius, 25, 2, Color.LawnGreen);
         }
         catch (Exception ex)
@@ -2785,6 +2789,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     {
         try
         {
+            LogImportant($"[ELLIPSE DEBUG] DrawEllipseToWorld called - pos: ({vector3Pos.X:F0}, {vector3Pos.Y:F0}), radius: {radius}");
+            
             var plottedCirclePoints = new List<Vector3>();
             for (var i = 0; i <= 360; i += 360 / points)
             {
@@ -2794,6 +2800,9 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 plottedCirclePoints.Add(new Vector3(x, y, vector3Pos.Z));
             }
 
+            LogImportant($"[ELLIPSE DEBUG] Generated {plottedCirclePoints.Count} circle points");
+
+            int linesDrawn = 0;
             for (var i = 0; i < plottedCirclePoints.Count; i++)
             {
                 if (i >= plottedCirclePoints.Count - 1)
@@ -2804,15 +2813,20 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 var camera = GameController.Game.IngameState.Camera;
                 Vector2 point1 = camera.WorldToScreen(plottedCirclePoints[i]);
                 Vector2 point2 = camera.WorldToScreen(plottedCirclePoints[i + 1]);
-                Graphics.DrawLine(point1, point2, lineWidth, color);
+                
+                // Check if points are valid (on screen)
+                if (point1.X > 0 && point1.Y > 0 && point2.X > 0 && point2.Y > 0)
+                {
+                    Graphics.DrawLine(point1, point2, lineWidth, color);
+                    linesDrawn++;
+                }
             }
+            
+            LogImportant($"[ELLIPSE DEBUG] Drew {linesDrawn} lines for circle");
         }
         catch (Exception ex)
         {
-            if (Settings.DebugSettings.DebugMode.Value)
-            {
-                LogMessage($"[CIRCLE ERROR] Error in DrawEllipseToWorld: {ex.Message}");
-            }
+            LogImportant($"[CIRCLE ERROR] Error in DrawEllipseToWorld: {ex.Message}");
         }
     }
 
