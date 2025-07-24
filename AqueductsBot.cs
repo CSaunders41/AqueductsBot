@@ -1019,10 +1019,6 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         public IntPtr ExtraInfo;
     }
     
-    private const uint INPUT_KEYBOARD = 1;
-    private const uint INPUT_MOUSE = 0;
-    private const uint KEYEVENTF_KEYUP_SENDINPUT = 0x0002;
-    
     [StructLayout(LayoutKind.Sequential)]
     public struct POINT
     {
