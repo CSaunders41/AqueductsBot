@@ -15,6 +15,8 @@ using ImGuiNET;
 using SharpDX;
 using Vector2 = System.Numerics.Vector2;
 using Vector3 = System.Numerics.Vector3;
+using System.IO;
+using System.Linq;
 
 namespace AqueductsBot;
 
@@ -53,7 +55,6 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     private DateTime _botStartTime;
     private int _runsCompleted = 0;
     private Random _random = new();
-    private string _lastLogMessage = "";
     private DateTime _lastRadarRetry = DateTime.MinValue;
     private DateTime _lastPathRequest = DateTime.MinValue;
     
@@ -62,25 +63,94 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     private bool _radarAvailable = false;
     private CancellationTokenSource _pathfindingCts = new();
     
+    // Logging system
+    private readonly List<string> _logMessages = new List<string>();
+    private readonly object _logLock = new object();
+    private string _lastLogMessage = "";
+    private string _logFilePath = "";
+    
+    private void InitializeLogging()
+    {
+        try
+        {
+            // Create log file in the plugin directory
+            var pluginDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            _logFilePath = Path.Combine(pluginDir, $"AqueductsBot_{DateTime.Now:yyyyMMdd}.log");
+            
+            // Write header to log file
+            File.AppendAllText(_logFilePath, $"=== AqueductsBot Log Started: {DateTime.Now} ==={Environment.NewLine}");
+        }
+        catch (Exception ex)
+        {
+            // If file logging fails, continue with console-only logging
+            Console.WriteLine($"[AqueductsBot] Could not initialize log file: {ex.Message}");
+        }
+    }
+    
+    private void LogMessage(string message)
+    {
+        lock (_logLock)
+        {
+            var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
+            var logLine = $"[{timestamp}] {message}";
+            
+            // Store in memory (keep last 100 messages for UI)
+            _logMessages.Add(logLine);
+            if (_logMessages.Count > 100)
+            {
+                _logMessages.RemoveAt(0);
+            }
+            
+            // Update last message for simple UI display
+            _lastLogMessage = logLine;
+            
+            // Write to console
+            Console.WriteLine($"[AqueductsBot] {logLine}");
+            Debug.WriteLine($"[AqueductsBot] {logLine}");
+            
+            // Write to log file
+            if (!string.IsNullOrEmpty(_logFilePath))
+            {
+                try
+                {
+                    File.AppendAllText(_logFilePath, logLine + Environment.NewLine);
+                }
+                catch
+                {
+                    // Ignore file write errors to prevent crashes
+                }
+            }
+        }
+    }
+    
+    private void LogError(string message)
+    {
+        LogMessage($"ERROR: {message}");
+    }
+    
+    private string GetRecentLogMessages(int count = 20)
+    {
+        lock (_logLock)
+        {
+            var recentMessages = _logMessages.Skip(Math.Max(0, _logMessages.Count - count)).ToArray();
+            return string.Join(Environment.NewLine, recentMessages);
+        }
+    }
+    
     public override bool Initialise()
     {
         try
         {
             LogMessage("AqueductsBot initializing...");
             
-            // Try to connect to Radar
+            // Initialize logging system
+            InitializeLogging();
+            
+            // Initialize random seed
+            _random = new Random();
+            
+            // Try to connect to Radar immediately
             TryConnectToRadar();
-            
-            // Register hotkeys
-            Input.RegisterKey(Settings.StartStopHotkey);
-            Input.RegisterKey(Settings.EmergencyStopHotkey);
-            Input.RegisterKey(Settings.MovementKey);
-            Input.RegisterKey(Settings.MovementSettings.MovementKey); // Keep nested one too
-            
-            Settings.StartStopHotkey.OnValueChanged += () => Input.RegisterKey(Settings.StartStopHotkey);
-            Settings.EmergencyStopHotkey.OnValueChanged += () => Input.RegisterKey(Settings.EmergencyStopHotkey);
-            Settings.MovementKey.OnValueChanged += () => Input.RegisterKey(Settings.MovementKey);
-            Settings.MovementSettings.MovementKey.OnValueChanged += () => Input.RegisterKey(Settings.MovementSettings.MovementKey);
             
             LogMessage("AqueductsBot initialized successfully");
             return true;
@@ -315,7 +385,48 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         
         ImGui.Separator();
         ImGui.Text("Recent Log:");
-        ImGui.TextWrapped(_lastLogMessage);
+        
+        // Create a scrollable text box for log messages
+        if (ImGui.BeginChild("LogOutput", new System.Numerics.Vector2(0, 150), true, ImGuiWindowFlags.HorizontalScrollbar))
+        {
+            var recentLogs = GetRecentLogMessages(50); // Show more messages
+            ImGui.TextUnformatted(recentLogs);
+            
+            // Auto-scroll to bottom if new messages arrive
+            if (ImGui.GetScrollY() >= ImGui.GetScrollMaxY())
+            {
+                ImGui.SetScrollHereY(1.0f);
+            }
+        }
+        ImGui.EndChild();
+        
+        if (ImGui.Button("Clear Log"))
+        {
+            lock (_logLock)
+            {
+                _logMessages.Clear();
+            }
+        }
+        
+        ImGui.SameLine();
+        if (ImGui.Button("Open Log File"))
+        {
+            if (!string.IsNullOrEmpty(_logFilePath) && File.Exists(_logFilePath))
+            {
+                try
+                {
+                    System.Diagnostics.Process.Start(_logFilePath);
+                }
+                catch (Exception ex)
+                {
+                    LogError($"Could not open log file: {ex.Message}");
+                }
+            }
+            else
+            {
+                LogError("Log file not found or not initialized");
+            }
+        }
     }
     
     private void ProcessBotLogic()
@@ -1356,23 +1467,5 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     {
         // Simple debug visualization of the current path
         // This will draw on the ImGui overlay
-    }
-    
-    private void LogMessage(string message)
-    {
-        var timestamp = DateTime.Now.ToString("HH:mm:ss");
-        var logLine = $"[{timestamp}] {message}";
-        _lastLogMessage = logLine;
-        
-        // Also output to debug console if available
-        Debug.WriteLine($"[AqueductsBot] {logLine}");
-        
-        // You might want to write to a log file here too
-        Console.WriteLine($"[AqueductsBot] {logLine}");
-    }
-    
-    private void LogError(string message)
-    {
-        LogMessage($"ERROR: {message}");
     }
 } 
