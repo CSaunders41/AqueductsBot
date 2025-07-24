@@ -843,21 +843,38 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         try
         {
             byte vkCode = (byte)key;
-            LogMessage($"[KEYBOARD] *** STARTING KEY PRESS SEQUENCE FOR {key} (VK Code: {vkCode}) ***");
+            LogMessage($"[KEYBOARD] *** TESTING MULTIPLE KEY PRESS METHODS FOR {key} (VK Code: {vkCode}) ***");
             
-            // Key down - EXACT same flags as working bot: KEYEVENTF_EXTENDEDKEY (0x0001)
-            LogMessage($"[KEYBOARD] Step 1: KEY DOWN - Sending keybd_event({vkCode}, 0, 0x0001, 0)");
-            keybd_event(vkCode, 0, 0x0001, 0);
-            
-            // Hold for 20ms - EXACT same timing as working bot
-            LogMessage("[KEYBOARD] Step 2: HOLDING KEY - Waiting 20ms (same as AreWeThereYet)");
+            // Method 1: Exact AreWeThereYet approach with int flags
+            LogMessage("[KEYBOARD] Method 1: EXACT AreWeThereYet (int flags, EXTENDEDKEY)");
+            keybd_event(vkCode, 0, 0x0001, 0); // Key down with EXTENDEDKEY
             Thread.Sleep(20);
+            keybd_event(vkCode, 0, 0x0003, 0); // Key up with EXTENDEDKEY | KEYUP
+            Thread.Sleep(100);
             
-            // Key up - EXACT same flags as working bot: KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP (0x0001 | 0x0002 = 0x0003)
-            LogMessage($"[KEYBOARD] Step 3: KEY UP - Sending keybd_event({vkCode}, 0, 0x0003, 0)");
-            keybd_event(vkCode, 0, 0x0003, 0);
+            // Method 2: Simple approach without EXTENDEDKEY flag
+            LogMessage("[KEYBOARD] Method 2: Simple approach (no EXTENDEDKEY flag)");
+            keybd_event(vkCode, 0, 0, 0); // Key down - no flags
+            Thread.Sleep(20);
+            keybd_event(vkCode, 0, 0x0002, 0); // Key up - just KEYUP flag
+            Thread.Sleep(100);
             
-            LogMessage($"[KEYBOARD] *** KEY PRESS SEQUENCE COMPLETED FOR {key} - CHECK IF CHARACTER MOVED! ***");
+            // Method 3: Longer hold time
+            LogMessage("[KEYBOARD] Method 3: Longer hold time (100ms like mouse)");
+            keybd_event(vkCode, 0, 0x0001, 0); // Key down
+            Thread.Sleep(100); // Longer hold
+            keybd_event(vkCode, 0, 0x0003, 0); // Key up
+            Thread.Sleep(100);
+            
+            // Method 4: Use scan codes instead of virtual key codes
+            LogMessage("[KEYBOARD] Method 4: Using scan codes instead of VK codes");
+            byte scanCode = (byte)MapVirtualKey((uint)vkCode, 0);
+            LogMessage($"[KEYBOARD] VK {vkCode} -> Scan Code {scanCode}");
+            keybd_event(0, scanCode, 0x0008, 0); // Key down with SCANCODE flag
+            Thread.Sleep(20);
+            keybd_event(0, scanCode, 0x0008 | 0x0002, 0); // Key up with SCANCODE | KEYUP
+            
+            LogMessage($"[KEYBOARD] *** ALL 4 METHODS TESTED FOR {key} - CHECK IF ANY MOVED CHARACTER! ***");
         }
         catch (Exception ex)
         {
@@ -1563,47 +1580,34 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                     
                     LogMessage($"[MOVEMENT TEST] Player at screen ({screenPos.X:F0}, {screenPos.Y:F0})");
                     
-                    // Test 3 different positions to rule out timing issues
-                    var testPositions = new[]
-                    {
-                        new { X = (int)(screenPos.X + 100), Y = (int)(screenPos.Y + 50), Name = "Position 1 (Right-Down)" },
-                        new { X = (int)(screenPos.X - 100), Y = (int)(screenPos.Y - 50), Name = "Position 2 (Left-Up)" },
-                        new { X = (int)(screenPos.X + 200), Y = (int)(screenPos.Y), Name = "Position 3 (Far Right)" }
-                    };
+                    // Test single position with 4 different key press methods
+                    var testX = (int)(screenPos.X + 150);
+                    var testY = (int)(screenPos.Y + 100);
                     
                     bool useKeyboardMovement = Settings.UseMovementKey || Settings.MovementSettings.UseMovementKey;
                     Keys movementKey = Settings.MovementKey.Value != Keys.None ? Settings.MovementKey.Value : Settings.MovementSettings.MovementKey.Value;
                     
-                    for (int i = 0; i < testPositions.Length; i++)
-                    {
-                        var pos = testPositions[i];
-                        LogMessage($"[MOVEMENT TEST] ===== TESTING {pos.Name} at ({pos.X}, {pos.Y}) =====");
-                        
-                        if (useKeyboardMovement && movementKey != Keys.None)
-                        {
-                            LogMessage($"[MOVEMENT TEST] Method: AreWeThereYet (cursor + {movementKey} key)");
-                            LogMessage("[MOVEMENT TEST] Step 1: Moving cursor...");
-                            SetCursorPos(pos.X, pos.Y);
-                            Thread.Sleep(100); // Longer delay so you can see cursor move
-                            
-                            LogMessage($"[MOVEMENT TEST] Step 2: *** PRESSING {movementKey} KEY NOW! WATCH FOR CHARACTER MOVEMENT! ***");
-                            PressAndHoldKey(movementKey);
-                            
-                            LogMessage($"[MOVEMENT TEST] *** {movementKey} KEY PRESS COMPLETED - DID CHARACTER MOVE? ***");
-                        }
-                        else
-                        {
-                            LogMessage("[MOVEMENT TEST] Method: Mouse click fallback");
-                            ClickAt(pos.X, pos.Y);
-                            LogMessage("[MOVEMENT TEST] Mouse click executed - did character move?");
-                        }
-                        
-                        // Wait between tests so user can observe
-                        LogMessage("[MOVEMENT TEST] Waiting 2 seconds before next test...");
-                        Thread.Sleep(2000);
-                    }
+                    LogMessage($"[MOVEMENT TEST] ===== TESTING at ({testX}, {testY}) with 4 KEY PRESS METHODS =====");
                     
-                    LogMessage("[MOVEMENT TEST] ===== ALL TESTS COMPLETED =====");
+                    if (useKeyboardMovement && movementKey != Keys.None)
+                    {
+                        LogMessage($"[MOVEMENT TEST] Moving cursor to test position...");
+                        SetCursorPos(testX, testY);
+                        Thread.Sleep(200); // Time to see cursor move
+                        
+                        LogMessage($"[MOVEMENT TEST] *** TESTING 4 DIFFERENT {movementKey} KEY PRESS METHODS! ***");
+                        PressAndHoldKey(movementKey);
+                        
+                        LogMessage($"[MOVEMENT TEST] *** ALL KEY METHODS TESTED - DID CHARACTER MOVE TO ANY? ***");
+                    }
+                    else
+                    {
+                                                 LogMessage("[MOVEMENT TEST] Method: Mouse click fallback");
+                         ClickAt(testX, testY);
+                         LogMessage("[MOVEMENT TEST] Mouse click executed - did character move?");
+                     }
+                     
+                     LogMessage("[MOVEMENT TEST] ===== TESTING COMPLETED =====");
                 }
                 else
                 {
