@@ -1154,6 +1154,9 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         var playerWorldPos = new System.Numerics.Vector2(playerPos.GridPos.X, playerPos.GridPos.Y);
 
         // RADIUS-BASED NAVIGATION: Use pure pursuit algorithm instead of waypoint chasing
+        var expectedRadius = Settings.MovementSettings.PursuitRadius.Value;
+        LogMovementDebug($"[PURSUIT START] Looking for intersection with radius {expectedRadius:F1} from path index {_currentPathIndex}");
+        
         var targetPoint = FindPathIntersectionWithRadius(_currentPath, _currentPathIndex);
         
         if (!targetPoint.HasValue)
@@ -1176,6 +1179,17 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var distanceToFallback = System.Numerics.Vector2.Distance(playerWorldPos, targetPoint.Value);
             LogMovementDebug($"[PURSUIT] 🔧 Using manual waypoint {_currentPathIndex}: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {distanceToFallback:F1}");
         }
+        else
+        {
+            var actualDistance = System.Numerics.Vector2.Distance(playerWorldPos, targetPoint.Value);
+            LogMovementDebug($"[PURSUIT SUCCESS] Found intersection at ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {actualDistance:F1}, expected: {expectedRadius:F1}");
+            
+            // CRITICAL CHECK: If the intersection is way too close, something is wrong
+            if (actualDistance < expectedRadius * 0.5f)
+            {
+                LogMovementDebug($"[PURSUIT WARNING] 🚨 Intersection too close ({actualDistance:F1} < {expectedRadius * 0.5f:F1}) - path may be ending or algorithm failing");
+            }
+        }
 
         // 🎯 VALIDATE PATH INTERSECTION IS CAMERA-VISIBLE
         var currentDistance = System.Numerics.Vector2.Distance(playerWorldPos, targetPoint.Value);
@@ -1193,31 +1207,45 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         {
             LogMovementDebug($"[PATH INTERSECTION] ⚠️ Intersection off-screen at ({testScreenPos.X:F0}, {testScreenPos.Y:F0}) - finding camera-visible intersection");
             
-            // Try to find a path intersection with progressively smaller radii until we get one that's visible
-            var baseRadius = Settings.MovementSettings.PursuitRadius.Value;
-            System.Numerics.Vector2? visibleIntersection = null;
-            
-            for (float radiusMultiplier = 0.8f; radiusMultiplier >= 0.3f; radiusMultiplier -= 0.1f)
-            {
-                var testRadius = baseRadius * radiusMultiplier;
-                var testIntersection = FindPathIntersectionWithSpecificRadius(_currentPath, _currentPathIndex, testRadius);
-                
-                if (testIntersection.HasValue)
-                {
-                    // Test if this intersection is visible
-                    var testWorld = new Vector3(testIntersection.Value.X * 250f / 23f, testIntersection.Value.Y * 250f / 23f, 0);
-                    var testScreen = GameController.IngameState.Camera.WorldToScreen(testWorld);
-                    var testIsVisible = testScreen.X >= margin && testScreen.X <= gameWindow.Width - margin && 
-                                       testScreen.Y >= margin && testScreen.Y <= gameWindow.Height - margin;
-                    
-                    if (testIsVisible)
-                    {
-                        visibleIntersection = testIntersection;
-                        LogMovementDebug($"[PATH INTERSECTION] ✅ Found camera-visible intersection with radius {testRadius:F1}: ({testIntersection.Value.X:F0}, {testIntersection.Value.Y:F0})");
-                        break;
-                    }
-                }
-            }
+                         // Try to find a path intersection with progressively smaller radii until we get one that's visible
+             var baseRadius = Settings.MovementSettings.PursuitRadius.Value;
+             System.Numerics.Vector2? visibleIntersection = null;
+             
+             LogMovementDebug($"[CAMERA AWARE] 🔍 Original intersection off-screen, trying smaller radii from {baseRadius:F1}");
+             
+             for (float radiusMultiplier = 0.8f; radiusMultiplier >= 0.3f; radiusMultiplier -= 0.1f)
+             {
+                 var testRadius = baseRadius * radiusMultiplier;
+                 LogMovementDebug($"[CAMERA AWARE] Testing radius {testRadius:F1} (multiplier: {radiusMultiplier:F1})");
+                 
+                 var testIntersection = FindPathIntersectionWithSpecificRadius(_currentPath, _currentPathIndex, testRadius);
+                 
+                 if (testIntersection.HasValue)
+                 {
+                     // Test if this intersection is visible
+                     var testWorld = new Vector3(testIntersection.Value.X * 250f / 23f, testIntersection.Value.Y * 250f / 23f, 0);
+                     var testScreen = GameController.IngameState.Camera.WorldToScreen(testWorld);
+                     var testIsVisible = testScreen.X >= margin && testScreen.X <= gameWindow.Width - margin && 
+                                        testScreen.Y >= margin && testScreen.Y <= gameWindow.Height - margin;
+                     
+                     LogMovementDebug($"[CAMERA AWARE] Intersection at ({testIntersection.Value.X:F0}, {testIntersection.Value.Y:F0}), screen: ({testScreen.X:F0}, {testScreen.Y:F0}), visible: {testIsVisible}");
+                     
+                     if (testIsVisible)
+                     {
+                         visibleIntersection = testIntersection;
+                         LogMovementDebug($"[CAMERA AWARE] ✅ SELECTED visible intersection with radius {testRadius:F1}: ({testIntersection.Value.X:F0}, {testIntersection.Value.Y:F0})");
+                         break;
+                     }
+                     else
+                     {
+                         LogMovementDebug($"[CAMERA AWARE] ❌ Intersection still not visible, trying smaller radius");
+                     }
+                 }
+                 else
+                 {
+                     LogMovementDebug($"[CAMERA AWARE] ❌ No intersection found with radius {testRadius:F1}");
+                 }
+             }
             
             if (visibleIntersection.HasValue)
             {
@@ -2863,6 +2891,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         // Look ahead from current position in path
         System.Numerics.Vector2? bestIntersection = null;
         float bestDistance = 0f;
+        int segmentsChecked = 0;
+        int intersectionsFound = 0;
         
         for (int i = Math.Max(startIndex, 1); i < path.Count; i++)
         {
@@ -2873,29 +2903,38 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var segmentLength = System.Numerics.Vector2.Distance(currentPoint, nextPoint);
             if (segmentLength < 2f) continue;
             
+            segmentsChecked++;
+            
             // Find intersection of line segment with circle around player
             var intersection = FindLineCircleIntersection(currentPoint, nextPoint, playerWorldPos, dynamicRadius);
             
             if (intersection.HasValue)
             {
+                intersectionsFound++;
                 var distanceToIntersection = System.Numerics.Vector2.Distance(playerWorldPos, intersection.Value);
-                if (Settings.DebugSettings.ShowIntersectionPoints.Value)
-                {
-                    LogMovementDebug($"[PURSUIT DEBUG] Intersection at segment {i}: ({intersection.Value.X:F0}, {intersection.Value.Y:F0}), distance: {distanceToIntersection:F1}");
-                }
+                
+                LogMovementDebug($"[PURSUIT DEBUG] Intersection {intersectionsFound} at segment {i}: ({intersection.Value.X:F0}, {intersection.Value.Y:F0}), distance: {distanceToIntersection:F1}");
                 
                 // Accept intersections within a reasonable range (more lenient for end of path)
                 var tolerance = Settings.ConfigurationSettings.CircleIntersectionTolerance.Value;
                 var minRadius = dynamicRadius * tolerance; 
                 var maxRadius = dynamicRadius * (2.0f - tolerance); // Inversely related for balance
                 
+                LogMovementDebug($"[PURSUIT DEBUG] Checking bounds: {minRadius:F1} <= {distanceToIntersection:F1} <= {maxRadius:F1}");
+                
                 if (distanceToIntersection >= minRadius && distanceToIntersection <= maxRadius)
                 {
-                    LogMovementDebug($"[PURSUIT] 🎯 Found valid path intersection at ({intersection.Value.X:F0}, {intersection.Value.Y:F0}) with distance {distanceToIntersection:F1}");
+                    LogMovementDebug($"[PURSUIT] 🎯 ACCEPTED intersection at ({intersection.Value.X:F0}, {intersection.Value.Y:F0}) with distance {distanceToIntersection:F1}");
                     return intersection.Value;
+                }
+                else
+                {
+                    LogMovementDebug($"[PURSUIT DEBUG] ❌ REJECTED intersection - outside bounds");
                 }
             }
         }
+        
+        LogMovementDebug($"[PURSUIT DEBUG] Checked {segmentsChecked} segments, found {intersectionsFound} intersections, none valid");
         
         // AGGRESSIVE FALLBACK LOGIC: Always find a target!
         LogMessage($"[PURSUIT DEBUG] No circle intersection found, trying fallback options...");

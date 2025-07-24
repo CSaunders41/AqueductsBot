@@ -3738,3 +3738,1186 @@
 [16:58:50.681] [SaveToFile:ENABLED] [MOVEMENT DEBUG] - Movement delay: 410ms
 [16:58:50.681] [SaveToFile:ENABLED] [MOVEMENT DEBUG] - Time since last movement: 291ms
 [16:58:50.681] [SaveToFile:ENABLED] [MOVEMENT] ⏳ BLOCKED: Waiting 119ms before next movement (last: 291ms ago)
+=== AqueductsBot Movement Debug Log Started: 7/24/2025 6:11:34 PM ===
+=== AqueductsBot Movement Debug Log Started: 7/24/2025 6:16:04 PM ===
+[18:24:23.090] [DIAGNOSTIC] Bot running - State: WaitingForRadar, Path: 0, Index: 0
+[18:24:23.091] [SaveToFile:ENABLED] [BOT STATE] Current state: WaitingForRadar, Path count: 0, Path index: 0
+[18:24:26.102] [DIAGNOSTIC] Bot running - State: WaitingForAqueducts, Path: 0, Index: 0
+[18:24:26.102] [SaveToFile:ENABLED] [BOT STATE] Current state: WaitingForAqueducts, Path count: 0, Path index: 0
+[18:24:31.939] [DIAGNOSTIC] Bot running - State: GettingPath, Path: 0, Index: 0
+[18:24:31.939] [SaveToFile:ENABLED] [BOT STATE] Current state: GettingPath, Path count: 0, Path index: 0
+[18:24:31.940] [SaveToFile:ENABLED] [PATHFINDING] RequestPathToExit started - requesting path from radar
+[18:24:33.296] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:24:33.296] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (515, 259), looking from index 0/151, radius 361 (base: 361, remaining: 151)
+[18:24:33.296] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 0, next 5 waypoints:
+[18:24:33.296] [SaveToFile:ENABLED]   [0] (515, 259) distance: 0.0
+[18:24:33.297] [SaveToFile:ENABLED]   [1] (514, 260) distance: 1.4
+[18:24:33.297] [SaveToFile:ENABLED]   [2] (513, 261) distance: 2.8
+[18:24:33.297] [SaveToFile:ENABLED]   [3] (512, 262) distance: 4.2
+[18:24:33.297] [SaveToFile:ENABLED]   [4] (511, 263) distance: 5.7
+[18:24:33.297] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 150.0
+[18:24:33.297] [SaveToFile:ENABLED] [PATH INTERSECTION] ⚠️ Intersection off-screen at (255, 45) - finding camera-visible intersection
+[18:24:33.300] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 288.7 from index 0
+[18:24:33.300] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 288.7
+[18:24:33.300] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 252.6 from index 0
+[18:24:33.300] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 252.6
+[18:24:33.300] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 216.5 from index 0
+[18:24:33.301] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 216.5
+[18:24:33.301] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 180.4 from index 0
+[18:24:33.301] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 180.4
+[18:24:33.301] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 144.4 from index 0
+[18:24:33.301] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 144.4
+[18:24:33.301] [SaveToFile:ENABLED] [PATH INTERSECTION] ⚠️ No camera-visible intersection found, keeping original target
+[18:24:33.301] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:24:33.301] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (255, 45)
+[18:24:33.301] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:24:33.301] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:24:33.302] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:24:33.302] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (255, 45)
+[18:24:33.302] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 806.3 pixels
+[18:24:33.303] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 150.0 units (expected: ~360.9)
+[18:24:33.304] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (806.3 <= 1200 pixels)
+[18:24:33.304] [SaveToFile:ENABLED] [MOVEMENT DEBUG] 🔍 Checking movement conditions:
+[18:24:33.304] [SaveToFile:ENABLED] [MOVEMENT DEBUG] - Distance to target: 150.0
+[18:24:33.304] [SaveToFile:ENABLED] [MOVEMENT DEBUG] - Should advance: False
+[18:24:33.305] [SaveToFile:ENABLED] [MOVEMENT DEBUG] ✅ Distance check passed (150.0 >= 10)
+[18:24:33.305] [SaveToFile:ENABLED] [MOVEMENT DEBUG] - Movement delay: 439ms
+[18:24:33.305] [SaveToFile:ENABLED] [MOVEMENT DEBUG] - Time since last movement: 63888978273306ms
+[18:24:33.305] [SaveToFile:ENABLED] [MOVEMENT DEBUG] ✅ Timing check passed (63888978273306ms >= 439ms)
+[18:24:33.305] [SaveToFile:ENABLED] [MOVEMENT] 🎮 EXECUTING MOVEMENT: cursor to (255, 45) + press T (distance: 150.0)
+[18:24:33.306] [SaveToFile:ENABLED] [MOVEMENT DEBUG] 📍 Player at (515, 259) → Target (515, 409)
+[18:24:33.306] [SaveToFile:ENABLED] [MOVEMENT DEBUG] ✅ Final coordinate check passed (255, 45)
+[18:24:33.306] [SaveToFile:ENABLED] [MOVEMENT] ✅ SAFE CLICK: Executing click at (255, 45)
+[18:24:33.661] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:24:33.661] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (515, 259), looking from index 0/151, radius 361 (base: 361, remaining: 151)
+[18:24:33.661] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 0, next 5 waypoints:
+[18:24:33.662] [SaveToFile:ENABLED]   [0] (515, 259) distance: 0.0
+[18:24:33.662] [SaveToFile:ENABLED]   [1] (514, 260) distance: 1.4
+[18:24:33.662] [SaveToFile:ENABLED]   [2] (513, 261) distance: 2.8
+[18:24:33.662] [SaveToFile:ENABLED]   [3] (512, 262) distance: 4.2
+[18:24:33.662] [SaveToFile:ENABLED]   [4] (511, 263) distance: 5.7
+[18:24:33.662] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 150.0
+[18:24:33.662] [SaveToFile:ENABLED] [PATH INTERSECTION] ⚠️ Intersection off-screen at (255, 45) - finding camera-visible intersection
+[18:24:33.662] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 288.7 from index 0
+[18:24:33.663] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 288.7
+[18:24:33.663] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 252.6 from index 0
+[18:24:33.663] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 252.6
+[18:24:33.663] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 216.5 from index 0
+[18:24:33.663] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 216.5
+[18:24:33.663] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 180.4 from index 0
+[18:24:33.663] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 180.4
+[18:24:33.663] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 144.4 from index 0
+[18:24:33.663] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 144.4
+[18:24:33.663] [SaveToFile:ENABLED] [PATH INTERSECTION] ⚠️ No camera-visible intersection found, keeping original target
+[18:24:33.663] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:24:33.663] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (255, 45)
+[18:24:33.664] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:24:33.664] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:24:33.664] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:24:33.664] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (255, 45)
+[18:24:33.664] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 806.3 pixels
+[18:24:33.664] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 150.0 units (expected: ~360.9)
+[18:24:33.664] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (806.3 <= 1200 pixels)
+[18:24:33.664] [SaveToFile:ENABLED] [MOVEMENT DEBUG] 🔍 Checking movement conditions:
+[18:24:33.664] [SaveToFile:ENABLED] [MOVEMENT DEBUG] - Distance to target: 150.0
+[18:24:33.664] [SaveToFile:ENABLED] [MOVEMENT DEBUG] - Should advance: False
+[18:24:33.664] [SaveToFile:ENABLED] [MOVEMENT DEBUG] ✅ Distance check passed (150.0 >= 10)
+[18:24:33.665] [SaveToFile:ENABLED] [MOVEMENT DEBUG] - Movement delay: 355ms
+[18:24:33.665] [SaveToFile:ENABLED] [MOVEMENT DEBUG] - Time since last movement: 359ms
+[18:24:33.665] [SaveToFile:ENABLED] [MOVEMENT DEBUG] ✅ Timing check passed (359ms >= 355ms)
+[18:24:33.665] [SaveToFile:ENABLED] [MOVEMENT] 🎮 EXECUTING MOVEMENT: cursor to (255, 45) + press T (distance: 150.0)
+[18:24:33.665] [SaveToFile:ENABLED] [MOVEMENT DEBUG] 📍 Player at (515, 259) → Target (515, 409)
+[18:24:33.665] [SaveToFile:ENABLED] [MOVEMENT DEBUG] ✅ Final coordinate check passed (255, 45)
+[18:24:33.670] [SaveToFile:ENABLED] [MOVEMENT] ✅ SAFE CLICK: Executing click at (255, 45)
+[18:24:34.104] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:24:34.104] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (513, 275), looking from index 0/151, radius 361 (base: 361, remaining: 151)
+[18:24:34.104] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 0, next 5 waypoints:
+[18:24:34.104] [SaveToFile:ENABLED]   [0] (515, 259) distance: 16.1
+[18:24:34.105] [SaveToFile:ENABLED]   [1] (514, 260) distance: 15.0
+[18:24:34.105] [SaveToFile:ENABLED]   [2] (513, 261) distance: 14.0
+[18:24:34.105] [SaveToFile:ENABLED]   [3] (512, 262) distance: 13.0
+[18:24:34.105] [SaveToFile:ENABLED]   [4] (511, 263) distance: 12.2
+[18:24:34.105] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 134.0
+[18:24:34.105] [SaveToFile:ENABLED] [PATH INTERSECTION] ⚠️ Intersection off-screen at (325, 87) - finding camera-visible intersection
+[18:24:34.105] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 288.7 from index 0
+[18:24:34.105] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 288.7
+[18:24:34.105] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 252.6 from index 0
+[18:24:34.106] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 252.6
+[18:24:34.106] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 216.5 from index 0
+[18:24:34.106] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 216.5
+[18:24:34.106] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 180.4 from index 0
+[18:24:34.106] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 180.4
+[18:24:34.106] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 144.4 from index 0
+[18:24:34.106] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 144.4
+[18:24:34.106] [SaveToFile:ENABLED] [PATH INTERSECTION] ⚠️ No camera-visible intersection found, keeping original target
+[18:24:34.106] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:24:34.106] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (325, 87)
+[18:24:34.106] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:24:34.106] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:24:34.107] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:24:34.107] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (325, 87)
+[18:24:34.107] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 724.3 pixels
+[18:24:34.107] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 134.0 units (expected: ~360.9)
+[18:24:34.107] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (724.3 <= 1200 pixels)
+[18:24:34.107] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - moved past waypoint (progress: 12.7/1.4)
+[18:24:34.107] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 3/151 (advanced by 3) - moved past waypoint (progress: 12.7/1.4)
+[18:24:34.478] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:24:34.478] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (509, 299), looking from index 3/151, radius 361 (base: 361, remaining: 148)
+[18:24:34.479] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 3, next 5 waypoints:
+[18:24:34.479] [SaveToFile:ENABLED]   [3] (512, 262) distance: 37.1
+[18:24:34.479] [SaveToFile:ENABLED]   [4] (511, 263) distance: 36.1
+[18:24:34.479] [SaveToFile:ENABLED]   [5] (511, 264) distance: 35.1
+[18:24:34.479] [SaveToFile:ENABLED]   [6] (511, 265) distance: 34.1
+[18:24:34.479] [SaveToFile:ENABLED]   [7] (511, 266) distance: 33.1
+[18:24:34.479] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 110.2
+[18:24:34.479] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:24:34.479] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:24:34.479] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (434, 153)
+[18:24:34.479] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:24:34.480] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:24:34.480] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:24:34.480] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (434, 153)
+[18:24:34.480] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 597.1 pixels
+[18:24:34.480] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 110.2 units (expected: ~360.9)
+[18:24:34.480] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (597.1 <= 1200 pixels)
+[18:24:34.480] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - moved past waypoint (progress: 28.3/1.4)
+[18:24:34.480] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 6/151 (advanced by 3) - moved past waypoint (progress: 28.3/1.4)
+[18:24:34.873] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:24:34.874] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (505, 327), looking from index 6/151, radius 361 (base: 361, remaining: 145)
+[18:24:34.874] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 6, next 5 waypoints:
+[18:24:34.874] [SaveToFile:ENABLED]   [6] (511, 265) distance: 62.3
+[18:24:34.874] [SaveToFile:ENABLED]   [7] (511, 266) distance: 61.3
+[18:24:34.874] [SaveToFile:ENABLED]   [8] (511, 267) distance: 60.3
+[18:24:34.874] [SaveToFile:ENABLED]   [9] (511, 268) distance: 59.3
+[18:24:34.874] [SaveToFile:ENABLED]   [10] (511, 269) distance: 58.3
+[18:24:34.874] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 82.6
+[18:24:34.874] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:24:34.875] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:24:34.875] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (571, 239)
+[18:24:34.875] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:24:34.875] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:24:34.875] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:24:34.875] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (571, 239)
+[18:24:34.875] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 435.4 pixels
+[18:24:34.875] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 82.6 units (expected: ~360.9)
+[18:24:34.875] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (435.4 <= 1200 pixels)
+[18:24:34.875] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - moved past waypoint (progress: 62.0/1.0)
+[18:24:34.875] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 9/151 (advanced by 3) - moved past waypoint (progress: 62.0/1.0)
+[18:24:35.301] [DIAGNOSTIC] Bot running - State: MovingAlongPath, Path: 82, Index: 0
+[18:24:35.301] [SaveToFile:ENABLED] [BOT STATE] Current state: MovingAlongPath, Path count: 82, Path index: 0
+[18:24:35.301] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:24:35.301] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (503, 354), looking from index 0/82, radius 361 (base: 361, remaining: 82)
+[18:24:35.301] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 0, next 5 waypoints:
+[18:24:35.301] [SaveToFile:ENABLED]   [0] (506, 328) distance: 26.2
+[18:24:35.301] [SaveToFile:ENABLED]   [1] (507, 329) distance: 25.3
+[18:24:35.301] [SaveToFile:ENABLED]   [2] (508, 330) distance: 24.5
+[18:24:35.301] [SaveToFile:ENABLED]   [3] (509, 331) distance: 23.8
+[18:24:35.302] [SaveToFile:ENABLED]   [4] (510, 332) distance: 23.1
+[18:24:35.302] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 56.3
+[18:24:35.302] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:24:35.302] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:24:35.302] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (730, 340)
+[18:24:35.302] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:24:35.302] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:24:35.302] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:24:35.302] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (730, 340)
+[18:24:35.302] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 249.0 pixels
+[18:24:35.303] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 56.3 units (expected: ~360.9)
+[18:24:35.303] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (249.0 <= 1200 pixels)
+[18:24:35.303] [SaveToFile:ENABLED] [STUCK DETECTION] 🚨 Stuck on same target for 5 attempts (threshold: 5) - forcing advancement!
+[18:24:35.303] [SaveToFile:ENABLED] [STUCK DEBUG] 📍 Player position hasn't changed from (503, 354) - character may be physically blocked!
+[18:24:35.303] [SaveToFile:ENABLED] [FORCED ADVANCEMENT] 📍 Forced advance by 4 to path index 4/82
+[18:24:35.303] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - moved past waypoint (progress: 10.6/1.4)
+[18:24:35.303] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 7/82 (advanced by 3) - moved past waypoint (progress: 10.6/1.4)
+[18:24:35.729] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:24:35.729] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (500, 385), looking from index 7/82, radius 361 (base: 361, remaining: 75)
+[18:24:35.729] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 7, next 5 waypoints:
+[18:24:35.729] [SaveToFile:ENABLED]   [7] (511, 335) distance: 51.2
+[18:24:35.729] [SaveToFile:ENABLED]   [8] (511, 336) distance: 50.2
+[18:24:35.730] [SaveToFile:ENABLED]   [9] (511, 337) distance: 49.2
+[18:24:35.730] [SaveToFile:ENABLED]   [10] (511, 338) distance: 48.3
+[18:24:35.730] [SaveToFile:ENABLED]   [11] (511, 339) distance: 47.3
+[18:24:35.730] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 28.3
+[18:24:35.730] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:24:35.730] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:24:35.730] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (905, 459)
+[18:24:35.730] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:24:35.730] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:24:35.730] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:24:35.731] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (905, 459)
+[18:24:35.731] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 59.7 pixels
+[18:24:35.731] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 28.3 units (expected: ~360.9)
+[18:24:35.731] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (59.7 <= 1200 pixels)
+[18:24:35.731] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 28.3 < 30)
+[18:24:35.731] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 10/82 (advanced by 3) - close to target (distance: 28.3 < 30)
+[18:24:36.105] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:24:36.106] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (497, 403), looking from index 10/82, radius 361 (base: 361, remaining: 72)
+[18:24:36.106] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 10, next 5 waypoints:
+[18:24:36.106] [SaveToFile:ENABLED]   [10] (511, 338) distance: 66.5
+[18:24:36.106] [SaveToFile:ENABLED]   [11] (511, 339) distance: 65.5
+[18:24:36.106] [SaveToFile:ENABLED]   [12] (511, 340) distance: 64.5
+[18:24:36.106] [SaveToFile:ENABLED]   [13] (511, 341) distance: 63.6
+[18:24:36.106] [SaveToFile:ENABLED]   [14] (511, 342) distance: 62.6
+[18:24:36.106] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 19.0
+[18:24:36.106] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:24:36.107] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:24:36.107] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (1035, 537)
+[18:24:36.107] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:24:36.107] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:24:36.107] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:24:36.107] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (1035, 537)
+[18:24:36.107] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 126.4 pixels
+[18:24:36.107] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 19.0 units (expected: ~360.9)
+[18:24:36.107] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (126.4 <= 1200 pixels)
+[18:24:36.107] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 19.0 < 30)
+[18:24:36.107] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 13/82 (advanced by 3) - close to target (distance: 19.0 < 30)
+[18:24:36.371] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:24:36.372] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (497, 401), looking from index 13/82, radius 361 (base: 361, remaining: 69)
+[18:24:36.372] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 13, next 5 waypoints:
+[18:24:36.372] [SaveToFile:ENABLED]   [13] (511, 341) distance: 61.6
+[18:24:36.372] [SaveToFile:ENABLED]   [14] (511, 342) distance: 60.6
+[18:24:36.372] [SaveToFile:ENABLED]   [15] (511, 343) distance: 59.7
+[18:24:36.372] [SaveToFile:ENABLED]   [16] (511, 344) distance: 58.7
+[18:24:36.372] [SaveToFile:ENABLED]   [17] (511, 345) distance: 57.7
+[18:24:36.372] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 19.7
+[18:24:36.373] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:24:36.373] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:24:36.373] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (1022, 524)
+[18:24:36.373] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:24:36.373] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:24:36.373] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:24:36.373] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (1022, 524)
+[18:24:36.373] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 108.0 pixels
+[18:24:36.373] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 19.7 units (expected: ~360.9)
+[18:24:36.373] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (108.0 <= 1200 pixels)
+[18:24:36.374] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 19.7 < 30)
+[18:24:36.374] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 16/82 (advanced by 3) - close to target (distance: 19.7 < 30)
+[18:24:36.640] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:24:36.640] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (499, 389), looking from index 16/82, radius 361 (base: 361, remaining: 66)
+[18:24:36.640] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 16, next 5 waypoints:
+[18:24:36.640] [SaveToFile:ENABLED]   [16] (511, 344) distance: 46.6
+[18:24:36.641] [SaveToFile:ENABLED]   [17] (511, 345) distance: 45.6
+[18:24:36.641] [SaveToFile:ENABLED]   [18] (511, 346) distance: 44.6
+[18:24:36.641] [SaveToFile:ENABLED]   [19] (511, 347) distance: 43.7
+[18:24:36.641] [SaveToFile:ENABLED]   [20] (511, 348) distance: 42.7
+[18:24:36.641] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 25.6
+[18:24:36.641] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:24:36.641] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:24:36.641] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (936, 476)
+[18:24:36.641] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:24:36.641] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:24:36.642] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:24:36.642] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (936, 476)
+[18:24:36.642] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 47.5 pixels
+[18:24:36.642] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 25.6 units (expected: ~360.9)
+[18:24:36.642] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (47.5 <= 1200 pixels)
+[18:24:36.642] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 25.6 < 30)
+[18:24:36.642] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 19/82 (advanced by 3) - close to target (distance: 25.6 < 30)
+[18:24:36.904] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:24:36.904] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (499, 386), looking from index 19/82, radius 361 (base: 361, remaining: 63)
+[18:24:36.904] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 19, next 5 waypoints:
+[18:24:36.904] [SaveToFile:ENABLED]   [19] (511, 347) distance: 40.8
+[18:24:36.904] [SaveToFile:ENABLED]   [20] (511, 348) distance: 39.8
+[18:24:36.904] [SaveToFile:ENABLED]   [21] (511, 349) distance: 38.9
+[18:24:36.904] [SaveToFile:ENABLED]   [22] (511, 350) distance: 37.9
+[18:24:36.904] [SaveToFile:ENABLED]   [23] (511, 351) distance: 37.0
+[18:24:36.904] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 28.0
+[18:24:36.905] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:24:36.905] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:24:36.905] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (918, 462)
+[18:24:36.905] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:24:36.905] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:24:36.905] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:24:36.905] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (918, 462)
+[18:24:36.905] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 49.7 pixels
+[18:24:36.905] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 28.0 units (expected: ~360.9)
+[18:24:36.905] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (49.7 <= 1200 pixels)
+[18:24:36.905] [SaveToFile:ENABLED] [STUCK DETECTION] 🚨 Stuck on same target for 5 attempts (threshold: 5) - forcing advancement!
+[18:24:36.906] [SaveToFile:ENABLED] [STUCK DEBUG] 📍 Player position hasn't changed from (499, 386) - character may be physically blocked!
+[18:24:36.906] [SaveToFile:ENABLED] [FORCED ADVANCEMENT] 📍 Forced advance by 4 to path index 23/82
+[18:24:36.906] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 28.0 < 30)
+[18:24:36.906] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 26/82 (advanced by 3) - close to target (distance: 28.0 < 30)
+[18:24:37.170] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:24:37.171] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (498, 394), looking from index 26/82, radius 361 (base: 361, remaining: 56)
+[18:24:37.171] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 26, next 5 waypoints:
+[18:24:37.171] [SaveToFile:ENABLED]   [26] (511, 354) distance: 42.1
+[18:24:37.171] [SaveToFile:ENABLED]   [27] (511, 355) distance: 41.1
+[18:24:37.171] [SaveToFile:ENABLED]   [28] (511, 356) distance: 40.2
+[18:24:37.171] [SaveToFile:ENABLED]   [29] (511, 357) distance: 39.2
+[18:24:37.171] [SaveToFile:ENABLED]   [30] (511, 358) distance: 38.3
+[18:24:37.171] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 22.7
+[18:24:37.171] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:24:37.171] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:24:37.172] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (972, 496)
+[18:24:37.172] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:24:37.172] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:24:37.172] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:24:37.172] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (972, 496)
+[18:24:37.172] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 61.8 pixels
+[18:24:37.172] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 22.7 units (expected: ~360.9)
+[18:24:37.172] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (61.8 <= 1200 pixels)
+[18:24:37.172] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 22.7 < 30)
+[18:24:37.172] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 29/82 (advanced by 3) - close to target (distance: 22.7 < 30)
+[18:24:37.430] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:24:37.430] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (498, 399), looking from index 29/82, radius 361 (base: 361, remaining: 53)
+[18:24:37.430] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 29, next 5 waypoints:
+[18:24:37.431] [SaveToFile:ENABLED]   [29] (511, 357) distance: 44.0
+[18:24:37.431] [SaveToFile:ENABLED]   [30] (511, 358) distance: 43.0
+[18:24:37.431] [SaveToFile:ENABLED]   [31] (511, 359) distance: 42.1
+[18:24:37.431] [SaveToFile:ENABLED]   [32] (511, 360) distance: 41.1
+[18:24:37.431] [SaveToFile:ENABLED]   [33] (511, 361) distance: 40.2
+[18:24:37.431] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 19.7
+[18:24:37.431] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:24:37.431] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:24:37.431] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (1004, 521)
+[18:24:37.431] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:24:37.431] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:24:37.431] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:24:37.432] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (1004, 521)
+[18:24:37.432] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 96.4 pixels
+[18:24:37.432] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 19.7 units (expected: ~360.9)
+[18:24:37.432] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (96.4 <= 1200 pixels)
+[18:24:37.432] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 19.7 < 30)
+[18:24:37.432] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 32/82 (advanced by 3) - close to target (distance: 19.7 < 30)
+[18:24:37.709] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:24:37.709] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (498, 394), looking from index 32/82, radius 361 (base: 361, remaining: 50)
+[18:24:37.709] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 32, next 5 waypoints:
+[18:24:37.709] [SaveToFile:ENABLED]   [32] (511, 360) distance: 36.4
+[18:24:37.709] [SaveToFile:ENABLED]   [33] (511, 361) distance: 35.5
+[18:24:37.709] [SaveToFile:ENABLED]   [34] (511, 362) distance: 34.5
+[18:24:37.710] [SaveToFile:ENABLED]   [35] (511, 363) distance: 33.6
+[18:24:37.710] [SaveToFile:ENABLED]   [36] (511, 364) distance: 32.7
+[18:24:37.710] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 22.7
+[18:24:37.710] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:24:37.710] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:24:37.710] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (972, 496)
+[18:24:37.710] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:24:37.710] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:24:37.711] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:24:37.711] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (972, 496)
+[18:24:37.711] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 61.8 pixels
+[18:24:37.711] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 22.7 units (expected: ~360.9)
+[18:24:37.711] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (61.8 <= 1200 pixels)
+[18:24:37.711] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 22.7 < 30)
+[18:24:37.711] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 35/82 (advanced by 3) - close to target (distance: 22.7 < 30)
+[18:24:37.969] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:24:37.970] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (498, 389), looking from index 35/82, radius 361 (base: 361, remaining: 47)
+[18:24:37.970] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 35, next 5 waypoints:
+[18:24:37.970] [SaveToFile:ENABLED]   [35] (511, 363) distance: 29.1
+[18:24:37.970] [SaveToFile:ENABLED]   [36] (511, 364) distance: 28.2
+[18:24:37.970] [SaveToFile:ENABLED]   [37] (511, 365) distance: 27.3
+[18:24:37.970] [SaveToFile:ENABLED]   [38] (511, 366) distance: 26.4
+[18:24:37.970] [SaveToFile:ENABLED]   [39] (511, 367) distance: 25.6
+[18:24:37.970] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 26.2
+[18:24:37.971] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:24:37.971] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:24:37.971] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (942, 471)
+[18:24:37.971] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:24:37.971] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:24:37.971] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:24:37.971] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (942, 471)
+[18:24:37.971] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 40.2 pixels
+[18:24:37.971] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 26.2 units (expected: ~360.9)
+[18:24:37.971] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (40.2 <= 1200 pixels)
+[18:24:37.971] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 26.2 < 30)
+[18:24:37.972] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 38/82 (advanced by 3) - close to target (distance: 26.2 < 30)
+[18:24:38.238] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:24:38.238] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (498, 392), looking from index 38/82, radius 361 (base: 361, remaining: 44)
+[18:24:38.238] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 38, next 5 waypoints:
+[18:24:38.238] [SaveToFile:ENABLED]   [38] (511, 366) distance: 29.1
+[18:24:38.238] [SaveToFile:ENABLED]   [39] (511, 367) distance: 28.2
+[18:24:38.239] [SaveToFile:ENABLED]   [40] (511, 368) distance: 27.3
+[18:24:38.239] [SaveToFile:ENABLED]   [41] (511, 369) distance: 26.4
+[18:24:38.239] [SaveToFile:ENABLED]   [42] (511, 370) distance: 25.6
+[18:24:38.239] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 24.0
+[18:24:38.239] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:24:38.239] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:24:38.239] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (960, 486)
+[18:24:38.239] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:24:38.239] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:24:38.239] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:24:38.240] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (960, 486)
+[18:24:38.240] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 50.6 pixels
+[18:24:38.240] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 24.0 units (expected: ~360.9)
+[18:24:38.240] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (50.6 <= 1200 pixels)
+[18:24:38.240] [SaveToFile:ENABLED] [STUCK DETECTION] 🚨 Stuck on same target for 5 attempts (threshold: 5) - forcing advancement!
+[18:24:38.240] [SaveToFile:ENABLED] [STUCK DEBUG] 📍 Player position hasn't changed from (498, 392) - character may be physically blocked!
+[18:24:38.240] [SaveToFile:ENABLED] [FORCED ADVANCEMENT] 📍 Forced advance by 4 to path index 42/82
+[18:24:38.240] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 24.0 < 30)
+[18:24:38.240] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 45/82 (advanced by 3) - close to target (distance: 24.0 < 30)
+[18:24:38.499] [DIAGNOSTIC] Bot running - State: MovingAlongPath, Path: 82, Index: 45
+[18:24:38.499] [SaveToFile:ENABLED] [BOT STATE] Current state: MovingAlongPath, Path count: 82, Path index: 45
+[18:24:38.499] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:24:38.499] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (498, 395), looking from index 45/82, radius 361 (base: 361, remaining: 37)
+[18:24:38.499] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 45, next 5 waypoints:
+[18:24:38.499] [SaveToFile:ENABLED]   [45] (511, 373) distance: 25.6
+[18:24:38.500] [SaveToFile:ENABLED]   [46] (511, 374) distance: 24.7
+[18:24:38.500] [SaveToFile:ENABLED]   [47] (511, 375) distance: 23.9
+[18:24:38.500] [SaveToFile:ENABLED]   [48] (511, 376) distance: 23.0
+[18:24:38.500] [SaveToFile:ENABLED]   [49] (511, 377) distance: 22.2
+[18:24:38.500] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 22.0
+[18:24:38.500] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:24:38.500] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:24:38.500] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (979, 501)
+[18:24:38.500] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:24:38.500] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:24:38.500] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:24:38.501] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (979, 501)
+[18:24:38.501] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 68.1 pixels
+[18:24:38.501] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 22.0 units (expected: ~360.9)
+[18:24:38.501] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (68.1 <= 1200 pixels)
+[18:24:38.501] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 22.0 < 30)
+[18:24:38.501] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 48/82 (advanced by 3) - close to target (distance: 22.0 < 30)
+[18:24:38.781] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:24:38.781] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (498, 395), looking from index 48/82, radius 361 (base: 361, remaining: 34)
+[18:24:38.781] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 48, next 5 waypoints:
+[18:24:38.782] [SaveToFile:ENABLED]   [48] (511, 376) distance: 23.0
+[18:24:38.782] [SaveToFile:ENABLED]   [49] (511, 377) distance: 22.2
+[18:24:38.782] [SaveToFile:ENABLED]   [50] (511, 378) distance: 21.4
+[18:24:38.782] [SaveToFile:ENABLED]   [51] (511, 379) distance: 20.6
+[18:24:38.782] [SaveToFile:ENABLED]   [52] (511, 380) distance: 19.8
+[18:24:38.782] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 22.0
+[18:24:38.782] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:24:38.782] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:24:38.782] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (979, 501)
+[18:24:38.782] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:24:38.783] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:24:38.783] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:24:38.783] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (979, 501)
+[18:24:38.783] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 68.1 pixels
+[18:24:38.783] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 22.0 units (expected: ~360.9)
+[18:24:38.783] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (68.1 <= 1200 pixels)
+[18:24:38.783] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 22.0 < 30)
+[18:24:38.783] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 51/82 (advanced by 3) - close to target (distance: 22.0 < 30)
+[18:24:39.040] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:24:39.040] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (498, 395), looking from index 51/82, radius 361 (base: 361, remaining: 31)
+[18:24:39.040] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 51, next 5 waypoints:
+[18:24:39.041] [SaveToFile:ENABLED]   [51] (511, 379) distance: 20.6
+[18:24:39.041] [SaveToFile:ENABLED]   [52] (511, 380) distance: 19.8
+[18:24:39.041] [SaveToFile:ENABLED]   [53] (511, 381) distance: 19.1
+[18:24:39.041] [SaveToFile:ENABLED]   [54] (511, 382) distance: 18.4
+[18:24:39.041] [SaveToFile:ENABLED]   [55] (511, 383) distance: 17.7
+[18:24:39.041] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 22.0
+[18:24:39.041] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:24:39.041] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:24:39.041] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (979, 501)
+[18:24:39.042] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:24:39.042] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:24:39.042] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:24:39.042] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (979, 501)
+[18:24:39.042] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 68.1 pixels
+[18:24:39.042] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 22.0 units (expected: ~360.9)
+[18:24:39.042] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (68.1 <= 1200 pixels)
+[18:24:39.042] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 22.0 < 30)
+[18:24:39.042] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 54/82 (advanced by 3) - close to target (distance: 22.0 < 30)
+[18:24:39.303] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:24:39.303] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (498, 395), looking from index 54/82, radius 361 (base: 361, remaining: 28)
+[18:24:39.303] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 54, next 5 waypoints:
+[18:24:39.303] [SaveToFile:ENABLED]   [54] (511, 382) distance: 18.4
+[18:24:39.303] [SaveToFile:ENABLED]   [55] (511, 383) distance: 17.7
+[18:24:39.303] [SaveToFile:ENABLED]   [56] (511, 384) distance: 17.0
+[18:24:39.303] [SaveToFile:ENABLED]   [57] (511, 385) distance: 16.4
+[18:24:39.303] [SaveToFile:ENABLED]   [58] (511, 386) distance: 15.8
+[18:24:39.304] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 22.0
+[18:24:39.304] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:24:39.304] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:24:39.304] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (979, 501)
+[18:24:39.304] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:24:39.304] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:24:39.304] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:24:39.304] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (979, 501)
+[18:24:39.304] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 68.1 pixels
+[18:24:39.304] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 22.0 units (expected: ~360.9)
+[18:24:39.305] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (68.1 <= 1200 pixels)
+[18:24:39.305] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 22.0 < 30)
+[18:24:39.305] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 57/82 (advanced by 3) - close to target (distance: 22.0 < 30)
+[18:24:39.562] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:24:39.562] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (498, 395), looking from index 57/82, radius 361 (base: 361, remaining: 25)
+[18:24:39.562] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 57, next 5 waypoints:
+[18:24:39.562] [SaveToFile:ENABLED]   [57] (511, 385) distance: 16.4
+[18:24:39.563] [SaveToFile:ENABLED]   [58] (511, 386) distance: 15.8
+[18:24:39.563] [SaveToFile:ENABLED]   [59] (511, 387) distance: 15.3
+[18:24:39.563] [SaveToFile:ENABLED]   [60] (511, 388) distance: 14.8
+[18:24:39.563] [SaveToFile:ENABLED]   [61] (511, 389) distance: 14.3
+[18:24:39.563] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 22.0
+[18:24:39.563] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:24:39.563] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:24:39.563] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (979, 501)
+[18:24:39.563] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:24:39.563] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:24:39.563] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:24:39.564] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (979, 501)
+[18:24:39.564] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 68.1 pixels
+[18:24:39.564] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 22.0 units (expected: ~360.9)
+[18:24:39.564] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (68.1 <= 1200 pixels)
+[18:24:39.564] [SaveToFile:ENABLED] [STUCK DETECTION] 🚨 Stuck on same target for 5 attempts (threshold: 5) - forcing advancement!
+[18:24:39.564] [SaveToFile:ENABLED] [STUCK DEBUG] 📍 Player position hasn't changed from (498, 395) - character may be physically blocked!
+[18:24:39.564] [SaveToFile:ENABLED] [FORCED ADVANCEMENT] 📍 Forced advance by 4 to path index 61/82
+[18:24:39.564] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 22.0 < 30)
+[18:24:39.564] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 64/82 (advanced by 3) - close to target (distance: 22.0 < 30)
+[18:24:39.837] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:24:39.837] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (498, 395), looking from index 64/82, radius 361 (base: 361, remaining: 18)
+[18:24:39.837] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 64, next 5 waypoints:
+[18:24:39.837] [SaveToFile:ENABLED]   [64] (511, 392) distance: 13.3
+[18:24:39.837] [SaveToFile:ENABLED]   [65] (511, 393) distance: 13.2
+[18:24:39.838] [SaveToFile:ENABLED]   [66] (511, 394) distance: 13.0
+[18:24:39.838] [SaveToFile:ENABLED]   [67] (511, 395) distance: 13.0
+[18:24:39.838] [SaveToFile:ENABLED]   [68] (512, 396) distance: 14.0
+[18:24:39.838] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 22.0
+[18:24:39.838] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:24:39.838] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:24:39.838] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (979, 501)
+[18:24:39.838] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:24:39.838] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:24:39.839] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:24:39.839] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (979, 501)
+[18:24:39.839] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 68.1 pixels
+[18:24:39.839] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 22.0 units (expected: ~360.9)
+[18:24:39.839] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (68.1 <= 1200 pixels)
+[18:24:39.839] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 22.0 < 30)
+[18:24:39.839] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 67/82 (advanced by 3) - close to target (distance: 22.0 < 30)
+[18:24:40.096] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:24:40.096] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (498, 395), looking from index 67/82, radius 361 (base: 361, remaining: 15)
+[18:24:40.097] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 67, next 5 waypoints:
+[18:24:40.097] [SaveToFile:ENABLED]   [67] (511, 395) distance: 13.0
+[18:24:40.097] [SaveToFile:ENABLED]   [68] (512, 396) distance: 14.0
+[18:24:40.097] [SaveToFile:ENABLED]   [69] (513, 397) distance: 15.1
+[18:24:40.097] [SaveToFile:ENABLED]   [70] (514, 398) distance: 16.3
+[18:24:40.097] [SaveToFile:ENABLED]   [71] (515, 399) distance: 17.5
+[18:24:40.097] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 22.0
+[18:24:40.097] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:24:40.097] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:24:40.097] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (979, 501)
+[18:24:40.097] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:24:40.098] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:24:40.098] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:24:40.098] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (979, 501)
+[18:24:40.098] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 68.1 pixels
+[18:24:40.098] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 22.0 units (expected: ~360.9)
+[18:24:40.098] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (68.1 <= 1200 pixels)
+[18:24:40.098] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 22.0 < 30)
+[18:24:40.098] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 70/82 (advanced by 3) - close to target (distance: 22.0 < 30)
+[18:24:40.369] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:24:40.370] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (498, 395), looking from index 70/82, radius 361 (base: 361, remaining: 12)
+[18:24:40.370] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 70, next 5 waypoints:
+[18:24:40.370] [SaveToFile:ENABLED]   [70] (514, 398) distance: 16.3
+[18:24:40.370] [SaveToFile:ENABLED]   [71] (515, 399) distance: 17.5
+[18:24:40.371] [SaveToFile:ENABLED]   [72] (515, 400) distance: 17.7
+[18:24:40.371] [SaveToFile:ENABLED]   [73] (515, 401) distance: 18.0
+[18:24:40.371] [SaveToFile:ENABLED]   [74] (515, 402) distance: 18.4
+[18:24:40.371] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 22.0
+[18:24:40.371] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:24:40.371] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:24:40.371] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (979, 501)
+[18:24:40.371] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:24:40.371] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:24:40.371] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:24:40.372] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (979, 501)
+[18:24:40.372] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 68.1 pixels
+[18:24:40.372] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 22.0 units (expected: ~360.9)
+[18:24:40.372] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (68.1 <= 1200 pixels)
+[18:24:40.372] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 22.0 < 30)
+[18:24:40.372] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 73/82 (advanced by 3) - close to target (distance: 22.0 < 30)
+[18:24:40.629] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:24:40.630] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (498, 395), looking from index 73/82, radius 541 (base: 361, remaining: 9)
+[18:24:40.630] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 73, next 5 waypoints:
+[18:24:40.630] [SaveToFile:ENABLED]   [73] (515, 401) distance: 18.0
+[18:24:40.630] [SaveToFile:ENABLED]   [74] (515, 402) distance: 18.4
+[18:24:40.630] [SaveToFile:ENABLED]   [75] (515, 403) distance: 18.8
+[18:24:40.630] [SaveToFile:ENABLED]   [76] (515, 404) distance: 19.2
+[18:24:40.630] [SaveToFile:ENABLED]   [77] (515, 405) distance: 19.7
+[18:24:40.630] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 22.0
+[18:24:40.630] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:24:40.630] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:24:40.630] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (979, 501)
+[18:24:40.631] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:24:40.631] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:24:40.631] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:24:40.631] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (979, 501)
+[18:24:40.631] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 68.1 pixels
+[18:24:40.631] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 22.0 units (expected: ~360.9)
+[18:24:40.631] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (68.1 <= 1200 pixels)
+[18:24:40.631] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 22.0 < 30)
+[18:24:40.631] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 75/82 (advanced by 2) - close to target (distance: 22.0 < 30)
+[18:24:40.904] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:24:40.904] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (498, 395), looking from index 75/82, radius 541 (base: 361, remaining: 7)
+[18:24:40.904] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 75, next 5 waypoints:
+[18:24:40.904] [SaveToFile:ENABLED]   [75] (515, 403) distance: 18.8
+[18:24:40.904] [SaveToFile:ENABLED]   [76] (515, 404) distance: 19.2
+[18:24:40.905] [SaveToFile:ENABLED]   [77] (515, 405) distance: 19.7
+[18:24:40.905] [SaveToFile:ENABLED]   [78] (515, 406) distance: 20.2
+[18:24:40.905] [SaveToFile:ENABLED]   [79] (515, 407) distance: 20.8
+[18:24:40.905] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 22.0
+[18:24:40.905] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:24:40.905] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:24:40.905] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (979, 501)
+[18:24:40.905] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:24:40.905] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:24:40.905] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:24:40.905] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (979, 501)
+[18:24:40.906] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 68.1 pixels
+[18:24:40.906] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 22.0 units (expected: ~360.9)
+[18:24:40.906] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (68.1 <= 1200 pixels)
+[18:24:40.906] [SaveToFile:ENABLED] [STUCK DETECTION] 🚨 Stuck on same target for 5 attempts (threshold: 5) - forcing advancement!
+[18:24:40.906] [SaveToFile:ENABLED] [STUCK DEBUG] 📍 Player position hasn't changed from (498, 395) - character may be physically blocked!
+[18:24:40.906] [SaveToFile:ENABLED] [FORCED ADVANCEMENT] 📍 Forced advance by 4 to path index 79/82
+[18:24:40.906] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 22.0 < 30)
+[18:24:40.906] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 80/82 (advanced by 1) - close to target (distance: 22.0 < 30)
+[18:24:41.168] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:24:41.168] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (498, 395), looking from index 80/82, radius 541 (base: 361, remaining: 2)
+[18:24:41.169] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 80, next 5 waypoints:
+[18:24:41.169] [SaveToFile:ENABLED]   [80] (515, 408) distance: 21.4
+[18:24:41.169] [SaveToFile:ENABLED]   [81] (515, 409) distance: 22.0
+[18:24:41.169] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 22.0
+[18:24:41.169] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:24:41.169] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:24:41.169] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (979, 501)
+[18:24:41.169] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:24:41.169] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:24:41.169] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:24:41.169] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (979, 501)
+[18:24:41.170] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 68.1 pixels
+[18:24:41.170] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 22.0 units (expected: ~360.9)
+[18:24:41.170] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (68.1 <= 1200 pixels)
+[18:24:41.170] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 22.0 < 30)
+[18:24:41.514] [DIAGNOSTIC] Bot running - State: AtAreaExit, Path: 82, Index: 80
+[18:24:41.514] [SaveToFile:ENABLED] [BOT STATE] Current state: AtAreaExit, Path count: 82, Path index: 80
+[18:27:36.317] [DIAGNOSTIC] Bot running - State: WaitingForRadar, Path: 168, Index: 0
+[18:27:36.318] [SaveToFile:ENABLED] [BOT STATE] Current state: WaitingForRadar, Path count: 168, Path index: 0
+[18:27:40.641] [DIAGNOSTIC] Bot running - State: WaitingForAqueducts, Path: 168, Index: 0
+[18:27:40.641] [SaveToFile:ENABLED] [BOT STATE] Current state: WaitingForAqueducts, Path count: 168, Path index: 0
+[18:27:41.661] [SaveToFile:ENABLED] [PATHFINDING] RequestPathToExit started - requesting path from radar
+[18:27:42.902] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:27:42.902] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (515, 259), looking from index 0/151, radius 361 (base: 361, remaining: 151)
+[18:27:42.902] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 0, next 5 waypoints:
+[18:27:42.902] [SaveToFile:ENABLED]   [0] (515, 259) distance: 0.0
+[18:27:42.903] [SaveToFile:ENABLED]   [1] (514, 260) distance: 1.4
+[18:27:42.904] [SaveToFile:ENABLED]   [2] (513, 261) distance: 2.8
+[18:27:42.904] [SaveToFile:ENABLED]   [3] (512, 262) distance: 4.2
+[18:27:42.904] [SaveToFile:ENABLED]   [4] (511, 263) distance: 5.7
+[18:27:42.904] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 150.0
+[18:27:42.904] [SaveToFile:ENABLED] [PATH INTERSECTION] ⚠️ Intersection off-screen at (255, 45) - finding camera-visible intersection
+[18:27:42.904] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 288.7 from index 0
+[18:27:42.904] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 288.7
+[18:27:42.905] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 252.6 from index 0
+[18:27:42.905] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 252.6
+[18:27:42.908] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 216.5 from index 0
+[18:27:42.908] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 216.5
+[18:27:42.908] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 180.4 from index 0
+[18:27:42.908] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 180.4
+[18:27:42.908] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 144.4 from index 0
+[18:27:42.908] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 144.4
+[18:27:42.908] [SaveToFile:ENABLED] [PATH INTERSECTION] ⚠️ No camera-visible intersection found, keeping original target
+[18:27:42.908] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:27:42.908] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (255, 45)
+[18:27:42.908] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:27:42.908] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:27:42.909] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:27:42.909] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (255, 45)
+[18:27:42.909] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 806.3 pixels
+[18:27:42.909] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 150.0 units (expected: ~360.9)
+[18:27:42.909] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (806.3 <= 1200 pixels)
+[18:27:42.909] [SaveToFile:ENABLED] [MOVEMENT DEBUG] 🔍 Checking movement conditions:
+[18:27:42.909] [SaveToFile:ENABLED] [MOVEMENT DEBUG] - Distance to target: 150.0
+[18:27:42.909] [SaveToFile:ENABLED] [MOVEMENT DEBUG] - Should advance: False
+[18:27:42.909] [SaveToFile:ENABLED] [MOVEMENT DEBUG] ✅ Distance check passed (150.0 >= 10)
+[18:27:42.909] [SaveToFile:ENABLED] [MOVEMENT DEBUG] - Movement delay: 391ms
+[18:27:42.909] [SaveToFile:ENABLED] [MOVEMENT DEBUG] - Time since last movement: 63888978462910ms
+[18:27:42.909] [SaveToFile:ENABLED] [MOVEMENT DEBUG] ✅ Timing check passed (63888978462910ms >= 391ms)
+[18:27:42.909] [SaveToFile:ENABLED] [MOVEMENT] 🎮 EXECUTING MOVEMENT: cursor to (255, 45) + press T (distance: 150.0)
+[18:27:42.910] [SaveToFile:ENABLED] [MOVEMENT DEBUG] 📍 Player at (515, 259) → Target (515, 409)
+[18:27:42.910] [SaveToFile:ENABLED] [MOVEMENT DEBUG] ✅ Final coordinate check passed (255, 45)
+[18:27:42.910] [SaveToFile:ENABLED] [MOVEMENT] ✅ SAFE CLICK: Executing click at (255, 45)
+[18:27:43.363] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:27:43.363] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (515, 259), looking from index 0/151, radius 361 (base: 361, remaining: 151)
+[18:27:43.363] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 0, next 5 waypoints:
+[18:27:43.363] [SaveToFile:ENABLED]   [0] (515, 259) distance: 0.0
+[18:27:43.363] [SaveToFile:ENABLED]   [1] (514, 260) distance: 1.4
+[18:27:43.363] [SaveToFile:ENABLED]   [2] (513, 261) distance: 2.8
+[18:27:43.363] [SaveToFile:ENABLED]   [3] (512, 262) distance: 4.2
+[18:27:43.363] [SaveToFile:ENABLED]   [4] (511, 263) distance: 5.7
+[18:27:43.364] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 150.0
+[18:27:43.364] [SaveToFile:ENABLED] [PATH INTERSECTION] ⚠️ Intersection off-screen at (255, 45) - finding camera-visible intersection
+[18:27:43.364] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 288.7 from index 0
+[18:27:43.364] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 288.7
+[18:27:43.364] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 252.6 from index 0
+[18:27:43.364] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 252.6
+[18:27:43.364] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 216.5 from index 0
+[18:27:43.364] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 216.5
+[18:27:43.364] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 180.4 from index 0
+[18:27:43.364] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 180.4
+[18:27:43.364] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 144.4 from index 0
+[18:27:43.365] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 144.4
+[18:27:43.365] [SaveToFile:ENABLED] [PATH INTERSECTION] ⚠️ No camera-visible intersection found, keeping original target
+[18:27:43.365] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:27:43.365] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (255, 45)
+[18:27:43.365] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:27:43.365] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:27:43.365] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:27:43.365] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (255, 45)
+[18:27:43.365] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 806.3 pixels
+[18:27:43.365] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 150.0 units (expected: ~360.9)
+[18:27:43.365] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (806.3 <= 1200 pixels)
+[18:27:43.366] [SaveToFile:ENABLED] [MOVEMENT DEBUG] 🔍 Checking movement conditions:
+[18:27:43.366] [SaveToFile:ENABLED] [MOVEMENT DEBUG] - Distance to target: 150.0
+[18:27:43.366] [SaveToFile:ENABLED] [MOVEMENT DEBUG] - Should advance: False
+[18:27:43.366] [SaveToFile:ENABLED] [MOVEMENT DEBUG] ✅ Distance check passed (150.0 >= 10)
+[18:27:43.366] [SaveToFile:ENABLED] [MOVEMENT DEBUG] - Movement delay: 604ms
+[18:27:43.366] [SaveToFile:ENABLED] [MOVEMENT DEBUG] - Time since last movement: 456ms
+[18:27:43.366] [SaveToFile:ENABLED] [MOVEMENT] ⏳ BLOCKED: Waiting 148ms before next movement (last: 456ms ago)
+[18:27:43.404] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:27:43.404] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (515, 259), looking from index 0/151, radius 361 (base: 361, remaining: 151)
+[18:27:43.405] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 0, next 5 waypoints:
+[18:27:43.405] [SaveToFile:ENABLED]   [0] (515, 259) distance: 0.0
+[18:27:43.405] [SaveToFile:ENABLED]   [1] (514, 260) distance: 1.4
+[18:27:43.405] [SaveToFile:ENABLED]   [2] (513, 261) distance: 2.8
+[18:27:43.405] [SaveToFile:ENABLED]   [3] (512, 262) distance: 4.2
+[18:27:43.405] [SaveToFile:ENABLED]   [4] (511, 263) distance: 5.7
+[18:27:43.405] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 150.0
+[18:27:43.405] [SaveToFile:ENABLED] [PATH INTERSECTION] ⚠️ Intersection off-screen at (255, 45) - finding camera-visible intersection
+[18:27:43.405] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 288.7 from index 0
+[18:27:43.405] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 288.7
+[18:27:43.405] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 252.6 from index 0
+[18:27:43.406] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 252.6
+[18:27:43.406] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 216.5 from index 0
+[18:27:43.406] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 216.5
+[18:27:43.406] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 180.4 from index 0
+[18:27:43.406] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 180.4
+[18:27:43.406] [SaveToFile:ENABLED] [SPECIFIC RADIUS] Looking for intersection with radius 144.4 from index 0
+[18:27:43.406] [SaveToFile:ENABLED] [SPECIFIC RADIUS] No intersection found with radius 144.4
+[18:27:43.406] [SaveToFile:ENABLED] [PATH INTERSECTION] ⚠️ No camera-visible intersection found, keeping original target
+[18:27:43.406] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:27:43.407] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (255, 45)
+[18:27:43.407] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:27:43.407] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:27:43.407] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:27:43.407] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (255, 45)
+[18:27:43.407] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 806.3 pixels
+[18:27:43.407] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 150.0 units (expected: ~360.9)
+[18:27:43.407] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (806.3 <= 1200 pixels)
+[18:27:43.408] [SaveToFile:ENABLED] [MOVEMENT DEBUG] 🔍 Checking movement conditions:
+[18:27:43.408] [SaveToFile:ENABLED] [MOVEMENT DEBUG] - Distance to target: 150.0
+[18:27:43.408] [SaveToFile:ENABLED] [MOVEMENT DEBUG] - Should advance: False
+[18:27:43.408] [SaveToFile:ENABLED] [MOVEMENT DEBUG] ✅ Distance check passed (150.0 >= 10)
+[18:27:43.408] [SaveToFile:ENABLED] [MOVEMENT DEBUG] - Movement delay: 407ms
+[18:27:43.408] [SaveToFile:ENABLED] [MOVEMENT DEBUG] - Time since last movement: 498ms
+[18:27:43.408] [SaveToFile:ENABLED] [MOVEMENT DEBUG] ✅ Timing check passed (498ms >= 407ms)
+[18:27:43.408] [SaveToFile:ENABLED] [MOVEMENT] 🎮 EXECUTING MOVEMENT: cursor to (255, 45) + press T (distance: 150.0)
+[18:27:43.408] [SaveToFile:ENABLED] [MOVEMENT DEBUG] 📍 Player at (515, 259) → Target (515, 409)
+[18:27:43.408] [SaveToFile:ENABLED] [MOVEMENT DEBUG] ✅ Final coordinate check passed (255, 45)
+[18:27:43.408] [SaveToFile:ENABLED] [MOVEMENT] ✅ SAFE CLICK: Executing click at (255, 45)
+[18:27:43.813] [DIAGNOSTIC] Bot running - State: MovingAlongPath, Path: 151, Index: 0
+[18:27:43.813] [SaveToFile:ENABLED] [BOT STATE] Current state: MovingAlongPath, Path count: 151, Path index: 0
+[18:27:43.813] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:27:43.813] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (512, 282), looking from index 0/151, radius 361 (base: 361, remaining: 151)
+[18:27:43.814] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 0, next 5 waypoints:
+[18:27:43.814] [SaveToFile:ENABLED]   [0] (515, 259) distance: 23.2
+[18:27:43.814] [SaveToFile:ENABLED]   [1] (514, 260) distance: 22.1
+[18:27:43.814] [SaveToFile:ENABLED]   [2] (513, 261) distance: 21.0
+[18:27:43.814] [SaveToFile:ENABLED]   [3] (512, 262) distance: 20.0
+[18:27:43.814] [SaveToFile:ENABLED]   [4] (511, 263) distance: 19.0
+[18:27:43.814] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 127.0
+[18:27:43.814] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:27:43.815] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:27:43.815] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (354, 104)
+[18:27:43.815] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:27:43.815] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:27:43.815] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:27:43.815] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (354, 104)
+[18:27:43.815] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 690.6 pixels
+[18:27:43.815] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 127.0 units (expected: ~360.9)
+[18:27:43.815] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (690.6 <= 1200 pixels)
+[18:27:43.815] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - moved past waypoint (progress: 18.4/1.4)
+[18:27:43.816] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 3/151 (advanced by 3) - moved past waypoint (progress: 18.4/1.4)
+[18:27:44.207] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:27:44.207] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (508, 308), looking from index 3/151, radius 361 (base: 361, remaining: 148)
+[18:27:44.207] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 3, next 5 waypoints:
+[18:27:44.207] [SaveToFile:ENABLED]   [3] (512, 262) distance: 46.2
+[18:27:44.207] [SaveToFile:ENABLED]   [4] (511, 263) distance: 45.1
+[18:27:44.207] [SaveToFile:ENABLED]   [5] (511, 264) distance: 44.1
+[18:27:44.208] [SaveToFile:ENABLED]   [6] (511, 265) distance: 43.1
+[18:27:44.208] [SaveToFile:ENABLED]   [7] (511, 266) distance: 42.1
+[18:27:44.208] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 101.2
+[18:27:44.208] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:27:44.208] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:27:44.208] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (478, 182)
+[18:27:44.208] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:27:44.208] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:27:44.208] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:27:44.208] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (478, 182)
+[18:27:44.208] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 544.5 pixels
+[18:27:44.209] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 101.2 units (expected: ~360.9)
+[18:27:44.209] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (544.5 <= 1200 pixels)
+[18:27:44.209] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - moved past waypoint (progress: 35.4/1.4)
+[18:27:44.209] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 6/151 (advanced by 3) - moved past waypoint (progress: 35.4/1.4)
+[18:27:44.533] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:27:44.533] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (506, 330), looking from index 6/151, radius 361 (base: 361, remaining: 145)
+[18:27:44.533] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 6, next 5 waypoints:
+[18:27:44.533] [SaveToFile:ENABLED]   [6] (511, 265) distance: 65.2
+[18:27:44.533] [SaveToFile:ENABLED]   [7] (511, 266) distance: 64.2
+[18:27:44.533] [SaveToFile:ENABLED]   [8] (511, 267) distance: 63.2
+[18:27:44.533] [SaveToFile:ENABLED]   [9] (511, 268) distance: 62.2
+[18:27:44.533] [SaveToFile:ENABLED]   [10] (511, 269) distance: 61.2
+[18:27:44.534] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 79.5
+[18:27:44.534] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:27:44.534] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:27:44.534] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (588, 252)
+[18:27:44.534] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:27:44.534] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:27:44.534] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:27:44.534] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (588, 252)
+[18:27:44.534] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 414.9 pixels
+[18:27:44.534] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 79.5 units (expected: ~360.9)
+[18:27:44.534] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (414.9 <= 1200 pixels)
+[18:27:44.534] [SaveToFile:ENABLED] [STUCK DETECTION] 🚨 Stuck on same target for 5 attempts (threshold: 5) - forcing advancement!
+[18:27:44.535] [SaveToFile:ENABLED] [STUCK DEBUG] 📍 Player position hasn't changed from (506, 330) - character may be physically blocked!
+[18:27:44.535] [SaveToFile:ENABLED] [FORCED ADVANCEMENT] 📍 Forced advance by 4 to path index 10/151
+[18:27:44.535] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - moved past waypoint (progress: 61.0/1.0)
+[18:27:44.535] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 13/151 (advanced by 3) - moved past waypoint (progress: 61.0/1.0)
+[18:27:44.872] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:27:44.873] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (503, 352), looking from index 0/79, radius 361 (base: 361, remaining: 79)
+[18:27:44.873] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 0, next 5 waypoints:
+[18:27:44.873] [SaveToFile:ENABLED]   [0] (507, 331) distance: 21.4
+[18:27:44.873] [SaveToFile:ENABLED]   [1] (508, 332) distance: 20.6
+[18:27:44.873] [SaveToFile:ENABLED]   [2] (509, 333) distance: 19.9
+[18:27:44.873] [SaveToFile:ENABLED]   [3] (510, 334) distance: 19.3
+[18:27:44.873] [SaveToFile:ENABLED]   [4] (511, 335) distance: 18.8
+[18:27:44.873] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 58.2
+[18:27:44.873] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:27:44.873] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:27:44.873] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (713, 332)
+[18:27:44.874] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:27:44.874] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:27:44.874] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:27:44.874] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (713, 332)
+[18:27:44.874] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 268.0 pixels
+[18:27:44.874] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 58.2 units (expected: ~360.9)
+[18:27:44.874] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (268.0 <= 1200 pixels)
+[18:27:44.874] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - moved past waypoint (progress: 12.0/1.4)
+[18:27:44.874] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 3/79 (advanced by 3) - moved past waypoint (progress: 12.0/1.4)
+[18:27:45.133] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:27:45.133] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (502, 370), looking from index 3/79, radius 361 (base: 361, remaining: 76)
+[18:27:45.133] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 3, next 5 waypoints:
+[18:27:45.133] [SaveToFile:ENABLED]   [3] (510, 334) distance: 36.9
+[18:27:45.133] [SaveToFile:ENABLED]   [4] (511, 335) distance: 36.1
+[18:27:45.133] [SaveToFile:ENABLED]   [5] (511, 336) distance: 35.2
+[18:27:45.133] [SaveToFile:ENABLED]   [6] (511, 337) distance: 34.2
+[18:27:45.134] [SaveToFile:ENABLED]   [7] (511, 338) distance: 33.2
+[18:27:45.134] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 41.1
+[18:27:45.134] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:27:45.134] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:27:45.134] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (811, 397)
+[18:27:45.134] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:27:45.134] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:27:45.134] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:27:45.134] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (811, 397)
+[18:27:45.134] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 154.1 pixels
+[18:27:45.134] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 41.1 units (expected: ~360.9)
+[18:27:45.135] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (154.1 <= 1200 pixels)
+[18:27:45.135] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - moved past waypoint (progress: 19.8/1.4)
+[18:27:45.135] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 6/79 (advanced by 3) - moved past waypoint (progress: 19.8/1.4)
+[18:27:45.404] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:27:45.405] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (499, 390), looking from index 6/79, radius 361 (base: 361, remaining: 73)
+[18:27:45.405] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 6, next 5 waypoints:
+[18:27:45.405] [SaveToFile:ENABLED]   [6] (511, 337) distance: 54.3
+[18:27:45.405] [SaveToFile:ENABLED]   [7] (511, 338) distance: 53.4
+[18:27:45.405] [SaveToFile:ENABLED]   [8] (511, 339) distance: 52.4
+[18:27:45.405] [SaveToFile:ENABLED]   [9] (511, 340) distance: 51.4
+[18:27:45.405] [SaveToFile:ENABLED]   [10] (511, 341) distance: 50.4
+[18:27:45.405] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 24.8
+[18:27:45.405] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:27:45.405] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:27:45.406] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (931, 473)
+[18:27:45.406] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:27:45.406] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:27:45.406] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:27:45.406] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (931, 473)
+[18:27:45.406] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 47.7 pixels
+[18:27:45.406] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 24.8 units (expected: ~360.9)
+[18:27:45.406] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (47.7 <= 1200 pixels)
+[18:27:45.406] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 24.8 < 30)
+[18:27:45.406] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 9/79 (advanced by 3) - close to target (distance: 24.8 < 30)
+[18:27:45.665] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:27:45.665] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (496, 407), looking from index 9/79, radius 361 (base: 361, remaining: 70)
+[18:27:45.665] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 9, next 5 waypoints:
+[18:27:45.665] [SaveToFile:ENABLED]   [9] (511, 340) distance: 68.7
+[18:27:45.665] [SaveToFile:ENABLED]   [10] (511, 341) distance: 67.7
+[18:27:45.665] [SaveToFile:ENABLED]   [11] (511, 342) distance: 66.7
+[18:27:45.666] [SaveToFile:ENABLED]   [12] (511, 343) distance: 65.7
+[18:27:45.666] [SaveToFile:ENABLED]   [13] (511, 344) distance: 64.8
+[18:27:45.666] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 19.1
+[18:27:45.666] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:27:45.666] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:27:45.666] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (1055, 549)
+[18:27:45.666] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:27:45.666] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:27:45.666] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:27:45.666] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (1055, 549)
+[18:27:45.667] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 147.5 pixels
+[18:27:45.667] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 19.1 units (expected: ~360.9)
+[18:27:45.667] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (147.5 <= 1200 pixels)
+[18:27:45.667] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 19.1 < 30)
+[18:27:45.667] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 12/79 (advanced by 3) - close to target (distance: 19.1 < 30)
+[18:27:45.940] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:27:45.940] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (497, 404), looking from index 12/79, radius 361 (base: 361, remaining: 67)
+[18:27:45.940] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 12, next 5 waypoints:
+[18:27:45.940] [SaveToFile:ENABLED]   [12] (511, 343) distance: 62.6
+[18:27:45.940] [SaveToFile:ENABLED]   [13] (511, 344) distance: 61.6
+[18:27:45.941] [SaveToFile:ENABLED]   [14] (511, 345) distance: 60.6
+[18:27:45.941] [SaveToFile:ENABLED]   [15] (511, 346) distance: 59.7
+[18:27:45.941] [SaveToFile:ENABLED]   [16] (511, 347) distance: 58.7
+[18:27:45.941] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 18.7
+[18:27:45.941] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:27:45.941] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:27:45.941] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (1047, 542)
+[18:27:45.941] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:27:45.941] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:27:45.941] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:27:45.942] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (1047, 542)
+[18:27:45.942] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 137.1 pixels
+[18:27:45.942] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 18.7 units (expected: ~360.9)
+[18:27:45.942] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (137.1 <= 1200 pixels)
+[18:27:45.942] [SaveToFile:ENABLED] [STUCK DETECTION] 🚨 Stuck on same target for 5 attempts (threshold: 5) - forcing advancement!
+[18:27:45.942] [SaveToFile:ENABLED] [STUCK DEBUG] 📍 Player position hasn't changed from (497, 404) - character may be physically blocked!
+[18:27:45.942] [SaveToFile:ENABLED] [FORCED ADVANCEMENT] 📍 Forced advance by 4 to path index 16/79
+[18:27:45.942] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 18.7 < 30)
+[18:27:45.942] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 19/79 (advanced by 3) - close to target (distance: 18.7 < 30)
+[18:27:46.200] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:27:46.200] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (499, 387), looking from index 19/79, radius 361 (base: 361, remaining: 60)
+[18:27:46.201] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 19, next 5 waypoints:
+[18:27:46.201] [SaveToFile:ENABLED]   [19] (511, 350) distance: 38.9
+[18:27:46.201] [SaveToFile:ENABLED]   [20] (511, 351) distance: 37.9
+[18:27:46.201] [SaveToFile:ENABLED]   [21] (511, 352) distance: 37.0
+[18:27:46.201] [SaveToFile:ENABLED]   [22] (511, 353) distance: 36.1
+[18:27:46.201] [SaveToFile:ENABLED]   [23] (511, 354) distance: 35.1
+[18:27:46.201] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 27.2
+[18:27:46.201] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:27:46.201] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:27:46.201] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (936, 472)
+[18:27:46.201] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:27:46.202] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:27:46.202] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:27:46.202] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (936, 472)
+[18:27:46.202] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 43.9 pixels
+[18:27:46.202] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 27.2 units (expected: ~360.9)
+[18:27:46.202] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (43.9 <= 1200 pixels)
+[18:27:46.202] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 27.2 < 30)
+[18:27:46.202] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 22/79 (advanced by 3) - close to target (distance: 27.2 < 30)
+[18:27:46.483] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:27:46.484] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (500, 385), looking from index 22/79, radius 361 (base: 361, remaining: 57)
+[18:27:46.484] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 22, next 5 waypoints:
+[18:27:46.484] [SaveToFile:ENABLED]   [22] (511, 353) distance: 33.8
+[18:27:46.484] [SaveToFile:ENABLED]   [23] (511, 354) distance: 32.9
+[18:27:46.484] [SaveToFile:ENABLED]   [24] (511, 355) distance: 32.0
+[18:27:46.484] [SaveToFile:ENABLED]   [25] (511, 356) distance: 31.0
+[18:27:46.484] [SaveToFile:ENABLED]   [26] (511, 357) distance: 30.1
+[18:27:46.484] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 28.3
+[18:27:46.484] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:27:46.484] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:27:46.484] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (906, 462)
+[18:27:46.484] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:27:46.485] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:27:46.485] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:27:46.485] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (906, 462)
+[18:27:46.485] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 60.3 pixels
+[18:27:46.485] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 28.3 units (expected: ~360.9)
+[18:27:46.485] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (60.3 <= 1200 pixels)
+[18:27:46.485] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 28.3 < 30)
+[18:27:46.485] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 25/79 (advanced by 3) - close to target (distance: 28.3 < 30)
+[18:27:46.755] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:27:46.755] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (499, 394), looking from index 25/79, radius 361 (base: 361, remaining: 54)
+[18:27:46.755] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 25, next 5 waypoints:
+[18:27:46.755] [SaveToFile:ENABLED]   [25] (511, 356) distance: 39.8
+[18:27:46.755] [SaveToFile:ENABLED]   [26] (511, 357) distance: 38.9
+[18:27:46.755] [SaveToFile:ENABLED]   [27] (511, 358) distance: 37.9
+[18:27:46.755] [SaveToFile:ENABLED]   [28] (511, 359) distance: 37.0
+[18:27:46.755] [SaveToFile:ENABLED]   [29] (511, 360) distance: 36.1
+[18:27:46.756] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 21.9
+[18:27:46.756] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:27:46.756] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:27:46.756] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (966, 501)
+[18:27:46.756] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:27:46.756] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:27:46.756] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:27:46.756] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (966, 501)
+[18:27:46.756] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 65.9 pixels
+[18:27:46.756] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 21.9 units (expected: ~360.9)
+[18:27:46.756] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (65.9 <= 1200 pixels)
+[18:27:46.757] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 21.9 < 30)
+[18:27:46.757] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 28/79 (advanced by 3) - close to target (distance: 21.9 < 30)
+[18:27:47.015] [DIAGNOSTIC] Bot running - State: MovingAlongPath, Path: 79, Index: 28
+[18:27:47.015] [SaveToFile:ENABLED] [BOT STATE] Current state: MovingAlongPath, Path count: 79, Path index: 28
+[18:27:47.016] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:27:47.016] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (497, 397), looking from index 28/79, radius 361 (base: 361, remaining: 51)
+[18:27:47.016] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 28, next 5 waypoints:
+[18:27:47.016] [SaveToFile:ENABLED]   [28] (511, 359) distance: 40.5
+[18:27:47.016] [SaveToFile:ENABLED]   [29] (511, 360) distance: 39.6
+[18:27:47.016] [SaveToFile:ENABLED]   [30] (511, 361) distance: 38.6
+[18:27:47.016] [SaveToFile:ENABLED]   [31] (511, 362) distance: 37.7
+[18:27:47.016] [SaveToFile:ENABLED]   [32] (511, 363) distance: 36.8
+[18:27:47.016] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 21.6
+[18:27:47.017] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:27:47.017] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:27:47.017] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (997, 506)
+[18:27:47.017] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:27:47.017] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:27:47.017] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:27:47.017] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (997, 506)
+[18:27:47.017] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 79.8 pixels
+[18:27:47.017] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 21.6 units (expected: ~360.9)
+[18:27:47.017] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (79.8 <= 1200 pixels)
+[18:27:47.017] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 21.6 < 30)
+[18:27:47.018] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 31/79 (advanced by 3) - close to target (distance: 21.6 < 30)
+[18:27:47.288] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:27:47.288] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (498, 394), looking from index 31/79, radius 361 (base: 361, remaining: 48)
+[18:27:47.289] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 31, next 5 waypoints:
+[18:27:47.289] [SaveToFile:ENABLED]   [31] (511, 362) distance: 34.5
+[18:27:47.289] [SaveToFile:ENABLED]   [32] (511, 363) distance: 33.6
+[18:27:47.289] [SaveToFile:ENABLED]   [33] (511, 364) distance: 32.7
+[18:27:47.289] [SaveToFile:ENABLED]   [34] (511, 365) distance: 31.8
+[18:27:47.289] [SaveToFile:ENABLED]   [35] (511, 366) distance: 30.9
+[18:27:47.289] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 22.7
+[18:27:47.289] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:27:47.289] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:27:47.289] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (972, 496)
+[18:27:47.289] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:27:47.290] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:27:47.290] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:27:47.290] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (972, 496)
+[18:27:47.290] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 61.8 pixels
+[18:27:47.290] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 22.7 units (expected: ~360.9)
+[18:27:47.290] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (61.8 <= 1200 pixels)
+[18:27:47.290] [SaveToFile:ENABLED] [STUCK DETECTION] 🚨 Stuck on same target for 5 attempts (threshold: 5) - forcing advancement!
+[18:27:47.290] [SaveToFile:ENABLED] [STUCK DEBUG] 📍 Player position hasn't changed from (498, 394) - character may be physically blocked!
+[18:27:47.290] [SaveToFile:ENABLED] [FORCED ADVANCEMENT] 📍 Forced advance by 4 to path index 35/79
+[18:27:47.290] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 22.7 < 30)
+[18:27:47.290] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 38/79 (advanced by 3) - close to target (distance: 22.7 < 30)
+[18:27:47.549] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:27:47.549] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (499, 391), looking from index 38/79, radius 361 (base: 361, remaining: 41)
+[18:27:47.549] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 38, next 5 waypoints:
+[18:27:47.549] [SaveToFile:ENABLED]   [38] (511, 369) distance: 25.1
+[18:27:47.549] [SaveToFile:ENABLED]   [39] (511, 370) distance: 24.2
+[18:27:47.549] [SaveToFile:ENABLED]   [40] (511, 371) distance: 23.3
+[18:27:47.549] [SaveToFile:ENABLED]   [41] (511, 372) distance: 22.5
+[18:27:47.549] [SaveToFile:ENABLED]   [42] (511, 373) distance: 21.6
+[18:27:47.559] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 24.1
+[18:27:47.560] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:27:47.560] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:27:47.560] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (948, 486)
+[18:27:47.560] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:27:47.560] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:27:47.560] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:27:47.560] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (948, 486)
+[18:27:47.560] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 52.0 pixels
+[18:27:47.561] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 24.1 units (expected: ~360.9)
+[18:27:47.561] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (52.0 <= 1200 pixels)
+[18:27:47.561] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 24.1 < 30)
+[18:27:47.561] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 41/79 (advanced by 3) - close to target (distance: 24.1 < 30)
+[18:27:47.822] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:27:47.822] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (499, 391), looking from index 41/79, radius 361 (base: 361, remaining: 38)
+[18:27:47.822] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 41, next 5 waypoints:
+[18:27:47.822] [SaveToFile:ENABLED]   [41] (511, 372) distance: 22.5
+[18:27:47.822] [SaveToFile:ENABLED]   [42] (511, 373) distance: 21.6
+[18:27:47.822] [SaveToFile:ENABLED]   [43] (511, 374) distance: 20.8
+[18:27:47.822] [SaveToFile:ENABLED]   [44] (511, 375) distance: 20.0
+[18:27:47.822] [SaveToFile:ENABLED]   [45] (511, 376) distance: 19.2
+[18:27:47.823] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 24.1
+[18:27:47.823] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:27:47.823] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:27:47.823] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (948, 486)
+[18:27:47.823] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:27:47.823] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:27:47.823] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:27:47.823] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (948, 486)
+[18:27:47.823] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 52.0 pixels
+[18:27:47.823] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 24.1 units (expected: ~360.9)
+[18:27:47.824] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (52.0 <= 1200 pixels)
+[18:27:47.824] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 24.1 < 30)
+[18:27:47.824] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 44/79 (advanced by 3) - close to target (distance: 24.1 < 30)
+[18:27:48.080] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:27:48.081] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (499, 391), looking from index 44/79, radius 361 (base: 361, remaining: 35)
+[18:27:48.081] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 44, next 5 waypoints:
+[18:27:48.081] [SaveToFile:ENABLED]   [44] (511, 375) distance: 20.0
+[18:27:48.081] [SaveToFile:ENABLED]   [45] (511, 376) distance: 19.2
+[18:27:48.081] [SaveToFile:ENABLED]   [46] (511, 377) distance: 18.4
+[18:27:48.081] [SaveToFile:ENABLED]   [47] (511, 378) distance: 17.7
+[18:27:48.081] [SaveToFile:ENABLED]   [48] (511, 379) distance: 17.0
+[18:27:48.081] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 24.1
+[18:27:48.082] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:27:48.082] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:27:48.082] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (948, 486)
+[18:27:48.082] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:27:48.082] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:27:48.082] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:27:48.082] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (948, 486)
+[18:27:48.082] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 52.0 pixels
+[18:27:48.082] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 24.1 units (expected: ~360.9)
+[18:27:48.083] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (52.0 <= 1200 pixels)
+[18:27:48.083] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 24.1 < 30)
+[18:27:48.083] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 47/79 (advanced by 3) - close to target (distance: 24.1 < 30)
+[18:27:48.353] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:27:48.353] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (499, 391), looking from index 47/79, radius 361 (base: 361, remaining: 32)
+[18:27:48.353] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 47, next 5 waypoints:
+[18:27:48.353] [SaveToFile:ENABLED]   [47] (511, 378) distance: 17.7
+[18:27:48.353] [SaveToFile:ENABLED]   [48] (511, 379) distance: 17.0
+[18:27:48.354] [SaveToFile:ENABLED]   [49] (511, 380) distance: 16.3
+[18:27:48.354] [SaveToFile:ENABLED]   [50] (511, 381) distance: 15.6
+[18:27:48.354] [SaveToFile:ENABLED]   [51] (511, 382) distance: 15.0
+[18:27:48.354] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 24.1
+[18:27:48.354] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:27:48.354] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:27:48.354] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (948, 486)
+[18:27:48.354] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:27:48.354] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:27:48.354] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:27:48.354] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (948, 486)
+[18:27:48.354] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 52.0 pixels
+[18:27:48.355] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 24.1 units (expected: ~360.9)
+[18:27:48.355] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (52.0 <= 1200 pixels)
+[18:27:48.355] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 24.1 < 30)
+[18:27:48.355] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 50/79 (advanced by 3) - close to target (distance: 24.1 < 30)
+[18:27:48.612] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:27:48.613] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (499, 391), looking from index 50/79, radius 361 (base: 361, remaining: 29)
+[18:27:48.613] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 50, next 5 waypoints:
+[18:27:48.613] [SaveToFile:ENABLED]   [50] (511, 381) distance: 15.6
+[18:27:48.613] [SaveToFile:ENABLED]   [51] (511, 382) distance: 15.0
+[18:27:48.613] [SaveToFile:ENABLED]   [52] (511, 383) distance: 14.4
+[18:27:48.613] [SaveToFile:ENABLED]   [53] (511, 384) distance: 13.9
+[18:27:48.613] [SaveToFile:ENABLED]   [54] (511, 385) distance: 13.4
+[18:27:48.614] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 24.1
+[18:27:48.614] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:27:48.614] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:27:48.614] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (948, 486)
+[18:27:48.614] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:27:48.614] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:27:48.614] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:27:48.614] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (948, 486)
+[18:27:48.614] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 52.0 pixels
+[18:27:48.614] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 24.1 units (expected: ~360.9)
+[18:27:48.614] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (52.0 <= 1200 pixels)
+[18:27:48.615] [SaveToFile:ENABLED] [STUCK DETECTION] 🚨 Stuck on same target for 5 attempts (threshold: 5) - forcing advancement!
+[18:27:48.615] [SaveToFile:ENABLED] [STUCK DEBUG] 📍 Player position hasn't changed from (499, 391) - character may be physically blocked!
+[18:27:48.615] [SaveToFile:ENABLED] [FORCED ADVANCEMENT] 📍 Forced advance by 4 to path index 54/79
+[18:27:48.615] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 24.1 < 30)
+[18:27:48.615] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 57/79 (advanced by 3) - close to target (distance: 24.1 < 30)
+[18:27:48.886] [SaveToFile:ENABLED] [SETTINGS DEBUG] 🔧 Pursuit radius setting: 360.877 (min: 150, max: 500)
+[18:27:48.886] [SaveToFile:ENABLED] [PURSUIT DEBUG] Player at (499, 391), looking from index 57/79, radius 361 (base: 361, remaining: 22)
+[18:27:48.886] [SaveToFile:ENABLED] [WAYPOINT DEBUG] Current path index: 57, next 5 waypoints:
+[18:27:48.886] [SaveToFile:ENABLED]   [57] (511, 388) distance: 12.4
+[18:27:48.886] [SaveToFile:ENABLED]   [58] (511, 389) distance: 12.2
+[18:27:48.886] [SaveToFile:ENABLED]   [59] (511, 390) distance: 12.0
+[18:27:48.886] [SaveToFile:ENABLED]   [60] (511, 391) distance: 12.0
+[18:27:48.887] [SaveToFile:ENABLED]   [61] (511, 392) distance: 12.0
+[18:27:48.887] [SaveToFile:ENABLED] [PATH INTERSECTION] Target at (515, 409), distance: 24.1
+[18:27:48.887] [SaveToFile:ENABLED] [PATH INTERSECTION] ✅ Intersection is camera-visible
+[18:27:48.887] [SaveToFile:ENABLED] [SCREEN VALIDATION] Game window: 1920x1080
+[18:27:48.887] [SaveToFile:ENABLED] [SCREEN VALIDATION] Target screen: (948, 486)
+[18:27:48.887] [SaveToFile:ENABLED] [SCREEN VALIDATION] Within window: True
+[18:27:48.887] [SaveToFile:ENABLED] [SCREEN VALIDATION] ✅ Target within game window bounds
+[18:27:48.887] [SaveToFile:ENABLED] [CLICK VALIDATION] Player screen: (960, 435)
+[18:27:48.887] [SaveToFile:ENABLED] [CLICK VALIDATION] Final target screen: (948, 486)
+[18:27:48.887] [SaveToFile:ENABLED] [CLICK VALIDATION] Screen distance: 52.0 pixels
+[18:27:48.887] [SaveToFile:ENABLED] [CLICK VALIDATION] World distance: 24.1 units (expected: ~360.9)
+[18:27:48.888] [SaveToFile:ENABLED] [CLICK VALIDATION] ✅ Screen distance check passed (52.0 <= 1200 pixels)
+[18:27:48.888] [SaveToFile:ENABLED] [PURSUIT] ✅ Advancing path - close to target (distance: 24.1 < 30)
+[18:27:48.888] [SaveToFile:ENABLED] [PATH ADVANCEMENT] 📍 Advanced path index to 60/79 (advanced by 3) - close to target (distance: 24.1 < 30)
