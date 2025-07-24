@@ -1229,72 +1229,126 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     {
         try
         {
-            LogMessage("=== COORDINATE SYSTEM DEBUG ===");
+            LogMessage("=== COORDINATE SYSTEM DEBUG START ===");
             
-            // Get window information
-            var windowRect = GameController.Window.GetWindowRectangle();
-            LogMessage($"Game window: X={windowRect.X}, Y={windowRect.Y}, Width={windowRect.Width}, Height={windowRect.Height}");
-            
-            // Get current cursor position
-            if (GetCursorPos(out POINT cursorPoint))
+            // Step 1: Window information
+            try
             {
-                LogMessage($"Current cursor position: ({cursorPoint.X}, {cursorPoint.Y})");
+                var windowRect = GameController.Window.GetWindowRectangle();
+                LogMessage($"STEP 1 - Game window: X={windowRect.X}, Y={windowRect.Y}, W={windowRect.Width}, H={windowRect.Height}");
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"STEP 1 ERROR - Window rect: {ex.Message}");
             }
             
-            // Get player position
-            var player = GameController.Game.IngameState.Data.LocalPlayer;
-            if (player?.GetComponent<Positioned>() is Positioned playerPos)
+            // Step 2: Current cursor position
+            try
             {
-                var render = player.GetComponent<Render>();
-                if (render != null)
+                if (GetCursorPos(out POINT cursorPoint))
                 {
-                    var worldPos = render.PosNum;
-                    var screenPos = GameController.IngameState.Camera.WorldToScreen(worldPos);
+                    LogMessage($"STEP 2 - Current cursor: ({cursorPoint.X}, {cursorPoint.Y})");
+                }
+                else
+                {
+                    LogMessage("STEP 2 ERROR - Could not get cursor position");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"STEP 2 ERROR - Cursor pos: {ex.Message}");
+            }
+            
+            // Step 3: Player position
+            try
+            {
+                var player = GameController.Game.IngameState.Data.LocalPlayer;
+                if (player?.GetComponent<Positioned>() is Positioned playerPos)
+                {
+                    LogMessage($"STEP 3A - Player found, getting render component...");
                     
-                    LogMessage($"Player world position: ({worldPos.X:F1}, {worldPos.Y:F1}, {worldPos.Z:F1})");
-                    LogMessage($"Player screen position: ({screenPos.X:F1}, {screenPos.Y:F1})");
-                    
-                    // Test coordinate calculations
-                    var testX = (int)(screenPos.X + 100);
-                    var testY = (int)(screenPos.Y + 50);
-                    
-                    // Calculate absolute screen coordinates
-                    int absoluteX = testX + (int)windowRect.X;
-                    int absoluteY = testY + (int)windowRect.Y;
-                    
-                    LogMessage($"Test target: game({testX}, {testY}) -> absolute({absoluteX}, {absoluteY})");
-                    
-                    // Get foreground window info
-                    var foregroundWindow = GetForegroundWindow();
-                    var windowTitle = new System.Text.StringBuilder(256);
-                    GetWindowText(foregroundWindow, windowTitle, 256);
-                    LogMessage($"Foreground window: {windowTitle}");
-                    
-                    // Test cursor move
-                    LogMessage($"Moving cursor to test position...");
-                    SetCursorPos(absoluteX, absoluteY);
-                    Thread.Sleep(100);
-                    
-                    if (GetCursorPos(out POINT newCursorPoint))
+                    var render = player.GetComponent<Render>();
+                    if (render != null)
                     {
-                        LogMessage($"Cursor after SetCursorPos: ({newCursorPoint.X}, {newCursorPoint.Y})");
-                        if (newCursorPoint.X == absoluteX && newCursorPoint.Y == absoluteY)
+                        var worldPos = render.PosNum;
+                        var screenPos = GameController.IngameState.Camera.WorldToScreen(worldPos);
+                        
+                        LogMessage($"STEP 3B - Player world: ({worldPos.X:F1}, {worldPos.Y:F1}, {worldPos.Z:F1})");
+                        LogMessage($"STEP 3C - Player screen: ({screenPos.X:F1}, {screenPos.Y:F1})");
+                        
+                        // Step 4: Test coordinate calculations
+                        var testX = (int)(screenPos.X + 100);
+                        var testY = (int)(screenPos.Y + 50);
+                        LogMessage($"STEP 4A - Test target game coords: ({testX}, {testY})");
+                        
+                        // Calculate absolute screen coordinates
+                        var windowRect = GameController.Window.GetWindowRectangle();
+                        int absoluteX = testX + (int)windowRect.X;
+                        int absoluteY = testY + (int)windowRect.Y;
+                        LogMessage($"STEP 4B - Test target absolute: ({absoluteX}, {absoluteY})");
+                        
+                        // Step 5: Test cursor move
+                        LogMessage($"STEP 5A - Moving cursor to test position...");
+                        bool moveResult = SetCursorPos(absoluteX, absoluteY);
+                        LogMessage($"STEP 5B - SetCursorPos returned: {moveResult}");
+                        
+                        Thread.Sleep(100);
+                        
+                        if (GetCursorPos(out POINT newCursorPoint))
                         {
-                            LogMessage("✓ Cursor positioning SUCCESSFUL");
+                            LogMessage($"STEP 5C - Cursor after move: ({newCursorPoint.X}, {newCursorPoint.Y})");
+                            if (newCursorPoint.X == absoluteX && newCursorPoint.Y == absoluteY)
+                            {
+                                LogMessage("STEP 5D - SUCCESS: Cursor positioning WORKED!");
+                            }
+                            else
+                            {
+                                LogMessage($"STEP 5D - FAIL: Expected ({absoluteX}, {absoluteY}), got ({newCursorPoint.X}, {newCursorPoint.Y})");
+                                
+                                // Calculate the difference
+                                int diffX = newCursorPoint.X - absoluteX;
+                                int diffY = newCursorPoint.Y - absoluteY;
+                                LogMessage($"STEP 5E - Difference: X={diffX}, Y={diffY}");
+                            }
                         }
                         else
                         {
-                            LogMessage($"✗ Cursor positioning FAILED - expected ({absoluteX}, {absoluteY}), got ({newCursorPoint.X}, {newCursorPoint.Y})");
+                            LogMessage("STEP 5D ERROR - Could not get cursor position after move");
                         }
                     }
+                    else
+                    {
+                        LogMessage("STEP 3B ERROR - Could not get player render component");
+                    }
+                }
+                else
+                {
+                    LogMessage("STEP 3A ERROR - Could not get player position");
                 }
             }
+            catch (Exception ex)
+            {
+                LogMessage($"STEP 3-5 ERROR - Player/coordinate test: {ex.Message}");
+            }
             
-            LogMessage("=== END COORDINATE DEBUG ===");
+            // Step 6: Foreground window info
+            try
+            {
+                var foregroundWindow = GetForegroundWindow();
+                var windowTitle = new System.Text.StringBuilder(256);
+                GetWindowText(foregroundWindow, windowTitle, 256);
+                LogMessage($"STEP 6 - Foreground window: '{windowTitle}'");
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"STEP 6 ERROR - Window info: {ex.Message}");
+            }
+            
+            LogMessage("=== COORDINATE DEBUG COMPLETE ===");
         }
         catch (Exception ex)
         {
-            LogError($"Error in coordinate debug: {ex.Message}");
+            LogMessage($"CRITICAL ERROR in coordinate debug: {ex.Message}");
         }
     }
     
