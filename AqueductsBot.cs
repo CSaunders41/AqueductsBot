@@ -1173,7 +1173,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         
         if (!isWithinGameWindow)
         {
-            LogMovementDebug($"[SCREEN VALIDATION] ❌ CRITICAL: Target outside game window! Clamping to safe bounds.");
+            LogMovementDebug($"[SCREEN VALIDATION] ⚠️ Target outside game window! Clamping to safe bounds.");
             
             // Clamp to safe area within game window (with margin for safety)
             var margin = 50f;
@@ -1182,6 +1182,10 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             
             LogMovementDebug($"[SCREEN VALIDATION] ✅ Clamped: ({screenPos.X:F0}, {screenPos.Y:F0}) → ({safeX:F0}, {safeY:F0})");
             screenPos = new Vector2(safeX, safeY);
+        }
+        else
+        {
+            LogMovementDebug($"[SCREEN VALIDATION] ✅ Target within game window bounds");
         }
         
         var distanceToTarget = System.Numerics.Vector2.Distance(playerWorldPos, targetPoint.Value);
@@ -1199,9 +1203,10 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             // Additional safety check - if screen distance is way too large, something is wrong
             if (screenDistance > 800) // More than 800 pixels from player is suspicious
             {
-                LogMovementDebug($"[CLICK VALIDATION] ⚠️ WARNING: Screen distance very large ({screenDistance:F1} pixels) - possible coordinate issue!");
+                LogMovementDebug($"[CLICK VALIDATION] ❌ BLOCKED: Screen distance too large ({screenDistance:F1} > 800 pixels) - coordinate issue!");
                 return; // Skip this movement to prevent off-screen clicking
             }
+            LogMovementDebug($"[CLICK VALIDATION] ✅ Screen distance check passed ({screenDistance:F1} <= 800 pixels)");
         }
         
         // Update path progress tracking
@@ -1339,24 +1344,34 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             return;
         }
 
+        // 🔍 DEBUG: Check all movement blocking conditions
+        LogMovementDebug($"[MOVEMENT DEBUG] 🔍 Checking movement conditions:");
+        LogMovementDebug($"[MOVEMENT DEBUG] - Distance to target: {distanceToTarget:F1}");
+        LogMovementDebug($"[MOVEMENT DEBUG] - Should advance: {shouldAdvance}");
+        
         // Check if we should skip movement due to being too close for micro-adjustments
         if (distanceToTarget < 10f)
         {
-            LogMessage($"[PURSUIT] ⏸️ Very close to target, skipping movement to avoid micro-adjustments");
+            LogMovementDebug($"[PURSUIT] ⏸️ BLOCKED: Very close to target ({distanceToTarget:F1} < 10), skipping movement");
             return;
         }
+        LogMovementDebug($"[MOVEMENT DEBUG] ✅ Distance check passed ({distanceToTarget:F1} >= 10)");
 
         // Calculate movement delay based on distance
         var movementDelay = CalculateImprovedMovementDelay(distanceToTarget);
         
         // Check movement delay timing
         var timeSinceLastMovement = (DateTime.Now - _lastMovementTime).TotalMilliseconds;
+        LogMovementDebug($"[MOVEMENT DEBUG] - Movement delay: {movementDelay}ms");
+        LogMovementDebug($"[MOVEMENT DEBUG] - Time since last movement: {timeSinceLastMovement:F0}ms");
+        
         if (timeSinceLastMovement < movementDelay)
         {
             var remainingDelay = movementDelay - timeSinceLastMovement;
-            LogMessage($"[MOVEMENT] ⏳ Waiting {remainingDelay:F0}ms before next movement (last movement: {timeSinceLastMovement:F0}ms ago)");
+            LogMovementDebug($"[MOVEMENT] ⏳ BLOCKED: Waiting {remainingDelay:F0}ms before next movement (last: {timeSinceLastMovement:F0}ms ago)");
             return;
         }
+        LogMovementDebug($"[MOVEMENT DEBUG] ✅ Timing check passed ({timeSinceLastMovement:F0}ms >= {movementDelay}ms)");
 
         // Execute the movement
         _lastMovementTime = DateTime.Now;
@@ -1372,9 +1387,10 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         // Additional sanity check on final screen coordinates
         if (screenPos.X < -1000 || screenPos.X > 5000 || screenPos.Y < -1000 || screenPos.Y > 5000)
         {
-            LogMovementDebug($"[MOVEMENT] ❌ CRITICAL: Insane screen coordinates ({screenPos.X:F0}, {screenPos.Y:F0}) - ABORTING CLICK!");
+            LogMovementDebug($"[MOVEMENT] ❌ BLOCKED: Insane screen coordinates ({screenPos.X:F0}, {screenPos.Y:F0}) - ABORTING CLICK!");
             return; // Don't click with crazy coordinates
         }
+        LogMovementDebug($"[MOVEMENT DEBUG] ✅ Final coordinate check passed ({screenPos.X:F0}, {screenPos.Y:F0})");
         
         // Store target position for visual display
         _lastTargetWorldPos = targetPoint.Value;
