@@ -40,6 +40,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     
     private const uint INPUT_MOUSE = 0;
     private const uint INPUT_KEYBOARD = 1;
+    private const uint KEYEVENTF_KEYUP = 0x0002;
     private const uint KEYEVENTF_KEYUP_SENDINPUT = 0x0002;
     
     // Bot state
