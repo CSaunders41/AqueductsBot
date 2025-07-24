@@ -1031,10 +1031,15 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 }
                 
                 // STUCK DETECTION: Check if we're not making progress
-                if (IsStuckDetected(playerScreenPos.Value, distance))
+                var playerPos = GetPlayerPosition();
+                if (playerPos.HasValue)
                 {
-                    HandleStuckSituation();
-                    return;
+                    var playerWorldPos = new System.Numerics.Vector2(playerPos.Value.GridPos.X, playerPos.Value.GridPos.Y);
+                    if (IsStuckDetected(playerWorldPos, distance))
+                    {
+                        HandleStuckSituation();
+                        return;
+                    }
                 }
             }
             
@@ -1076,8 +1081,13 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 
                 _lastActionTime = DateTime.Now;
                 
-                // Update stuck detection
-                UpdateStuckDetection(playerScreenPos ?? Vector2.Zero);
+                // Update stuck detection with world position
+                var currentPlayerPos = GetPlayerPosition();
+                if (currentPlayerPos.HasValue)
+                {
+                    var playerWorldPos = new System.Numerics.Vector2(currentPlayerPos.Value.GridPos.X, currentPlayerPos.Value.GridPos.Y);
+                    UpdateStuckDetection(playerWorldPos);
+                }
                 
                 if (Settings.DebugSettings.DebugMode)
                 {
@@ -1184,11 +1194,10 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     }
     
     // STUCK DETECTION SYSTEM
-    private Vector2 _lastPlayerPosition = Vector2.Zero;
     private DateTime _lastPositionUpdate = DateTime.MinValue;
     private int _stuckCounter = 0;
     
-    private bool IsStuckDetected(Vector2 currentPlayerPos, float distanceToTarget)
+    private bool IsStuckDetected(System.Numerics.Vector2 currentPlayerPos, float distanceToTarget)
     {
         var timeSinceLastUpdate = (DateTime.Now - _lastPositionUpdate).TotalSeconds;
         
@@ -1196,7 +1205,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         if (timeSinceLastUpdate < 2.0) return false;
         
         // Calculate how much the player has moved
-        var playerMovement = Vector2.Distance(currentPlayerPos, _lastPlayerPosition);
+        var playerMovement = System.Numerics.Vector2.Distance(currentPlayerPos, _lastPlayerPosition);
         
         // If player hasn't moved much and we're still far from target, we might be stuck
         if (playerMovement < 20 && distanceToTarget > 100 && timeSinceLastUpdate > 3.0)
@@ -1216,7 +1225,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         return false;
     }
     
-    private void UpdateStuckDetection(Vector2 currentPlayerPos)
+    private void UpdateStuckDetection(System.Numerics.Vector2 currentPlayerPos)
     {
         _lastPlayerPosition = currentPlayerPos;
         _lastPositionUpdate = DateTime.Now;
@@ -1252,6 +1261,20 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             
             var worldPos = GameController.IngameState.Camera.WorldToScreen(render.PosNum);
             return new Vector2(worldPos.X, worldPos.Y);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+    
+    private Positioned? GetPlayerPosition()
+    {
+        try
+        {
+            var player = GameController.Game.IngameState.Data.LocalPlayer;
+            var positioned = player?.GetComponent<Positioned>();
+            return positioned;
         }
         catch
         {
