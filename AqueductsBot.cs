@@ -1177,70 +1177,60 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             LogMovementDebug($"[PURSUIT] 🔧 Using manual waypoint {_currentPathIndex}: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {distanceToFallback:F1}");
         }
 
-        // 🎯 CAMERA-AWARE RADIUS ENFORCEMENT
-        var expectedRadius = Settings.MovementSettings.PursuitRadius.Value;
+        // 🎯 VALIDATE PATH INTERSECTION IS CAMERA-VISIBLE
         var currentDistance = System.Numerics.Vector2.Distance(playerWorldPos, targetPoint.Value);
+        LogMovementDebug($"[PATH INTERSECTION] Target at ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {currentDistance:F1}");
         
-        LogMovementDebug($"[RADIUS ENFORCEMENT] Target distance: {currentDistance:F1}, Expected radius: {expectedRadius:F1}");
+        // Check if the path intersection point is visible on screen
+        var testWorldPos = new Vector3(targetPoint.Value.X * 250f / 23f, targetPoint.Value.Y * 250f / 23f, 0);
+        var testScreenPos = GameController.IngameState.Camera.WorldToScreen(testWorldPos);
+        var gameWindow = GameController.Window.GetWindowRectangle();
+        var margin = 100f;
+        var isVisible = testScreenPos.X >= margin && testScreenPos.X <= gameWindow.Width - margin && 
+                       testScreenPos.Y >= margin && testScreenPos.Y <= gameWindow.Height - margin;
         
-        // If target needs adjustment (too close or too far), find a camera-visible position
-        if (currentDistance < expectedRadius * 0.8f || currentDistance > expectedRadius * 2.0f)
+        if (!isVisible)
         {
-            LogMovementDebug($"[RADIUS ENFORCEMENT] ⚠️ Target needs adjustment ({currentDistance:F1}) - finding camera-visible position");
+            LogMovementDebug($"[PATH INTERSECTION] ⚠️ Intersection off-screen at ({testScreenPos.X:F0}, {testScreenPos.Y:F0}) - finding camera-visible intersection");
             
-            var originalDirection = targetPoint.Value - playerWorldPos;
-            if (originalDirection.Length() > 0)
+            // Try to find a path intersection with progressively smaller radii until we get one that's visible
+            var baseRadius = Settings.MovementSettings.PursuitRadius.Value;
+            System.Numerics.Vector2? visibleIntersection = null;
+            
+            for (float radiusMultiplier = 0.8f; radiusMultiplier >= 0.3f; radiusMultiplier -= 0.1f)
             {
-                originalDirection = System.Numerics.Vector2.Normalize(originalDirection);
+                var testRadius = baseRadius * radiusMultiplier;
+                var testIntersection = FindPathIntersectionWithSpecificRadius(_currentPath, _currentPathIndex, testRadius);
                 
-                // Try multiple angles to find a position that's visible on screen
-                var bestTarget = targetPoint.Value;
-                bool foundVisibleTarget = false;
-                var gameWindow = GameController.Window.GetWindowRectangle();
-                
-                // Try angles in 45-degree increments around the original direction
-                for (int angleDeg = 0; angleDeg <= 315; angleDeg += 45)
+                if (testIntersection.HasValue)
                 {
-                    var angleRad = angleDeg * (Math.PI / 180.0);
-                    var testDirection = new System.Numerics.Vector2(
-                        (float)(originalDirection.X * Math.Cos(angleRad) - originalDirection.Y * Math.Sin(angleRad)),
-                        (float)(originalDirection.X * Math.Sin(angleRad) + originalDirection.Y * Math.Cos(angleRad))
-                    );
+                    // Test if this intersection is visible
+                    var testWorld = new Vector3(testIntersection.Value.X * 250f / 23f, testIntersection.Value.Y * 250f / 23f, 0);
+                    var testScreen = GameController.IngameState.Camera.WorldToScreen(testWorld);
+                    var testIsVisible = testScreen.X >= margin && testScreen.X <= gameWindow.Width - margin && 
+                                       testScreen.Y >= margin && testScreen.Y <= gameWindow.Height - margin;
                     
-                    var candidateTarget = playerWorldPos + testDirection * expectedRadius;
-                    
-                    // Test if this position would be visible on screen
-                    var testWorldPos = new Vector3(candidateTarget.X * 250f / 23f, candidateTarget.Y * 250f / 23f, 0);
-                    var testScreenPos = GameController.IngameState.Camera.WorldToScreen(testWorldPos);
-                    
-                    var margin = 100f; // Safe margin from screen edges
-                    var isVisible = testScreenPos.X >= margin && testScreenPos.X <= gameWindow.Width - margin && 
-                                   testScreenPos.Y >= margin && testScreenPos.Y <= gameWindow.Height - margin;
-                    
-                    if (isVisible)
+                    if (testIsVisible)
                     {
-                        bestTarget = candidateTarget;
-                        foundVisibleTarget = true;
-                        LogMovementDebug($"[RADIUS ENFORCEMENT] ✅ Found camera-visible target at {angleDeg}°: ({candidateTarget.X:F0}, {candidateTarget.Y:F0})");
+                        visibleIntersection = testIntersection;
+                        LogMovementDebug($"[PATH INTERSECTION] ✅ Found camera-visible intersection with radius {testRadius:F1}: ({testIntersection.Value.X:F0}, {testIntersection.Value.Y:F0})");
                         break;
                     }
                 }
-                
-                if (!foundVisibleTarget)
-                {
-                    // Fallback: Use a smaller radius that's more likely to be visible
-                    var fallbackRadius = Math.Min(expectedRadius * 0.5f, 100f);
-                    bestTarget = playerWorldPos + originalDirection * fallbackRadius;
-                    LogMovementDebug($"[RADIUS ENFORCEMENT] ⚠️ No camera-visible position found, using fallback radius {fallbackRadius:F1}");
-                }
-                
-                LogMovementDebug($"[RADIUS ENFORCEMENT] ✅ Corrected target: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}) → ({bestTarget.X:F0}, {bestTarget.Y:F0})");
-                targetPoint = bestTarget;
+            }
+            
+            if (visibleIntersection.HasValue)
+            {
+                targetPoint = visibleIntersection.Value;
+            }
+            else
+            {
+                LogMovementDebug($"[PATH INTERSECTION] ⚠️ No camera-visible intersection found, keeping original target");
             }
         }
         else
         {
-            LogMovementDebug($"[RADIUS ENFORCEMENT] ✅ Target distance acceptable ({currentDistance:F1} within {expectedRadius * 0.8f:F1}-{expectedRadius * 2.0f:F1})");
+            LogMovementDebug($"[PATH INTERSECTION] ✅ Intersection is camera-visible");
         }
         
         // Convert world position to screen coordinates for clicking
@@ -2796,6 +2786,50 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         return score;
     }
     
+    /// <summary>
+    /// Find where the path intersects with a circle of specific radius around the player
+    /// </summary>
+    private System.Numerics.Vector2? FindPathIntersectionWithSpecificRadius(List<Vector2i> path, int startIndex, float radius)
+    {
+        var playerPos = GetPlayerPosition();
+        if (playerPos == null || path.Count == 0) return null;
+        
+        var playerWorldPos = new System.Numerics.Vector2(playerPos.GridPos.X, playerPos.GridPos.Y);
+        
+        LogMovementDebug($"[SPECIFIC RADIUS] Looking for intersection with radius {radius:F1} from index {startIndex}");
+        
+        // Look for intersection with the specific radius only
+        for (int i = Math.Max(startIndex, 1); i < path.Count; i++)
+        {
+            var currentPoint = new System.Numerics.Vector2(path[i - 1].X, path[i - 1].Y);
+            var nextPoint = new System.Numerics.Vector2(path[i].X, path[i].Y);
+            
+            // Skip very short segments to avoid numerical issues
+            var segmentLength = System.Numerics.Vector2.Distance(currentPoint, nextPoint);
+            if (segmentLength < 2f) continue;
+            
+            // Find intersection of line segment with circle around player
+            var intersection = FindLineCircleIntersection(currentPoint, nextPoint, playerWorldPos, radius);
+            
+            if (intersection.HasValue)
+            {
+                var distanceToIntersection = System.Numerics.Vector2.Distance(playerWorldPos, intersection.Value);
+                var tolerance = Settings.ConfigurationSettings.CircleIntersectionTolerance.Value;
+                var minRadius = radius * tolerance; 
+                var maxRadius = radius * (2.0f - tolerance);
+                
+                if (distanceToIntersection >= minRadius && distanceToIntersection <= maxRadius)
+                {
+                    LogMovementDebug($"[SPECIFIC RADIUS] Found intersection at ({intersection.Value.X:F0}, {intersection.Value.Y:F0}), distance: {distanceToIntersection:F1}");
+                    return intersection.Value;
+                }
+            }
+        }
+        
+        LogMovementDebug($"[SPECIFIC RADIUS] No intersection found with radius {radius:F1}");
+        return null;
+    }
+
     /// <summary>
     /// Find where the path intersects with a circle around the player (Pure Pursuit Algorithm)
     /// This provides much smoother navigation than chasing exact waypoints
