@@ -61,6 +61,9 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     private DateTime _lastActionTime = DateTime.MinValue;
     private DateTime _botStartTime;
     private int _runsCompleted = 0;
+    
+    // Separate bot automation state from plugin state
+    private bool _botEnabled = false;
     private Random _random = new();
     private DateTime _lastRadarRetry = DateTime.MinValue;
     private DateTime _lastPathRequest = DateTime.MinValue;
@@ -273,25 +276,10 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             bool commaPressed = Input.IsKeyDown(Keys.Oemcomma);
             if (commaPressed && !_commaKeyPressed) // Key just pressed (not held)
             {
-                if (!Settings.Enable.Value)
+                if (!_botEnabled)
                 {
                     LogImportant("[HOTKEY] Comma pressed - Starting bot!");
-                    Settings.Enable.Value = true; // Direct enable instead of toggle
-                    if (_currentState == BotState.Disabled)
-                    {
-                        _botStartTime = DateTime.Now;
-                        _currentState = BotState.WaitingForRadar;
-                        
-                        // Reset tracking for new session
-                        _hasRecordedSpawnPosition = false;
-                        _initialSpawnPosition = System.Numerics.Vector2.Zero;
-                        _visitedAreas.Clear();
-                        
-                        if (!_radarAvailable)
-                        {
-                            TryConnectToRadar();
-                        }
-                    }
+                    StartBot();
                 }
             }
             _commaKeyPressed = commaPressed;
@@ -299,25 +287,16 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             bool periodPressed = Input.IsKeyDown(Keys.OemPeriod);
             if (periodPressed && !_periodKeyPressed) // Key just pressed (not held)
             {
-                if (Settings.Enable.Value)
+                if (_botEnabled)
                 {
                     LogImportant("[HOTKEY] Period pressed - Stopping bot!");
-                    Settings.Enable.Value = false; // Direct disable instead of toggle
-                    _currentState = BotState.Disabled;
-                    
-                    // Cancel any ongoing pathfinding
-                    _pathfindingCts.Cancel();
-                    _pathfindingCts = new CancellationTokenSource();
-                    
-                    // Clear current path
-                    _currentPath.Clear();
-                    _currentPathIndex = 0;
+                    StopBot();
                 }
             }
             _periodKeyPressed = periodPressed;
             
-            // Main bot logic
-            if (Settings.Enable.Value && _currentState != BotState.Disabled)
+            // Main bot logic - only run if bot is enabled (separate from plugin enable)
+            if (_botEnabled && _currentState != BotState.Disabled)
             {
                 ProcessBotLogic();
             }
@@ -493,7 +472,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             _ => new System.Numerics.Vector4(1, 1, 1, 1)
         };
         
-        ImGui.TextColored(statusColor, $"Status: {_currentState} | Radar: {(_radarAvailable ? "Connected" : "Disconnected")} | Runs: {_runsCompleted}");
+        var botStatus = _botEnabled ? "Running" : "Stopped";
+        ImGui.TextColored(statusColor, $"Bot: {botStatus} | State: {_currentState} | Radar: {(_radarAvailable ? "Connected" : "Disconnected")} | Runs: {_runsCompleted}");
         
         if (_currentPath.Count > 0)
         {
@@ -506,18 +486,18 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         // Control buttons in a more compact layout
         if (ImGui.Button("🚀 Start Bot"))
         {
-            if (!Settings.Enable.Value)
+            if (!_botEnabled)
             {
-                ToggleBot();
+                StartBot();
             }
         }
         
         ImGui.SameLine();
         if (ImGui.Button("⏹️ Stop Bot"))
         {
-            if (Settings.Enable.Value)
+            if (_botEnabled)
             {
-                ToggleBot();
+                StopBot();
             }
         }
         
@@ -713,61 +693,68 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     
     private void ToggleBot()
     {
-        Settings.Enable.Value = !Settings.Enable.Value;
-        
-        if (Settings.Enable.Value)
+        if (_botEnabled)
         {
-            LogImportant("Bot enabled - starting automation");
-            _botStartTime = DateTime.Now;
-            _currentState = BotState.WaitingForRadar;
-            
-            // DIRECTIONAL INTELLIGENCE: Reset spawn tracking for new session
-            _hasRecordedSpawnPosition = false;
-            _initialSpawnPosition = System.Numerics.Vector2.Zero;
-            _visitedAreas.Clear();
-            LogMessage("[SPAWN TRACKING] 🔄 Reset spawn tracking for new bot session");
-            
-            // WAYPOINT STABILITY: Reset tracking for new session
-            _lastWaypointSkip = DateTime.MinValue;
-            _lastOptimizedWaypoint = -1;
-            LogMessage("[WAYPOINT STABILITY] 🔄 Reset waypoint stability tracking for new bot session");
-            
-            // PURSUIT NAVIGATION: Reset tracking for new session
-            _lastIntersectionPoint = System.Numerics.Vector2.Zero;
-            _lastMovementTime = DateTime.MinValue;
-            _lastProgressLog = DateTime.MinValue;
-            _lastPathAdvancement = DateTime.MinValue;
-            _stuckTargetCount = 0;
-            _lastTargetPoint = System.Numerics.Vector2.Zero;
-            LogMessage("[PURSUIT] 🔄 Reset pursuit navigation tracking for new bot session");
-            
-            if (!_radarAvailable)
-            {
-                TryConnectToRadar();
-            }
+            StopBot();
         }
         else
         {
-            LogImportant("Bot disabled - stopping automation");
-            _currentState = BotState.Disabled;
-            
-            // Cancel any ongoing pathfinding
-            _pathfindingCts.Cancel();
-            _pathfindingCts = new CancellationTokenSource();
-            
-            // Clear current path
-            _currentPath.Clear();
-            _currentPathIndex = 0;
+            StartBot();
         }
+    }
+    
+    private void StartBot()
+    {
+        _botEnabled = true;
+        LogImportant("Bot enabled - starting automation");
+        _botStartTime = DateTime.Now;
+        _currentState = BotState.WaitingForRadar;
+        
+        // DIRECTIONAL INTELLIGENCE: Reset spawn tracking for new session
+        _hasRecordedSpawnPosition = false;
+        _initialSpawnPosition = System.Numerics.Vector2.Zero;
+        _visitedAreas.Clear();
+        LogMessage("[SPAWN TRACKING] 🔄 Reset spawn tracking for new bot session");
+        
+        // WAYPOINT STABILITY: Reset tracking for new session
+        _lastWaypointSkip = DateTime.MinValue;
+        _lastOptimizedWaypoint = -1;
+        LogMessage("[WAYPOINT STABILITY] 🔄 Reset waypoint stability tracking for new bot session");
+        
+        // PURSUIT NAVIGATION: Reset tracking for new session
+        _lastIntersectionPoint = System.Numerics.Vector2.Zero;
+        _lastMovementTime = DateTime.MinValue;
+        _lastProgressLog = DateTime.MinValue;
+        _lastPathAdvancement = DateTime.MinValue;
+        _stuckTargetCount = 0;
+        _lastTargetPoint = System.Numerics.Vector2.Zero;
+        LogMessage("[PURSUIT] 🔄 Reset pursuit navigation tracking for new bot session");
+        
+        if (!_radarAvailable)
+        {
+            TryConnectToRadar();
+        }
+    }
+    
+    private void StopBot()
+    {
+        _botEnabled = false;
+        LogImportant("Bot disabled - stopping automation");
+        _currentState = BotState.Disabled;
+        
+        // Cancel any ongoing pathfinding
+        _pathfindingCts.Cancel();
+        _pathfindingCts = new CancellationTokenSource();
+        
+        // Clear current path
+        _currentPath.Clear();
+        _currentPathIndex = 0;
     }
     
     private void EmergencyStop()
     {
         LogImportant("EMERGENCY STOP activated!");
-        Settings.Enable.Value = false;
-        _currentState = BotState.Disabled;
-        _pathfindingCts.Cancel();
-        _currentPath.Clear();
+        StopBot();
     }
     
     private bool IsInAqueducts(AreaInstance area)
