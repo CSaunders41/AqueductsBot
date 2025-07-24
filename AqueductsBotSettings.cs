@@ -139,7 +139,8 @@ public class ConfigurationSettings
 
 public class AqueductsBotSettings : ISettings
 {
-    public ToggleNode Enable { get; set; } = new ToggleNode(false);
+    [Menu("Plugin Enabled", "Enable/disable the entire plugin (use hotkeys/buttons to start/stop bot automation)")]
+    public ToggleNode Enable { get; set; } = new ToggleNode(true);
     
     // Removed duplicate movement settings - they're now only in MovementSettings section
     
