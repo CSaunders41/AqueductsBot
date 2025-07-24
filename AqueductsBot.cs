@@ -84,6 +84,10 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     // private int _pathfindingFailures = 0;
     // private DateTime _lastPathfindingFailure = DateTime.MinValue;
     
+    // Add path staleness detection
+    private DateTime _currentPathStartTime = DateTime.MinValue;
+    private int _lastAcceptedPathLength = 0;
+    
     private void InitializeLogging()
     {
         try
@@ -870,14 +874,56 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 return; // Don't change state, wait for other attempts
             }
             
-            // SUCCESS: We got a valid path!
-            if (_currentPath.Count == 0 || path.Count > _currentPath.Count) // Take longer paths (more exploration)
+            // Check if current path is stale (been following it too long)
+            bool isCurrentPathStale = false;
+            if (_currentPath.Count > 0 && _currentPathStartTime != DateTime.MinValue)
+            {
+                var pathAge = (DateTime.Now - _currentPathStartTime).TotalSeconds;
+                if (pathAge > 30) // Path is stale after 30 seconds
+                {
+                    isCurrentPathStale = true;
+                    LogMessage($"[PATH STALENESS] Current path is {pathAge:F1} seconds old - considering replacement");
+                }
+            }
+            
+            // FIXED: Accept new paths if we have no path OR if new path is shorter/more efficient
+            bool shouldAcceptPath = false;
+            string acceptReason = "";
+            
+            if (_currentPath.Count == 0)
+            {
+                shouldAcceptPath = true;
+                acceptReason = "no current path";
+            }
+            else if (isCurrentPathStale)
+            {
+                shouldAcceptPath = true;
+                acceptReason = $"replacing stale path (age: {(DateTime.Now - _currentPathStartTime).TotalSeconds:F1}s)";
+            }
+            else if (path.Count < _currentPath.Count)
+            {
+                // Prefer shorter paths (more efficient)
+                shouldAcceptPath = true;
+                acceptReason = $"shorter path ({path.Count} vs {_currentPath.Count} points)";
+            }
+            else if (path.Count <= _currentPath.Count * 1.2) // Accept paths up to 20% longer if they might be better
+            {
+                // For similar length paths, prefer newer ones (might be better targets)
+                shouldAcceptPath = true;
+                acceptReason = $"similar length, newer target ({path.Count} vs {_currentPath.Count} points)";
+            }
+            
+            if (shouldAcceptPath)
             {
                 _currentPath = path;
                 _currentPathIndex = 0;
                 _currentState = BotState.MovingAlongPath;
                 
-                LogMessage($"[SUCCESS {targetIndex}] ACCEPTED path from {targetReason} with {path.Count} points!");
+                // Track when we accepted this path
+                _currentPathStartTime = DateTime.Now;
+                _lastAcceptedPathLength = path.Count;
+                
+                LogMessage($"[SUCCESS {targetIndex}] ACCEPTED path from {targetReason} with {path.Count} points! Reason: {acceptReason}");
                 LogMessage($"[PATH INFO] Start: ({path[0].X}, {path[0].Y}) -> End: ({path[path.Count-1].X}, {path[path.Count-1].Y})");
                 
                 // Cancel any pending pathfinding requests since we found a good path
@@ -886,7 +932,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             }
             else
             {
-                LogMessage($"[CALLBACK {targetIndex}] Path from {targetReason} has {path.Count} points, keeping current path with {_currentPath.Count} points");
+                LogMessage($"[CALLBACK {targetIndex}] REJECTED path from {targetReason} with {path.Count} points, keeping current path with {_currentPath.Count} points (path too long)");
             }
         }
         catch (Exception ex)
