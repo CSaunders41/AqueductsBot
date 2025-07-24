@@ -98,6 +98,10 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     private DateTime _lastMovementTime = DateTime.MinValue;
     private List<System.Numerics.Vector2> _stuckPositionHistory = new List<System.Numerics.Vector2>();
     
+    // WAYPOINT STABILITY: Prevent rapid re-evaluation
+    private DateTime _lastWaypointSkip = DateTime.MinValue;
+    private int _lastOptimizedWaypoint = -1;
+    
     private void InitializeLogging()
     {
         try
@@ -666,6 +670,11 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             _visitedAreas.Clear();
             LogMessage("[SPAWN TRACKING] 🔄 Reset spawn tracking for new bot session");
             
+            // WAYPOINT STABILITY: Reset tracking for new session
+            _lastWaypointSkip = DateTime.MinValue;
+            _lastOptimizedWaypoint = -1;
+            LogMessage("[WAYPOINT STABILITY] 🔄 Reset waypoint stability tracking for new bot session");
+            
             if (!_radarAvailable)
             {
                 TryConnectToRadar();
@@ -906,8 +915,13 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             }
             
             // SMART DIRECTIONAL PATH SELECTION: Avoid going back to spawn
+            // STABILITY ADDITION: Don't change paths too frequently
             bool shouldAcceptPath = false;
             string acceptReason = "";
+            
+            // PATH STABILITY: Don't accept new paths if we just started following current path
+            var timeSincePathStart = (DateTime.Now - _currentPathStartTime).TotalSeconds;
+            var isPathTooNew = timeSincePathStart < 5.0; // Don't change paths for first 5 seconds
             
             if (_currentPath.Count == 0)
             {
@@ -919,6 +933,11 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 shouldAcceptPath = true;
                 acceptReason = $"replacing stale path (age: {(DateTime.Now - _currentPathStartTime).TotalSeconds:F1}s)";
             }
+            else if (isPathTooNew)
+            {
+                LogMessage($"[PATH STABILITY] ⏸️ Rejecting path change - current path too new ({timeSincePathStart:F1}s < 5.0s)");
+                return; // Don't even analyze the new path
+            }
             else
             {
                 // DIRECTIONAL INTELLIGENCE: Analyze path endpoints to avoid backtracking
@@ -927,24 +946,19 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 
                 LogMessage($"[PATH ANALYSIS] Current path score: {currentPathScore:F2}, New path ({targetReason}) score: {newPathScore:F2}");
                 
-                // Prefer paths with better directional scores (away from spawn)
-                if (newPathScore > currentPathScore + 0.1f) // Need significant improvement to switch
+                // STABILITY: Require significant improvement to switch paths (increased threshold)
+                if (newPathScore > currentPathScore + 0.15f) // Increased from 0.1f to 0.15f
                 {
                     shouldAcceptPath = true;
-                    acceptReason = $"better direction (score: {newPathScore:F2} vs {currentPathScore:F2})";
+                    acceptReason = $"significantly better direction (score: {newPathScore:F2} vs {currentPathScore:F2})";
                 }
-                // If directional scores are similar, prefer shorter paths
-                else if (Math.Abs(newPathScore - currentPathScore) <= 0.1f && path.Count < _currentPath.Count * 0.8f)
+                // If directional scores are similar, prefer much shorter paths only
+                else if (Math.Abs(newPathScore - currentPathScore) <= 0.1f && path.Count < _currentPath.Count * 0.7f) // Stricter: 70% instead of 80%
                 {
                     shouldAcceptPath = true;
                     acceptReason = $"similar direction, much shorter ({path.Count} vs {_currentPath.Count} points)";
                 }
-                // Accept similar length paths with similar direction (might be better targets)
-                else if (Math.Abs(newPathScore - currentPathScore) <= 0.05f && path.Count <= _currentPath.Count * 1.2)
-                {
-                    shouldAcceptPath = true;
-                    acceptReason = $"similar direction and length, newer target ({path.Count} vs {_currentPath.Count} points)";
-                }
+                // REMOVED: Accept similar length paths (caused too much path switching)
             }
             
             if (shouldAcceptPath)
@@ -985,12 +999,26 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 return;
                 
             // PATH OPTIMIZATION: Skip intermediate waypoints if we can see far ahead
-            var optimizedIndex = GetOptimizedWaypointIndex();
-            if (optimizedIndex > _currentPathIndex)
+            // BUT: Add stability delay to prevent rapid re-evaluation
+            var timeSinceLastSkip = (DateTime.Now - _lastWaypointSkip).TotalMilliseconds;
+            var shouldOptimize = timeSinceLastSkip >= 1500; // Wait at least 1.5 seconds between optimizations
+            
+            if (shouldOptimize)
             {
-                var skippedCount = optimizedIndex - _currentPathIndex;
-                LogMessage($"[PATH OPTIMIZATION] ⚡ Skipping to waypoint {optimizedIndex + 1}/{_currentPath.Count} (skipped {skippedCount} intermediate points)");
-                _currentPathIndex = optimizedIndex;
+                var optimizedIndex = GetOptimizedWaypointIndex();
+                if (optimizedIndex > _currentPathIndex)
+                {
+                    var skippedCount = optimizedIndex - _currentPathIndex;
+                    LogMessage($"[PATH OPTIMIZATION] ⚡ Skipping to waypoint {optimizedIndex + 1}/{_currentPath.Count} (skipped {skippedCount} intermediate points)");
+                    _currentPathIndex = optimizedIndex;
+                    _lastWaypointSkip = DateTime.Now;
+                    _lastOptimizedWaypoint = optimizedIndex;
+                }
+            }
+            else
+            {
+                var remainingDelay = 1500 - timeSinceLastSkip;
+                LogMessage($"[WAYPOINT STABILITY] ⏸️ Waiting {remainingDelay:F0}ms before next waypoint optimization (preventing rapid re-evaluation)");
             }
                 
             var targetPoint = _currentPath[_currentPathIndex];
@@ -1146,48 +1174,57 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     
     private int CalculateImprovedMovementDelay(float distanceToTarget)
     {
-        // FIXED: More conservative delays to prevent oscillation
+        // CONSERVATIVE DELAYS: Much longer delays to prevent overcorrection
         var minDelay = Settings.MovementSettings.MinMoveDelayMs;
         var maxDelay = Settings.MovementSettings.MaxMoveDelayMs;
+        
+        // STABILITY FIX: Much longer base delays to allow character movement
+        var baseMinDelay = Math.Max(minDelay, 800); // At least 800ms between movements
+        var baseMaxDelay = Math.Max(maxDelay, 1500); // Up to 1.5s between movements
         
         // For very close targets, use much longer delays to let movement settle
         if (distanceToTarget < 30)
         {
-            return _random.Next(maxDelay * 2, maxDelay * 3); // 2-3x longer delay for close targets
+            return _random.Next(baseMaxDelay * 3, baseMaxDelay * 4); // 4.5-6s delay for very close targets
         }
         // For close targets, use longer delays
         else if (distanceToTarget < 100)
         {
-            return _random.Next(minDelay * 2, maxDelay * 2); // 2x longer delay for close targets
+            return _random.Next(baseMaxDelay * 2, baseMaxDelay * 3); // 3-4.5s delay for close targets
         }
-        // For far targets, use faster movement
-        else if (distanceToTarget > 200)
+        // For medium distance targets, use standard longer delays
+        else if (distanceToTarget < 200)
         {
-            return _random.Next(minDelay / 2, maxDelay / 2); // Faster for long distances
+            return _random.Next(baseMinDelay * 2, baseMaxDelay * 2); // 1.6-3s delay
+        }
+        // For far targets, use faster movement but still conservative
+        else if (distanceToTarget > 300)
+        {
+            return _random.Next(baseMinDelay, baseMaxDelay); // 0.8-1.5s delay
         }
         
-        return _random.Next(minDelay, maxDelay); // Standard delay
+        return _random.Next(baseMinDelay, baseMaxDelay); // Standard conservative delay
     }
     
     private int GetOptimizedWaypointIndex()
     {
-        // AGGRESSIVE WAYPOINT SKIPPING: Find waypoint that's far enough from current position
-        const int MIN_CLICK_DISTANCE = 150; // Minimum pixels from player before clicking
-        const int PREFERRED_CLICK_DISTANCE = 250; // Preferred distance for smooth movement
-        const int MAX_LOOKAHEAD = 20; // Maximum waypoints to look ahead
+        // CONSERVATIVE WAYPOINT SKIPPING: Better balance between distance and stability
+        const int MIN_CLICK_DISTANCE = 200; // Increased minimum distance
+        const int PREFERRED_CLICK_DISTANCE = 350; // Increased preferred distance for smoother movement
+        const int MAX_LOOKAHEAD = 15; // Reduced to prevent over-analysis
         
         var playerScreenPos = GetPlayerScreenPosition();
         if (!playerScreenPos.HasValue)
         {
-            // Fallback to old method if we can't get player position
-            return Math.Min(_currentPathIndex + 5, _currentPath.Count - 1);
+            // Fallback: skip more waypoints to ensure we click farther away
+            return Math.Min(_currentPathIndex + 8, _currentPath.Count - 1);
         }
         
         int bestWaypointIndex = _currentPathIndex;
         float bestDistance = 0f;
         
         // Look ahead through waypoints to find one that's far enough away
-        for (int i = 1; i <= MAX_LOOKAHEAD && (_currentPathIndex + i) < _currentPath.Count; i++)
+        for (int i = 3; i <= MAX_LOOKAHEAD && (_currentPathIndex + i) < _currentPath.Count; i++) // Start from 3 to skip closer waypoints
         {
             int checkIndex = _currentPathIndex + i;
             var targetPoint = _currentPath[checkIndex];
@@ -1219,7 +1256,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             }
         }
         
-        // Use best waypoint above minimum distance, or skip at least 3 waypoints
+        // Use best waypoint above minimum distance, or skip more waypoints for safety
         if (bestDistance > 0)
         {
             int skipped = bestWaypointIndex - _currentPathIndex;
@@ -1227,8 +1264,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             return bestWaypointIndex;
         }
         
-        // Fallback: Skip at least 3 waypoints to avoid clicking too close
-        int fallbackIndex = Math.Min(_currentPathIndex + 3, _currentPath.Count - 1);
+        // Fallback: Skip more waypoints to ensure we click farther away
+        int fallbackIndex = Math.Min(_currentPathIndex + 8, _currentPath.Count - 1);
         LogMessage($"[WAYPOINT SKIP] ⚠️ Fallback: forcing skip to waypoint {fallbackIndex + 1} (skipped {fallbackIndex - _currentPathIndex} waypoints)");
         return fallbackIndex;
     }
