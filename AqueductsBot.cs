@@ -1112,12 +1112,68 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             LogMovementDebug($"[PURSUIT] 🔧 Using manual waypoint {_currentPathIndex}: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {distanceToFallback:F1}");
         }
 
+        // 🎯 CRITICAL FIX: ENFORCE CIRCLE RADIUS DISTANCE
+        var expectedRadius = Settings.MovementSettings.PursuitRadius.Value;
+        var currentDistance = System.Numerics.Vector2.Distance(playerWorldPos, targetPoint.Value);
+        
+        LogMovementDebug($"[RADIUS ENFORCEMENT] Target distance: {currentDistance:F1}, Expected radius: {expectedRadius:F1}");
+        
+        // If target is too close to player, move it outward to the proper radius
+        if (currentDistance < expectedRadius * 0.8f) // Less than 80% of expected radius
+        {
+            LogMovementDebug($"[RADIUS ENFORCEMENT] ⚠️ Target too close ({currentDistance:F1} < {expectedRadius * 0.8f:F1}) - moving to proper radius");
+            
+            // Find direction from player to target
+            var directionToTarget = targetPoint.Value - playerWorldPos;
+            if (directionToTarget.Length() > 0)
+            {
+                // Normalize and scale to expected radius
+                directionToTarget = System.Numerics.Vector2.Normalize(directionToTarget);
+                var correctedTarget = playerWorldPos + (directionToTarget * expectedRadius);
+                
+                LogMovementDebug($"[RADIUS ENFORCEMENT] ✅ Corrected target: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}) → ({correctedTarget.X:F0}, {correctedTarget.Y:F0})");
+                targetPoint = correctedTarget;
+            }
+        }
+        // If target is way too far, bring it closer (but still at proper radius)
+        else if (currentDistance > expectedRadius * 2.0f) // More than 200% of expected radius
+        {
+            LogMovementDebug($"[RADIUS ENFORCEMENT] ⚠️ Target too far ({currentDistance:F1} > {expectedRadius * 2.0f:F1}) - bringing to proper radius");
+            
+            // Find direction from player to target
+            var directionToTarget = targetPoint.Value - playerWorldPos;
+            if (directionToTarget.Length() > 0)
+            {
+                // Normalize and scale to expected radius
+                directionToTarget = System.Numerics.Vector2.Normalize(directionToTarget);
+                var correctedTarget = playerWorldPos + (directionToTarget * expectedRadius);
+                
+                LogMovementDebug($"[RADIUS ENFORCEMENT] ✅ Corrected target: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}) → ({correctedTarget.X:F0}, {correctedTarget.Y:F0})");
+                targetPoint = correctedTarget;
+            }
+        }
+        else
+        {
+            LogMovementDebug($"[RADIUS ENFORCEMENT] ✅ Target distance acceptable ({currentDistance:F1} within {expectedRadius * 0.8f:F1}-{expectedRadius * 2.0f:F1})");
+        }
+        
         // Convert world position to screen coordinates for clicking
         var worldPos = new Vector3(targetPoint.Value.X * 250f / 23f, targetPoint.Value.Y * 250f / 23f, 0);
         var screenPosSharp = GameController.IngameState.Camera.WorldToScreen(worldPos);
         var screenPos = new Vector2(screenPosSharp.X, screenPosSharp.Y);
         
         var distanceToTarget = System.Numerics.Vector2.Distance(playerWorldPos, targetPoint.Value);
+        
+        // 📏 FINAL VALIDATION: Log exactly where we're clicking relative to player and circle
+        var playerScreenPos = GetPlayerScreenPosition();
+        if (playerScreenPos.HasValue)
+        {
+            var screenDistance = Vector2.Distance(screenPos, playerScreenPos.Value);
+            LogMovementDebug($"[CLICK VALIDATION] Player screen: ({playerScreenPos.Value.X:F0}, {playerScreenPos.Value.Y:F0})");
+            LogMovementDebug($"[CLICK VALIDATION] Target screen: ({screenPos.X:F0}, {screenPos.Y:F0})");
+            LogMovementDebug($"[CLICK VALIDATION] Screen distance: {screenDistance:F1} pixels");
+            LogMovementDebug($"[CLICK VALIDATION] World distance: {distanceToTarget:F1} units (expected: ~{expectedRadius:F1})");
+        }
         
         // Update path progress tracking
         UpdatePathProgress(targetPoint.Value, distanceToTarget);
