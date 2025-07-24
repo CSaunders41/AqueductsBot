@@ -245,7 +245,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             bool commaPressed = Input.IsKeyDown(Keys.Oemcomma);
             if (commaPressed && !_commaKeyPressed) // Key just pressed (not held)
             {
-                if (!Settings.Enable)
+                if (!Settings.Enable.Value)
                 {
                     LogMessage("[HOTKEY] Comma pressed - Starting bot!");
                     ToggleBot();
@@ -256,7 +256,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             bool periodPressed = Input.IsKeyDown(Keys.OemPeriod);
             if (periodPressed && !_periodKeyPressed) // Key just pressed (not held)
             {
-                if (Settings.Enable)
+                if (Settings.Enable.Value)
                 {
                     LogMessage("[HOTKEY] Period pressed - Stopping bot!");
                     ToggleBot();
@@ -265,7 +265,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             _periodKeyPressed = periodPressed;
             
             // Main bot logic
-            if (Settings.Enable && _currentState != BotState.Disabled)
+            if (Settings.Enable.Value && _currentState != BotState.Disabled)
             {
                 ProcessBotLogic();
             }
@@ -396,7 +396,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         
         if (ImGui.Button("🚀 Start Intelligent Bot"))
         {
-            if (!Settings.Enable)
+            if (!Settings.Enable.Value)
             {
                 LogMessage("[UI] Start button pressed - attempting to start bot");
                 if (!_radarAvailable)
@@ -411,7 +411,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         ImGui.SameLine();
         if (ImGui.Button("⏹️ Stop Bot"))
         {
-            if (Settings.Enable)
+            if (Settings.Enable.Value)
             {
                 ToggleBot();
             }
@@ -551,12 +551,12 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 
             case BotState.WaitingForAqueducts:
                 // DIRECTIONAL INTELLIGENCE: Record initial spawn position when we first enter Aqueducts
-                if (!_hasRecordedSpawnPosition && IsInAqueducts())
+                if (!_hasRecordedSpawnPosition && IsInAqueducts(GameController.Area.CurrentArea))
                 {
                     var playerPos = GetPlayerPosition();
-                    if (playerPos.HasValue)
+                    if (playerPos != null)
                     {
-                        _initialSpawnPosition = new System.Numerics.Vector2(playerPos.Value.GridPos.X, playerPos.Value.GridPos.Y);
+                        _initialSpawnPosition = new System.Numerics.Vector2(playerPos.GridPos.X, playerPos.GridPos.Y);
                         _hasRecordedSpawnPosition = true;
                         LogMessage($"[SPAWN TRACKING] 📍 Recorded initial spawn position: ({_initialSpawnPosition.X:F1}, {_initialSpawnPosition.Y:F1})");
                     }
@@ -652,9 +652,9 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     
     private void ToggleBot()
     {
-        Settings.Enable = !Settings.Enable;
+        Settings.Enable.Value = !Settings.Enable.Value;
         
-        if (Settings.Enable)
+        if (Settings.Enable.Value)
         {
             LogMessage("Bot enabled - starting automation");
             _botStartTime = DateTime.Now;
@@ -1032,9 +1032,9 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 
                 // STUCK DETECTION: Check if we're not making progress
                 var playerPos = GetPlayerPosition();
-                if (playerPos.HasValue)
+                if (playerPos != null)
                 {
-                    var playerWorldPos = new System.Numerics.Vector2(playerPos.Value.GridPos.X, playerPos.Value.GridPos.Y);
+                    var playerWorldPos = new System.Numerics.Vector2(playerPos.GridPos.X, playerPos.GridPos.Y);
                     if (IsStuckDetected(playerWorldPos, distance))
                     {
                         HandleStuckSituation();
@@ -1083,9 +1083,9 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 
                 // Update stuck detection with world position
                 var currentPlayerPos = GetPlayerPosition();
-                if (currentPlayerPos.HasValue)
+                if (currentPlayerPos != null)
                 {
-                    var playerWorldPos = new System.Numerics.Vector2(currentPlayerPos.Value.GridPos.X, currentPlayerPos.Value.GridPos.Y);
+                    var playerWorldPos = new System.Numerics.Vector2(currentPlayerPos.GridPos.X, currentPlayerPos.GridPos.Y);
                     UpdateStuckDetection(playerWorldPos);
                 }
                 
