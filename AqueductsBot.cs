@@ -387,7 +387,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         ImGui.Text("Recent Log:");
         
         // Create a scrollable text box for log messages
-        if (ImGui.BeginChild("LogOutput", new System.Numerics.Vector2(0, 150), true, ImGuiWindowFlags.HorizontalScrollbar))
+        if (ImGui.BeginChild("LogOutput", new System.Numerics.Vector2(0, 150)))
         {
             var recentLogs = GetRecentLogMessages(50); // Show more messages
             ImGui.TextUnformatted(recentLogs);
