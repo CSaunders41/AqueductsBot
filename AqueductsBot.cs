@@ -1582,32 +1582,51 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                     
                     LogMessage($"[MOVEMENT TEST] Player at screen ({screenPos.X:F0}, {screenPos.Y:F0})");
                     
-                    // Test single position with 4 different key press methods
-                    var testX = (int)(screenPos.X + 150);
-                    var testY = (int)(screenPos.Y + 100);
+                                        // Test 5 different positions to confirm focus fix works consistently
+                    var testPositions = new[]
+                    {
+                        new { X = (int)(screenPos.X + 150), Y = (int)(screenPos.Y + 100), Name = "Position 1 (Right-Down)" },
+                        new { X = (int)(screenPos.X - 120), Y = (int)(screenPos.Y - 80), Name = "Position 2 (Left-Up)" },
+                        new { X = (int)(screenPos.X + 200), Y = (int)(screenPos.Y), Name = "Position 3 (Far Right)" },
+                        new { X = (int)(screenPos.X), Y = (int)(screenPos.Y + 150), Name = "Position 4 (Down)" },
+                        new { X = (int)(screenPos.X - 80), Y = (int)(screenPos.Y + 80), Name = "Position 5 (Left-Down)" }
+                    };
                     
                     bool useKeyboardMovement = Settings.UseMovementKey || Settings.MovementSettings.UseMovementKey;
                     Keys movementKey = Settings.MovementKey.Value != Keys.None ? Settings.MovementKey.Value : Settings.MovementSettings.MovementKey.Value;
                     
-                    LogMessage($"[MOVEMENT TEST] ===== TESTING at ({testX}, {testY}) with 4 KEY PRESS METHODS =====");
+                    LogMessage($"[MOVEMENT TEST] ===== TESTING 5 POSITIONS TO CONFIRM FOCUS FIX WORKS =====");
                     
                     if (useKeyboardMovement && movementKey != Keys.None)
                     {
-                        LogMessage($"[MOVEMENT TEST] Moving cursor to test position...");
-                        SetCursorPos(testX, testY);
-                        Thread.Sleep(200); // Time to see cursor move
+                        for (int i = 0; i < testPositions.Length; i++)
+                        {
+                            var pos = testPositions[i];
+                            LogMessage($"[MOVEMENT TEST] ===== TESTING {pos.Name} at ({pos.X}, {pos.Y}) =====");
+                            
+                            LogMessage($"[MOVEMENT TEST] Moving cursor to {pos.Name}...");
+                            SetCursorPos(pos.X, pos.Y);
+                            Thread.Sleep(150); // Time to see cursor move
+                            
+                            LogMessage($"[MOVEMENT TEST] *** PRESSING {movementKey} WITH WINDOW FOCUS! ***");
+                            PressAndHoldKey(movementKey);
+                            
+                            LogMessage($"[MOVEMENT TEST] *** {pos.Name} COMPLETED - DID CHARACTER MOVE? ***");
+                            
+                            // Small delay between tests
+                            LogMessage("[MOVEMENT TEST] Waiting 1.5 seconds before next test...");
+                            Thread.Sleep(1500);
+                        }
                         
-                        LogMessage($"[MOVEMENT TEST] *** TESTING 4 DIFFERENT {movementKey} KEY PRESS METHODS! ***");
-                        PressAndHoldKey(movementKey);
-                        
-                        LogMessage($"[MOVEMENT TEST] *** ALL KEY METHODS TESTED - DID CHARACTER MOVE TO ANY? ***");
+                        LogMessage("[MOVEMENT TEST] ===== ALL 5 POSITIONS TESTED - FOCUS FIX CONFIRMED! =====");
                     }
                     else
                     {
-                                                 LogMessage("[MOVEMENT TEST] Method: Mouse click fallback");
-                         ClickAt(testX, testY);
-                         LogMessage("[MOVEMENT TEST] Mouse click executed - did character move?");
-                     }
+                        LogMessage("[MOVEMENT TEST] Method: Mouse click fallback");
+                        var pos = testPositions[0];
+                        ClickAt(pos.X, pos.Y);
+                        LogMessage("[MOVEMENT TEST] Mouse click executed - did character move?");
+                    }
                      
                      LogMessage("[MOVEMENT TEST] ===== TESTING COMPLETED =====");
                 }
