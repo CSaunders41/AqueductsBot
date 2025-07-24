@@ -76,6 +76,10 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     private string _lastLogMessage = "";
     private string _logFilePath = "";
     
+    // Add hotkey state tracking
+    private bool _commaKeyPressed = false;
+    private bool _periodKeyPressed = false;
+    
     private void InitializeLogging()
     {
         try
@@ -218,6 +222,30 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 EmergencyStop();
             }
             
+            // NEW: Add comma (start) and period (stop) hotkeys for easy control
+            // Use state tracking to prevent multiple triggers
+            bool commaPressed = Input.IsKeyDown(Keys.Oemcomma);
+            if (commaPressed && !_commaKeyPressed) // Key just pressed (not held)
+            {
+                if (!Settings.Enable)
+                {
+                    LogMessage("[HOTKEY] Comma pressed - Starting bot!");
+                    ToggleBot();
+                }
+            }
+            _commaKeyPressed = commaPressed;
+            
+            bool periodPressed = Input.IsKeyDown(Keys.OemPeriod);
+            if (periodPressed && !_periodKeyPressed) // Key just pressed (not held)
+            {
+                if (Settings.Enable)
+                {
+                    LogMessage("[HOTKEY] Period pressed - Stopping bot!");
+                    ToggleBot();
+                }
+            }
+            _periodKeyPressed = periodPressed;
+            
             // Main bot logic
             if (Settings.Enable && _currentState != BotState.Disabled)
             {
@@ -346,11 +374,18 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         
         // ===== CONTROL BUTTONS =====
         ImGui.TextColored(new System.Numerics.Vector4(0.8f, 0.8f, 1, 1), "🎮 CONTROLS:");
+        ImGui.TextColored(new System.Numerics.Vector4(1, 1, 0, 1), "HOTKEYS: Press ',' (comma) to START | Press '.' (period) to STOP");
         
-        if (ImGui.Button("🚀 Start Intelligent Bot") && _radarAvailable)
+        if (ImGui.Button("🚀 Start Intelligent Bot"))
         {
             if (!Settings.Enable)
             {
+                LogMessage("[UI] Start button pressed - attempting to start bot");
+                if (!_radarAvailable)
+                {
+                    LogMessage("[UI] Radar not available - trying to connect first");
+                    TryConnectToRadar();
+                }
                 ToggleBot();
             }
         }
@@ -1594,11 +1629,15 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     
     private void TryConnectToRadar()
     {
-        if (_radarAvailable) return; // Already connected
+        if (_radarAvailable) 
+        {
+            LogMessage("Radar already connected");
+            return; // Already connected
+        }
         
         try
         {
-            LogMessage("Attempting to connect to Radar plugin...");
+            LogMessage("=== ATTEMPTING RADAR CONNECTION ===");
             LogMessage("Trying multiple signature variations...");
             
             // Try variation 1: System.Numerics.Vector2
@@ -1606,11 +1645,15 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var method1 = GameController.PluginBridge.GetMethod<Action<Vector2, Action<List<Vector2i>>, CancellationToken>>("Radar.LookForRoute");
             if (method1 != null)
             {
-                LogMessage("✅ Found signature 1!");
+                LogMessage("✅ SUCCESS: Found signature 1!");
                 _radarLookForRoute = method1;
                 _radarAvailable = true;
-                TestRadarConnection();
+                LogMessage("=== RADAR CONNECTION ESTABLISHED ===");
                 return;
+            }
+            else
+            {
+                LogMessage("❌ Signature 1 failed");
             }
             
             // Try variation 2: SharpDX.Vector2  
@@ -1618,12 +1661,16 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var method2 = GameController.PluginBridge.GetMethod<Action<SharpDX.Vector2, Action<List<Vector2i>>, CancellationToken>>("Radar.LookForRoute");
             if (method2 != null)
             {
-                LogMessage("✅ Found signature 2 with SharpDX.Vector2!");
+                LogMessage("✅ SUCCESS: Found signature 2 with SharpDX.Vector2!");
                 // Need to create a wrapper since our internal Vector2 is System.Numerics
                 _radarLookForRoute = (v2, callback, token) => method2(new SharpDX.Vector2(v2.X, v2.Y), callback, token);
                 _radarAvailable = true;
-                TestRadarConnection();
+                LogMessage("=== RADAR CONNECTION ESTABLISHED ===");
                 return;
+            }
+            else
+            {
+                LogMessage("❌ Signature 2 failed");
             }
 
             // Try variation 3: Maybe it returns Task
@@ -1631,11 +1678,15 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var method3 = GameController.PluginBridge.GetMethod<Func<Vector2, Action<List<Vector2i>>, CancellationToken, Task>>("Radar.LookForRoute");
             if (method3 != null)
             {
-                LogMessage("✅ Found signature 3 with Task return!");
+                LogMessage("✅ SUCCESS: Found signature 3 with Task return!");
                 _radarLookForRoute = (v2, callback, token) => { _ = method3(v2, callback, token); };
                 _radarAvailable = true;
-                TestRadarConnection();
+                LogMessage("=== RADAR CONNECTION ESTABLISHED ===");
                 return;
+            }
+            else
+            {
+                LogMessage("❌ Signature 3 failed");
             }
 
             // Try variation 4: Maybe different parameter order
@@ -1643,24 +1694,29 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var method4 = GameController.PluginBridge.GetMethod<Action<Action<List<Vector2i>>, Vector2, CancellationToken>>("Radar.LookForRoute");
             if (method4 != null)
             {
-                LogMessage("✅ Found signature 4 with different parameter order!");
+                LogMessage("✅ SUCCESS: Found signature 4 with different parameter order!");
                 _radarLookForRoute = (v2, callback, token) => method4(callback, v2, token);
                 _radarAvailable = true;
-                TestRadarConnection();
+                LogMessage("=== RADAR CONNECTION ESTABLISHED ===");
                 return;
             }
+            else
+            {
+                LogMessage("❌ Signature 4 failed");
+            }
 
-            LogMessage("❌ Could not find any matching 'Radar.LookForRoute' signature");
-            LogMessage("All 4 signature variations failed:");
-            LogMessage("  1. Action<Vector2, Action<List<Vector2i>>, CancellationToken>");
-            LogMessage("  2. Action<SharpDX.Vector2, Action<List<Vector2i>>, CancellationToken>");
-            LogMessage("  3. Func<Vector2, Action<List<Vector2i>>, CancellationToken, Task>");
-            LogMessage("  4. Action<Action<List<Vector2i>>, Vector2, CancellationToken>");
+            LogMessage("❌ ALL RADAR CONNECTION ATTEMPTS FAILED");
+            LogMessage("Possible issues:");
+            LogMessage("- Radar plugin not loaded or enabled");
+            LogMessage("- Radar plugin version incompatibility");
+            LogMessage("- ExileApi PluginBridge not ready");
+            LogMessage("Bot will attempt to retry connection periodically...");
             _radarAvailable = false;
         }
         catch (Exception ex)
         {
-            LogError($"Error connecting to Radar: {ex.Message}");
+            LogError($"CRITICAL ERROR connecting to Radar: {ex.Message}");
+            LogError($"Stack trace: {ex.StackTrace}");
             _radarAvailable = false;
         }
     }
