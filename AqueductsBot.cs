@@ -178,14 +178,23 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 _logMessages.RemoveAt(0);
             }
             
-            // Also log to ExileApi console
-            LogError(fullMessage);
+            // FIXED: Don't create recursive loop - log directly to ExileApi console
+            try 
+            {
+                // Use ExileCore's direct logging to avoid recursion
+                DebugWindow.LogMsg(fullMessage);
+            }
+            catch
+            {
+                // If ExileCore logging fails, just continue - don't recurse
+            }
         }
     }
     
     private void LogError(string message)
     {
-        LogMessage($"ERROR: {message}");
+        // FIXED: Use LogImportant to avoid recursion, and don't add "ERROR:" prefix to avoid double prefixing
+        LogImportant(message);
     }
     
     private string GetRecentLogMessages(int count = 20)
