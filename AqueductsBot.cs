@@ -1239,11 +1239,11 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         var screenPos = new Vector2(screenPosSharp.X, screenPosSharp.Y);
         
         // 🖥️ CRITICAL: VALIDATE SCREEN COORDINATES BEFORE CLICKING
-        var gameWindow = GameController.Window.GetWindowRectangle();
-        var isWithinGameWindow = screenPos.X >= 0 && screenPos.X <= gameWindow.Width && 
-                                screenPos.Y >= 0 && screenPos.Y <= gameWindow.Height;
+        var finalGameWindow = GameController.Window.GetWindowRectangle();
+        var isWithinGameWindow = screenPos.X >= 0 && screenPos.X <= finalGameWindow.Width && 
+                                screenPos.Y >= 0 && screenPos.Y <= finalGameWindow.Height;
         
-        LogMovementDebug($"[SCREEN VALIDATION] Game window: {gameWindow.Width}x{gameWindow.Height}");
+        LogMovementDebug($"[SCREEN VALIDATION] Game window: {finalGameWindow.Width}x{finalGameWindow.Height}");
         LogMovementDebug($"[SCREEN VALIDATION] Target screen: ({screenPos.X:F0}, {screenPos.Y:F0})");
         LogMovementDebug($"[SCREEN VALIDATION] Within window: {isWithinGameWindow}");
         
@@ -1252,9 +1252,9 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             LogMovementDebug($"[SCREEN VALIDATION] ⚠️ Target outside game window! Clamping to safe bounds.");
             
             // Clamp to safe area within game window (with margin for safety)
-            var margin = 50f;
-            var safeX = Math.Max(margin, Math.Min(gameWindow.Width - margin, screenPos.X));
-            var safeY = Math.Max(margin, Math.Min(gameWindow.Height - margin, screenPos.Y));
+            var clampMargin = 50f;
+            var safeX = Math.Max(clampMargin, Math.Min(finalGameWindow.Width - clampMargin, screenPos.X));
+            var safeY = Math.Max(clampMargin, Math.Min(finalGameWindow.Height - clampMargin, screenPos.Y));
             
             LogMovementDebug($"[SCREEN VALIDATION] ✅ Clamped: ({screenPos.X:F0}, {screenPos.Y:F0}) → ({safeX:F0}, {safeY:F0})");
             screenPos = new Vector2(safeX, safeY);
@@ -1274,7 +1274,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             LogMovementDebug($"[CLICK VALIDATION] Player screen: ({playerScreenPos.Value.X:F0}, {playerScreenPos.Value.Y:F0})");
             LogMovementDebug($"[CLICK VALIDATION] Final target screen: ({screenPos.X:F0}, {screenPos.Y:F0})");
             LogMovementDebug($"[CLICK VALIDATION] Screen distance: {screenDistance:F1} pixels");
-            LogMovementDebug($"[CLICK VALIDATION] World distance: {distanceToTarget:F1} units (expected: ~{expectedRadius:F1})");
+            LogMovementDebug($"[CLICK VALIDATION] World distance: {distanceToTarget:F1} units (expected: ~{Settings.MovementSettings.PursuitRadius.Value:F1})");
             
             // Additional safety check - if screen distance is way too large, something is wrong
             if (screenDistance > 1200) // Increased from 800 to 1200 pixels - less restrictive
