@@ -2740,6 +2740,13 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var playerWorldPos = new System.Numerics.Vector2(playerPos.GridPos.X, playerPos.GridPos.Y);
             var radius = Settings.MovementSettings.PursuitRadius.Value; // Use the same radius as movement calculations
             
+            // Fallback to hardcoded radius if setting is invalid
+            if (radius <= 0)
+            {
+                radius = 300f; // Default fallback
+                LogMessage($"[CIRCLE DEBUG] Using fallback radius: {radius}");
+            }
+            
             LogMessage($"[CIRCLE DEBUG] Player at ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}), radius: {radius}");
             
             // Convert world position to screen position
