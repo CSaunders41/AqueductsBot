@@ -2829,35 +2829,33 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         {
             if (_lastTargetWorldPos == null || _currentPath.Count == 0) return;
             
-            // Convert world position to screen position
-            var worldPos = new Vector3(_lastTargetWorldPos.Value.X * 250f / 23f, _lastTargetWorldPos.Value.Y * 250f / 23f, 0);
-            var screenPosSharp = GameController.IngameState.Camera.WorldToScreen(worldPos);
-            var targetScreen = new System.Numerics.Vector2(screenPosSharp.X, screenPosSharp.Y);
+            // Convert world position to screen position using ExileCore's Graphics
+            var camera = GameController.Game.IngameState.Camera;
+            var targetScreenPos = camera.WorldToScreen(new Vector3(_lastTargetWorldPos.Value.X, _lastTargetWorldPos.Value.Y, 0));
             
-            // Draw target point using ImGui
-            var drawList = ImGui.GetBackgroundDrawList();
-            var targetColor = ImGui.ColorConvertFloat4ToU32(new System.Numerics.Vector4(1.0f, 0.0f, 0.0f, 0.8f)); // Red
-            var crosshairColor = ImGui.ColorConvertFloat4ToU32(new System.Numerics.Vector4(1.0f, 1.0f, 1.0f, 1.0f)); // White
+            // Draw a red circle at the target point using Graphics.DrawLine (small circle)
+            DrawEllipseToWorld(new Vector3(_lastTargetWorldPos.Value.X, _lastTargetWorldPos.Value.Y, 0), 8, 16, 3, Color.Red);
             
-            // Draw a red circle at the target point
-            drawList.AddCircleFilled(targetScreen, 8, targetColor);
-            drawList.AddCircle(targetScreen, 8, crosshairColor, 16, 2.0f);
-            
-            // Draw crosshair
-            drawList.AddLine(
-                new System.Numerics.Vector2(targetScreen.X - 12, targetScreen.Y),
-                new System.Numerics.Vector2(targetScreen.X + 12, targetScreen.Y),
-                crosshairColor, 2.0f
+            // Draw crosshair using Graphics.DrawLine
+            var crosshairSize = 12;
+            Graphics.DrawLine(
+                new Vector2(targetScreenPos.X - crosshairSize, targetScreenPos.Y),
+                new Vector2(targetScreenPos.X + crosshairSize, targetScreenPos.Y),
+                3, Color.White
             );
-            drawList.AddLine(
-                new System.Numerics.Vector2(targetScreen.X, targetScreen.Y - 12),
-                new System.Numerics.Vector2(targetScreen.X, targetScreen.Y + 12),
-                crosshairColor, 2.0f
+            Graphics.DrawLine(
+                new Vector2(targetScreenPos.X, targetScreenPos.Y - crosshairSize),
+                new Vector2(targetScreenPos.X, targetScreenPos.Y + crosshairSize),
+                3, Color.White
             );
         }
         catch (Exception ex)
         {
             // Don't spam errors for rendering issues
+            if (Settings.DebugSettings.DebugMode.Value)
+            {
+                LogMessage($"[TARGET POINT ERROR] Error drawing target point: {ex.Message}");
+            }
         }
     }
 }
