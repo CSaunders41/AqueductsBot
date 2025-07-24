@@ -843,18 +843,21 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         try
         {
             byte vkCode = (byte)key;
-            LogMessage($"[KEYBOARD] Pressing and holding key {key} (VK Code: {vkCode}) - EXACT AreWeThereYet method");
+            LogMessage($"[KEYBOARD] *** STARTING KEY PRESS SEQUENCE FOR {key} (VK Code: {vkCode}) ***");
             
             // Key down - EXACT same flags as working bot: KEYEVENTF_EXTENDEDKEY (0x0001)
+            LogMessage($"[KEYBOARD] Step 1: KEY DOWN - Sending keybd_event({vkCode}, 0, 0x0001, 0)");
             keybd_event(vkCode, 0, 0x0001, 0);
             
             // Hold for 20ms - EXACT same timing as working bot
+            LogMessage("[KEYBOARD] Step 2: HOLDING KEY - Waiting 20ms (same as AreWeThereYet)");
             Thread.Sleep(20);
             
             // Key up - EXACT same flags as working bot: KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP (0x0001 | 0x0002 = 0x0003)
+            LogMessage($"[KEYBOARD] Step 3: KEY UP - Sending keybd_event({vkCode}, 0, 0x0003, 0)");
             keybd_event(vkCode, 0, 0x0003, 0);
             
-            LogMessage($"[KEYBOARD] Key press sequence completed using AreWeThereYet method for {key}");
+            LogMessage($"[KEYBOARD] *** KEY PRESS SEQUENCE COMPLETED FOR {key} - CHECK IF CHARACTER MOVED! ***");
         }
         catch (Exception ex)
         {
@@ -1547,7 +1550,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     {
         try
         {
-            LogMessage("[MOVEMENT TEST] Testing both movement methods...");
+            LogMessage("[MOVEMENT TEST] ===== TESTING MULTIPLE POSITIONS =====");
             
             var player = GameController.Game.IngameState.Data.LocalPlayer;
             if (player?.GetComponent<Positioned>() is Positioned playerPos)
@@ -1558,31 +1561,49 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                     var worldPos = render.PosNum;
                     var screenPos = GameController.IngameState.Camera.WorldToScreen(worldPos);
                     
-                    // Click slightly to the right of player
-                    var testX = (int)(screenPos.X + 150);
-                    var testY = (int)(screenPos.Y + 100);
-                    
                     LogMessage($"[MOVEMENT TEST] Player at screen ({screenPos.X:F0}, {screenPos.Y:F0})");
-                    LogMessage($"[MOVEMENT TEST] Testing at ({testX}, {testY}) - watch if character moves!");
                     
-                    // Test Method 1: AreWeThereYet approach (cursor + key press)
+                    // Test 3 different positions to rule out timing issues
+                    var testPositions = new[]
+                    {
+                        new { X = (int)(screenPos.X + 100), Y = (int)(screenPos.Y + 50), Name = "Position 1 (Right-Down)" },
+                        new { X = (int)(screenPos.X - 100), Y = (int)(screenPos.Y - 50), Name = "Position 2 (Left-Up)" },
+                        new { X = (int)(screenPos.X + 200), Y = (int)(screenPos.Y), Name = "Position 3 (Far Right)" }
+                    };
+                    
                     bool useKeyboardMovement = Settings.UseMovementKey || Settings.MovementSettings.UseMovementKey;
                     Keys movementKey = Settings.MovementKey.Value != Keys.None ? Settings.MovementKey.Value : Settings.MovementSettings.MovementKey.Value;
                     
-                    if (useKeyboardMovement && movementKey != Keys.None)
+                    for (int i = 0; i < testPositions.Length; i++)
                     {
-                        LogMessage($"[MOVEMENT TEST] Method 1: AreWeThereYet approach (cursor + {movementKey} key)");
-                        SetCursorPos(testX, testY);
-                        Thread.Sleep(50);
-                        PressAndHoldKey(movementKey);
-                        LogMessage("[MOVEMENT TEST] AreWeThereYet method executed - did character move?");
+                        var pos = testPositions[i];
+                        LogMessage($"[MOVEMENT TEST] ===== TESTING {pos.Name} at ({pos.X}, {pos.Y}) =====");
+                        
+                        if (useKeyboardMovement && movementKey != Keys.None)
+                        {
+                            LogMessage($"[MOVEMENT TEST] Method: AreWeThereYet (cursor + {movementKey} key)");
+                            LogMessage("[MOVEMENT TEST] Step 1: Moving cursor...");
+                            SetCursorPos(pos.X, pos.Y);
+                            Thread.Sleep(100); // Longer delay so you can see cursor move
+                            
+                            LogMessage($"[MOVEMENT TEST] Step 2: *** PRESSING {movementKey} KEY NOW! WATCH FOR CHARACTER MOVEMENT! ***");
+                            PressAndHoldKey(movementKey);
+                            
+                            LogMessage($"[MOVEMENT TEST] *** {movementKey} KEY PRESS COMPLETED - DID CHARACTER MOVE? ***");
+                        }
+                        else
+                        {
+                            LogMessage("[MOVEMENT TEST] Method: Mouse click fallback");
+                            ClickAt(pos.X, pos.Y);
+                            LogMessage("[MOVEMENT TEST] Mouse click executed - did character move?");
+                        }
+                        
+                        // Wait between tests so user can observe
+                        LogMessage("[MOVEMENT TEST] Waiting 2 seconds before next test...");
+                        Thread.Sleep(2000);
                     }
-                    else
-                    {
-                        LogMessage("[MOVEMENT TEST] Method 2: Mouse click fallback");
-                        ClickAt(testX, testY);
-                        LogMessage("[MOVEMENT TEST] Mouse click executed - did character move?");
-                    }
+                    
+                    LogMessage("[MOVEMENT TEST] ===== ALL TESTS COMPLETED =====");
                 }
                 else
                 {
