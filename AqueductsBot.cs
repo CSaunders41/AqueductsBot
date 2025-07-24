@@ -32,9 +32,15 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     [DllImport("user32.dll")]
     private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
     
-    private const uint MOUSEEVENTF_LEFTDOWN = 0x02;
-    private const uint MOUSEEVENTF_LEFTUP = 0x04;
-    private const uint KEYEVENTF_KEYUP = 0x02;
+    // Mouse and keyboard constants
+    private const uint MOUSEEVENTF_LEFTDOWN = 0x0002;
+    private const uint MOUSEEVENTF_LEFTUP = 0x0004;
+    private const uint MOUSEEVENTF_RIGHTDOWN = 0x0008;
+    private const uint MOUSEEVENTF_RIGHTUP = 0x0010;
+    
+    private const uint INPUT_MOUSE = 0;
+    private const uint INPUT_KEYBOARD = 1;
+    private const uint KEYEVENTF_KEYUP_SENDINPUT = 0x0002;
     
     // Bot state
     private enum BotState
@@ -773,24 +779,40 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     {
         try
         {
-            // CRITICAL FIX: Add window offset for absolute screen coordinates
-            var windowRect = GameController.Window.GetWindowRectangle();
-            int absoluteX = x + (int)windowRect.X;
-            int absoluteY = y + (int)windowRect.Y;
+            // Using exact approach from working AreWeThereYet bot
+            LogMessage($"[MOUSE] Clicking at coordinates ({x}, {y}) using working bot method");
             
-            LogMessage($"[MOUSE] Clicking at game coords ({x}, {y}) -> screen coords ({absoluteX}, {absoluteY})");
+            // Step 1: Move cursor to position (like working bot)
+            SetCursorPos(x, y);
             
-            SetCursorPos(absoluteX, absoluteY);
-            Thread.Sleep(10); // Small delay between cursor move and click
+            // Step 2: Wait (like working bot's WaitTime)
+            Thread.Sleep(40); // Match working bot's 40ms delay
             
+            // Step 3: Mouse down (exact same API call as working bot)
             mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
-            Thread.Sleep(50); // Hold click briefly
+            
+            // Step 4: Hold down briefly (like working bot)
+            Thread.Sleep(40); // Match working bot's hold time
+            
+            // Step 5: Mouse up (exact same API call as working bot)
             mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            
+            // Step 6: Final delay (like working bot)
+            Thread.Sleep(100); // Match working bot's final delay
+            
+            LogMessage("[MOUSE] Click sequence completed using working bot method");
         }
         catch (Exception ex)
         {
             LogError($"Error clicking at ({x}, {y}): {ex.Message}");
         }
+    }
+    
+    // Remove the complex SendInput method since working bot uses simple mouse_event
+    private void ClickWithSendInput(int x, int y)
+    {
+        // This method is no longer needed - working bot uses mouse_event
+        LogMessage("[MOUSE] SendInput method disabled - using working bot approach instead");
     }
     
     private void PressKey(Keys key)
@@ -803,7 +825,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             // Method 1: Try keybd_event
             keybd_event(vkCode, 0, 0, 0); // Key down
             Thread.Sleep(50); // Hold key briefly
-            keybd_event(vkCode, 0, KEYEVENTF_KEYUP, 0); // Key up
+            keybd_event(vkCode, 0, KEYEVENTF_KEYUP_SENDINPUT, 0); // Key up
             
             LogMessage($"[KEYBOARD] Key press sequence completed for {key}");
         }
@@ -946,6 +968,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     {
         [FieldOffset(0)]
         public KEYBDINPUT Keyboard;
+        [FieldOffset(0)]
+        public MOUSEINPUT Mouse;
     }
     
     [StructLayout(LayoutKind.Sequential)]
@@ -958,7 +982,19 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         public IntPtr ExtraInfo;
     }
     
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MOUSEINPUT
+    {
+        public int X;
+        public int Y;
+        public uint MouseData;
+        public uint Flags;
+        public uint Time;
+        public IntPtr ExtraInfo;
+    }
+    
     private const uint INPUT_KEYBOARD = 1;
+    private const uint INPUT_MOUSE = 0;
     private const uint KEYEVENTF_KEYUP_SENDINPUT = 0x0002;
     
     [StructLayout(LayoutKind.Sequential)]
