@@ -673,7 +673,9 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             LogMessage($"[SMART PATHFINDING] Player at ({currentPos.X:F0}, {currentPos.Y:F0})");
             
             // STRATEGIC TARGET SELECTION - Try multiple intelligent targets
-            var strategicTargets = GenerateStrategicTargets(currentPos);
+            // Convert SharpDX.Vector2 to System.Numerics.Vector2
+            var currentPosNum = new System.Numerics.Vector2(currentPos.X, currentPos.Y);
+            var strategicTargets = GenerateStrategicTargets(currentPosNum);
             
             LogMessage($"[SMART PATHFINDING] Generated {strategicTargets.Count} strategic targets");
             foreach(var target in strategicTargets.Take(3)) // Log first 3 for debugging
@@ -693,9 +695,9 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         }
     }
     
-    private List<(Vector2 Position, string Reason)> GenerateStrategicTargets(Vector2 currentPos)
+    private List<(System.Numerics.Vector2 Position, string Reason)> GenerateStrategicTargets(System.Numerics.Vector2 currentPos)
     {
-        var targets = new List<(Vector2, string)>();
+        var targets = new List<(System.Numerics.Vector2, string)>();
         
         // Strategy 1: Explore in cardinal directions (likely to find exits)
         var cardinalDistances = new[] { 150, 300, 500, 800 }; // Progressively farther
@@ -715,7 +717,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         {
             foreach (var (x, y, reason) in cardinalDirections)
             {
-                var target = new Vector2(
+                var target = new System.Numerics.Vector2(
                     currentPos.X + (x * distance), 
                     currentPos.Y + (y * distance)
                 );
@@ -725,9 +727,9 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         
         // Strategy 2: Area-based exploration (try to reach map edges)
         var areaData = GameController.IngameState.Data.AreaDimensions;
-        if (areaData.HasValue)
+        if (areaData != null && areaData.X > 0 && areaData.Y > 0)
         {
-            var dimensions = areaData.Value;
+            var dimensions = areaData;
             LogMessage($"[AREA INFO] Map dimensions: {dimensions.X} x {dimensions.Y}");
             
             // Target edges where exits are likely to be
@@ -743,7 +745,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             
             foreach (var (x, y, reason) in edgeTargets)
             {
-                targets.Add((new Vector2(x, y), reason));
+                targets.Add((new System.Numerics.Vector2(x, y), reason));
             }
         }
         
@@ -757,9 +759,9 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         return targets;
     }
     
-    private List<Vector2> GenerateSpiralPattern(Vector2 center, float baseRadius, int points)
+    private List<System.Numerics.Vector2> GenerateSpiralPattern(System.Numerics.Vector2 center, float baseRadius, int points)
     {
-        var spiral = new List<Vector2>();
+        var spiral = new List<System.Numerics.Vector2>();
         float angleStep = (float)(2 * Math.PI / points);
         
         for (int i = 0; i < points; i++)
@@ -770,13 +772,13 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var x = center.X + radius * (float)Math.Cos(angle);
             var y = center.Y + radius * (float)Math.Sin(angle);
             
-            spiral.Add(new Vector2(x, y));
+            spiral.Add(new System.Numerics.Vector2(x, y));
         }
         
         return spiral;
     }
     
-    private void TryMultipleTargets(List<(Vector2 Position, string Reason)> targets)
+    private void TryMultipleTargets(List<(System.Numerics.Vector2 Position, string Reason)> targets)
     {
         int maxTargetsToTry = Math.Min(targets.Count, 10); // Don't spam too many requests
         int targetIndex = 0;
@@ -2040,7 +2042,10 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                     var entityPos = entity.GetComponent<Positioned>();
                     if (entityPos != null)
                     {
-                        var distance = Vector2.Distance(playerGridPos, entityPos.GridPos);
+                        // Convert SharpDX.Vector2 to System.Numerics.Vector2 for distance calculation
+                        var playerGridPosNum = new System.Numerics.Vector2(playerGridPos.X, playerGridPos.Y);
+                        var entityGridPosNum = new System.Numerics.Vector2(entityPos.GridPos.X, entityPos.GridPos.Y);
+                        var distance = Vector2.Distance(playerGridPosNum, entityGridPosNum);
                         if (distance < 150) // Within interaction range
                         {
                             LogMessage($"[TRANSITION DETECTED] Found area transition at distance {distance:F1}: {entity.Path}");
@@ -2101,7 +2106,10 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                     var entityPos = entity.GetComponent<Positioned>();
                     if (entityPos != null)
                     {
-                        var distance = Vector2.Distance(playerGridPos, entityPos.GridPos);
+                        // Convert SharpDX.Vector2 to System.Numerics.Vector2 for distance calculation
+                        var playerGridPosNum = new System.Numerics.Vector2(playerGridPos.X, playerGridPos.Y);
+                        var entityGridPosNum = new System.Numerics.Vector2(entityPos.GridPos.X, entityPos.GridPos.Y);
+                        var distance = Vector2.Distance(playerGridPosNum, entityGridPosNum);
                         if (distance < nearestDistance && distance < 150)
                         {
                             nearestDistance = distance;
