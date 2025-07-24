@@ -988,7 +988,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var optimizedIndex = GetOptimizedWaypointIndex();
             if (optimizedIndex > _currentPathIndex)
             {
-                LogMessage($"[PATH OPTIMIZATION] Skipping to waypoint {optimizedIndex} (skipped {optimizedIndex - _currentPathIndex} intermediate points)");
+                var skippedCount = optimizedIndex - _currentPathIndex;
+                LogMessage($"[PATH OPTIMIZATION] ⚡ Skipping to waypoint {optimizedIndex + 1}/{_currentPath.Count} (skipped {skippedCount} intermediate points)");
                 _currentPathIndex = optimizedIndex;
             }
                 
@@ -1115,11 +1116,20 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         
         // FIXED: Much more generous precision for final waypoints
         var progressRatio = (float)currentIndex / totalPoints;
+        var remainingWaypoints = totalPoints - currentIndex;
+        
+        // For final 3 waypoints, use very large precision to prevent getting stuck
+        if (remainingWaypoints <= 3)
+        {
+            var finalPrecision = Math.Max(basePrecision * 5.0f, 80f); // At least 80 pixels for final 3 waypoints
+            LogMessage($"[PRECISION] Final 3 waypoints precision: {finalPrecision:F1} (remaining: {remainingWaypoints})");
+            return finalPrecision;
+        }
         
         // For final waypoints (last 20% of path), use much larger precision to prevent oscillation
         if (progressRatio > 0.8f)
         {
-            var finalPrecision = Math.Max(basePrecision * 3.0f, 30f); // At least 30 pixels for final waypoints
+            var finalPrecision = Math.Max(basePrecision * 3.0f, 50f); // At least 50 pixels for final waypoints
             LogMessage($"[PRECISION] Final waypoint precision: {finalPrecision:F1} (progress: {progressRatio:P0})");
             return finalPrecision;
         }
@@ -1161,36 +1171,66 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     
     private int GetOptimizedWaypointIndex()
     {
-        // Look ahead up to 5 waypoints to skip unnecessary intermediate points
-        var lookAheadDistance = Math.Min(5, _currentPath.Count - _currentPathIndex);
-        var currentIndex = _currentPathIndex;
+        // AGGRESSIVE WAYPOINT SKIPPING: Find waypoint that's far enough from current position
+        const int MIN_CLICK_DISTANCE = 150; // Minimum pixels from player before clicking
+        const int PREFERRED_CLICK_DISTANCE = 250; // Preferred distance for smooth movement
+        const int MAX_LOOKAHEAD = 20; // Maximum waypoints to look ahead
         
-        for (int i = 1; i <= lookAheadDistance; i++)
+        var playerScreenPos = GetPlayerScreenPosition();
+        if (!playerScreenPos.HasValue)
         {
-            var futureIndex = _currentPathIndex + i;
-            if (futureIndex >= _currentPath.Count) break;
+            // Fallback to old method if we can't get player position
+            return Math.Min(_currentPathIndex + 5, _currentPath.Count - 1);
+        }
+        
+        int bestWaypointIndex = _currentPathIndex;
+        float bestDistance = 0f;
+        
+        // Look ahead through waypoints to find one that's far enough away
+        for (int i = 1; i <= MAX_LOOKAHEAD && (_currentPathIndex + i) < _currentPath.Count; i++)
+        {
+            int checkIndex = _currentPathIndex + i;
+            var targetPoint = _currentPath[checkIndex];
             
-            var futurePoint = _currentPath[futureIndex];
-            var currentPoint = _currentPath[_currentPathIndex];
-            
-            // Calculate distance - if points are very close together, we can skip intermediate ones
-            var distance = Math.Sqrt(
-                Math.Pow(futurePoint.X - currentPoint.X, 2) + 
-                Math.Pow(futurePoint.Y - currentPoint.Y, 2)
+            // Convert to screen coordinates
+            var worldPos = new Vector3(
+                targetPoint.X * 250f / 23f,
+                targetPoint.Y * 250f / 23f,
+                0
             );
             
-            // If future point is close enough (within ~100 units), we can skip to it
-            if (distance <= 100)
+            var screenPosSharp = GameController.IngameState.Camera.WorldToScreen(worldPos);
+            var screenPos = new Vector2(screenPosSharp.X, screenPosSharp.Y);
+            
+            float distanceFromPlayer = Vector2.Distance(screenPos, playerScreenPos.Value);
+            
+            // Priority 1: Find waypoint at preferred distance
+            if (distanceFromPlayer >= PREFERRED_CLICK_DISTANCE)
             {
-                currentIndex = futureIndex;
+                LogMessage($"[WAYPOINT SKIP] 🎯 Found preferred distance waypoint {checkIndex + 1} at {distanceFromPlayer:F0} pixels (skipped {i} waypoints)");
+                return checkIndex;
             }
-            else
+            
+            // Priority 2: Track best waypoint above minimum distance
+            if (distanceFromPlayer >= MIN_CLICK_DISTANCE && distanceFromPlayer > bestDistance)
             {
-                break; // Too far, stop optimization
+                bestWaypointIndex = checkIndex;
+                bestDistance = distanceFromPlayer;
             }
         }
         
-        return currentIndex;
+        // Use best waypoint above minimum distance, or skip at least 3 waypoints
+        if (bestDistance > 0)
+        {
+            int skipped = bestWaypointIndex - _currentPathIndex;
+            LogMessage($"[WAYPOINT SKIP] ✅ Using minimum distance waypoint {bestWaypointIndex + 1} at {bestDistance:F0} pixels (skipped {skipped} waypoints)");
+            return bestWaypointIndex;
+        }
+        
+        // Fallback: Skip at least 3 waypoints to avoid clicking too close
+        int fallbackIndex = Math.Min(_currentPathIndex + 3, _currentPath.Count - 1);
+        LogMessage($"[WAYPOINT SKIP] ⚠️ Fallback: forcing skip to waypoint {fallbackIndex + 1} (skipped {fallbackIndex - _currentPathIndex} waypoints)");
+        return fallbackIndex;
     }
     
     // STUCK DETECTION SYSTEM
@@ -2363,4 +2403,4 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         
         return score;
     }
-} 
+}
