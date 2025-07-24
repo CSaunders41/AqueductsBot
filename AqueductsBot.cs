@@ -2739,10 +2739,10 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var playerPos = GetPlayerPosition();
             if (playerPos == null) 
             {
-                // Only log this error once every 5 seconds to avoid spam
-                if ((DateTime.Now - _lastCircleErrorLog).TotalSeconds > 5)
+                // Only log this error once every 5 seconds to avoid spam, and only if debug is enabled
+                if (Settings.DebugSettings.DebugMode.Value && (DateTime.Now - _lastCircleErrorLog).TotalSeconds > 5)
                 {
-                    LogImportant($"[CIRCLE ERROR] Player position is null - circle cannot be drawn");
+                    LogMessage($"[CIRCLE ERROR] Player position is null - circle cannot be drawn");
                     _lastCircleErrorLog = DateTime.Now;
                 }
                 return;
@@ -2755,7 +2755,10 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             if (radius <= 0)
             {
                 radius = 300f; // Default fallback
-                LogImportant($"[CIRCLE DEBUG] Using fallback radius: {radius} (setting was invalid)");
+                if (Settings.DebugSettings.DebugMode.Value)
+                {
+                    LogMessage($"[CIRCLE DEBUG] Using fallback radius: {radius} (setting was invalid)");
+                }
             }
             
             // Convert world position to screen position
@@ -2768,11 +2771,14 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var radiusScreenPosSharp = GameController.IngameState.Camera.WorldToScreen(radiusWorldPos); 
             var screenRadius = Math.Abs(radiusScreenPosSharp.X - screenPosSharp.X);
             
-            // Only log debug info if there are issues or on first successful draw
-            if (!_firstCircleDrawLogged || screenRadius <= 0)
+            // Only log debug info on first successful draw or if there are issues (and only if debug is enabled)
+            if (Settings.DebugSettings.DebugMode.Value && (!_firstCircleDrawLogged || screenRadius <= 0))
             {
-                LogImportant($"[CIRCLE DEBUG] Drawing circle - Screen center: ({centerScreen.X:F0}, {centerScreen.Y:F0}), screen radius: {screenRadius:F0}");
-                _firstCircleDrawLogged = true;
+                LogMessage($"[CIRCLE DEBUG] Drawing circle - Screen center: ({centerScreen.X:F0}, {centerScreen.Y:F0}), screen radius: {screenRadius:F0}");
+                if (screenRadius > 0) // Only mark as logged if it's a successful draw
+                {
+                    _firstCircleDrawLogged = true;
+                }
             }
             
             // Draw circle using ImGui
@@ -2787,7 +2793,11 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         }
         catch (Exception ex)
         {
-            LogImportant($"[CIRCLE DEBUG] Error drawing circle: {ex.Message}");
+            // Only log errors if debug is enabled
+            if (Settings.DebugSettings.DebugMode.Value)
+            {
+                LogMessage($"[CIRCLE ERROR] Error drawing circle: {ex.Message}");
+            }
         }
     }
 
