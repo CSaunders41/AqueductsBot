@@ -2612,7 +2612,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             return finalPoint;
         }
         
-        // Option 1: Look for any point that's far enough ahead
+        // Option 1: Look for any point that's far enough ahead - use pursuit radius as minimum
+        var minimumTargetDistance = basePursuitRadius * 0.8f; // At least 80% of pursuit radius
         for (int distance = 3; distance <= 20; distance += 3) // Increased granularity
         {
             int fallbackIndex = Math.Min(startIndex + distance, path.Count - 1);
@@ -2621,22 +2622,23 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var fallbackPoint = new System.Numerics.Vector2(path[fallbackIndex].X, path[fallbackIndex].Y);
             var fallbackDistance = System.Numerics.Vector2.Distance(playerWorldPos, fallbackPoint);
             
-            if (fallbackDistance >= 20f) // Reduced minimum distance for better responsiveness
+            if (fallbackDistance >= minimumTargetDistance) // Use pursuit radius as minimum distance
             {
-                LogMessage($"[PURSUIT] ⚡ Using distance-based fallback: index {fallbackIndex}, point ({fallbackPoint.X:F0}, {fallbackPoint.Y:F0}), distance {fallbackDistance:F1}");
+                LogMessage($"[PURSUIT] ⚡ Using distance-based fallback: index {fallbackIndex}, point ({fallbackPoint.X:F0}, {fallbackPoint.Y:F0}), distance {fallbackDistance:F1} (min: {minimumTargetDistance:F1})");
                 return fallbackPoint;
             }
         }
         
-        // Option 2: Just use the next valid point in the path, regardless of distance
+        // Option 2: Use the next valid point in the path, but enforce minimum distance
+        var absoluteMinimumDistance = Math.Max(basePursuitRadius * 0.5f, 50f); // At least half pursuit radius or 50 units
         for (int i = startIndex + 1; i < path.Count; i++)
         {
             var point = new System.Numerics.Vector2(path[i].X, path[i].Y);
             var distance = System.Numerics.Vector2.Distance(playerWorldPos, point);
             
-            if (distance >= 8f) // Reduced minimum distance
+            if (distance >= absoluteMinimumDistance)
             {
-                LogMessage($"[PURSUIT] 🔧 Emergency fallback: index {i}, point ({point.X:F0}, {point.Y:F0}), distance {distance:F1}");
+                LogMessage($"[PURSUIT] 🔧 Emergency fallback: index {i}, point ({point.X:F0}, {point.Y:F0}), distance {distance:F1} (min: {absoluteMinimumDistance:F1})");
                 return point;
             }
         }
@@ -2725,7 +2727,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             if (playerPos == null) return;
             
             var playerWorldPos = new System.Numerics.Vector2(playerPos.GridPos.X, playerPos.GridPos.Y);
-            var radius = Settings.RadarSettings.PlayerCircleRadius.Value; // Use the dedicated player circle radius setting
+            var radius = Settings.MovementSettings.PursuitRadius.Value; // Use the same radius as movement calculations
             
             // Convert world position to screen position
             var worldPos = new Vector3(playerWorldPos.X * 250f / 23f, playerWorldPos.Y * 250f / 23f, 0);

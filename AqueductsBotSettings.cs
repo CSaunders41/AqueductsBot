@@ -27,11 +27,8 @@ public class RadarSettings
     [Menu("Path Intersect Range", "Range for radar path intersection detection", 63)]
     public RangeNode<float> PathIntersectRange { get; set; } = new RangeNode<float>(150f, 75f, 300f);
     
-    [Menu("Show Player Circle", "Show diameter circle around player representing calculation radius")]
+    [Menu("Show Player Circle", "Show pursuit radius circle around player (matches movement calculations)")]
     public ToggleNode ShowPlayerCircle { get; set; } = new ToggleNode(false);
-    
-    [Menu("Player Circle Radius", "Radius of the visual circle around player (pixels)", 66)]
-    public RangeNode<float> PlayerCircleRadius { get; set; } = new RangeNode<float>(200f, 50f, 500f);
     
     [Menu("Waypoint Check Frequency", "How often to check for next waypoint (ms)", 64)]
     public RangeNode<int> WaypointCheckFrequency { get; set; } = new RangeNode<int>(500, 100, 2000);
@@ -58,7 +55,7 @@ public class MovementSettings
     [Menu("Max Move Delay", "Maximum delay between movements (ms)", 53)]
     public RangeNode<int> MaxMoveDelayMs { get; set; } = new RangeNode<int>(800, 200, 2000);
     
-    [Menu("Pursuit Radius", "Radius for path intersection navigation (larger = smoother, smaller = more precise)", 54)]
+    [Menu("Pursuit Radius", "Radius for path intersection navigation - this is where clicks will target (larger = smoother, smaller = more precise)", 54)]
     public RangeNode<float> PursuitRadius { get; set; } = new RangeNode<float>(300f, 150f, 500f);
     
     [Menu("Auto-Click Delay", "Delay between automatic clicks (ms)", 55)]
