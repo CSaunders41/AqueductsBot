@@ -1101,8 +1101,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         }
         else
         {
-            var targetDistance = System.Numerics.Vector2.Distance(playerWorldPos, targetPoint.Value);
-            LogImportant($"[PURSUIT] ✅ Found radius-based target: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {targetDistance:F1}");
+            var pursuitDistance = System.Numerics.Vector2.Distance(playerWorldPos, targetPoint.Value);
+            LogImportant($"[PURSUIT] ✅ Found radius-based target: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {pursuitDistance:F1}");
         }
 
         // Convert world position to screen coordinates for clicking
