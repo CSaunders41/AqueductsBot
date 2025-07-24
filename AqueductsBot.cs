@@ -145,37 +145,27 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     
     private void LogMessage(string message)
     {
+        // Only log if debug messages are enabled
+        if (!Settings.DebugSettings.DebugMode.Value) return;
+        
         lock (_logLock)
-        {
-            var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
-            var logLine = $"[{timestamp}] {message}";
+        { 
+            if (message == _lastLogMessage) return; // Prevent spam
+            _lastLogMessage = message;
             
-            // Store in memory (keep last 100 messages for UI)
-            _logMessages.Add(logLine);
-            if (_logMessages.Count > 100)
+            var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
+            var fullMessage = $"[{timestamp}] {message}";
+            
+            _logMessages.Add(fullMessage);
+            
+            // Keep only last 50 messages to prevent memory issues
+            if (_logMessages.Count > 50)
             {
                 _logMessages.RemoveAt(0);
             }
             
-            // Update last message for simple UI display
-            _lastLogMessage = logLine;
-            
-            // Write to console
-            Console.WriteLine($"[AqueductsBot] {logLine}");
-            Debug.WriteLine($"[AqueductsBot] {logLine}");
-            
-            // Write to log file
-            if (!string.IsNullOrEmpty(_logFilePath))
-            {
-                try
-                {
-                    File.AppendAllText(_logFilePath, logLine + Environment.NewLine);
-                }
-                catch
-                {
-                    // Ignore file write errors to prevent crashes
-                }
-            }
+            // Also log to ExileApi console
+            LogError(fullMessage);
         }
     }
     
@@ -298,9 +288,15 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             }
             
             // Debug rendering
-            if (Settings.DebugSettings.DebugMode && Settings.DebugSettings.ShowPathPoints && _currentPath.Count > 0)
+            if (Settings.DebugSettings.DebugMode.Value && Settings.DebugSettings.ShowPathPoints.Value && _currentPath.Count > 0)
             {
                 DrawPathDebug();
+            }
+            
+            // Show player calculation circle if enabled
+            if (Settings.RadarSettings.ShowPlayerCircle.Value)
+            {
+                DrawPlayerCircle();
             }
         }
         catch (Exception ex)
@@ -567,8 +563,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 }
                 else
                 {
-                    // Try to reconnect to Radar every 2 seconds (in case of load order issues)
-                    if ((DateTime.Now - _lastRadarRetry).TotalSeconds >= 2)
+                    // Try to reconnect to Radar based on configured interval
+                    if ((DateTime.Now - _lastRadarRetry).TotalSeconds >= Settings.TimingSettings.RadarRetryInterval.Value)
                     {
                         TryConnectToRadar();
                         _lastRadarRetry = DateTime.Now;
@@ -606,7 +602,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 if (CanRequestNewPath())
                 {
                     // Only request path if we haven't requested one recently (prevent spam)
-                    if ((DateTime.Now - _lastActionTime).TotalSeconds >= 3)
+                    var waypointCheckFrequency = Settings.RadarSettings.WaypointCheckFrequency.Value / 1000.0; // Convert ms to seconds
+                    if ((DateTime.Now - _lastActionTime).TotalSeconds >= waypointCheckFrequency)
                     {
                         LogMessage("[ENHANCED PATHFINDING] Player in Aqueducts and Radar available - using smart target selection");
                         RequestPathToExit();
@@ -615,9 +612,9 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 }
                 else if (_lastPathRequest != DateTime.MinValue)
                 {
-                    // Check for timeout - if no callback after 15 seconds, something is wrong
+                    // Check for timeout based on configured path request timeout
                     var timeSinceRequest = (DateTime.Now - _lastPathRequest).TotalSeconds;
-                    if (timeSinceRequest > 15)
+                    if (timeSinceRequest > Settings.RadarSettings.PathRequestTimeout.Value)
                     {
                         LogMessage($"[TIMEOUT] No valid path received after {timeSinceRequest:F1} seconds - retrying pathfinding");
                         _lastPathRequest = DateTime.MinValue;
@@ -756,8 +753,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     
     private bool CanRequestNewPath()
     {
-        // Don't spam path requests
-        return (DateTime.Now - _lastActionTime).TotalMilliseconds > 1000;
+        // Don't spam path requests - use configured interval
+        return (DateTime.Now - _lastActionTime).TotalMilliseconds > Settings.RadarSettings.WaypointCheckFrequency.Value;
     }
     
     private void RequestPathToExit()
@@ -770,7 +767,10 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             // Check if radar is still available
             if (!_radarAvailable || _radarLookForRoute == null)
             {
-                LogMessage("[ERROR] Radar not available when trying to request path");
+                if (Settings.DebugSettings.ShowRadarStatus.Value)
+                {
+                    LogMessage("[ERROR] Radar not available when trying to request path");
+                }
                 _currentState = BotState.WaitingForRadar;
                 return;
             }
@@ -915,7 +915,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 _radarLookForRoute(position, targetCallback, CancellationToken.None);
                 
                 // Small delay between requests to avoid overwhelming the pathfinder
-                Thread.Sleep(50);
+                Thread.Sleep(Settings.MovementSettings.AutoClickDelay.Value);
             }
             catch (Exception ex)
             {
@@ -948,7 +948,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             if (_currentPath.Count > 0 && _currentPathStartTime != DateTime.MinValue)
             {
                 var pathAge = (DateTime.Now - _currentPathStartTime).TotalSeconds;
-                if (pathAge > 30) // Path is stale after 30 seconds
+                if (pathAge > Settings.TimingSettings.PathStalenessTime.Value) // Path is stale after configured time
                 {
                     isCurrentPathStale = true;
                     LogMessage($"[PATH STALENESS] Current path is {pathAge:F1} seconds old - considering replacement");
@@ -987,14 +987,14 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 
                 LogMessage($"[PATH ANALYSIS] Current path score: {currentPathScore:F2}, New path ({targetReason}) score: {newPathScore:F2}");
                 
-                // STABILITY: Require significant improvement to switch paths (increased threshold)
-                if (newPathScore > currentPathScore + 0.15f) // Increased from 0.1f to 0.15f
+                // STABILITY: Require significant improvement to switch paths (configurable threshold)
+                if (newPathScore > currentPathScore + Settings.ConfigurationSettings.PathScoreThreshold.Value)
                 {
                     shouldAcceptPath = true;
                     acceptReason = $"significantly better direction (score: {newPathScore:F2} vs {currentPathScore:F2})";
                 }
                 // If directional scores are similar, prefer much shorter paths only
-                else if (Math.Abs(newPathScore - currentPathScore) <= 0.1f && path.Count < _currentPath.Count * 0.7f) // Stricter: 70% instead of 80%
+                else if (Math.Abs(newPathScore - currentPathScore) <= Settings.ConfigurationSettings.PathScoreThreshold.Value && path.Count < _currentPath.Count * 0.7f) // Use configurable threshold
                 {
                     shouldAcceptPath = true;
                     acceptReason = $"similar direction, much shorter ({path.Count} vs {_currentPath.Count} points)";
@@ -1092,15 +1092,17 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             _stuckTargetCount++;
             
             // DYNAMIC STUCK THRESHOLD: Be more sensitive near end of path
-            var stuckThreshold = remainingPathWaypoints <= 5 ? 3 : 5; // Reduced for debugging: was 5:10, now 3:5
+            var baseStuckThreshold = Settings.MovementSettings.StuckDetectionThreshold.Value;
+            var stuckThreshold = remainingPathWaypoints <= 5 ? Math.Max(baseStuckThreshold - 2, 3) : baseStuckThreshold;
             
             if (_stuckTargetCount >= stuckThreshold)
             {
                 LogMessage($"[STUCK DETECTION] 🚨 Stuck on same target for {_stuckTargetCount} attempts (threshold: {stuckThreshold}) - forcing advancement!");
                 LogMessage($"[STUCK DEBUG] 📍 Player position hasn't changed from ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}) - character may be physically blocked!");
                 
-                // SMART ADVANCEMENT: Less aggressive near end of path
-                var forceAdvancement = remainingPathWaypoints <= 5 ? 3 : 10; // Increased advancement for debugging
+                // SMART ADVANCEMENT: Less aggressive near end of path  
+                var baseAdvancement = (int)(Settings.MovementSettings.PathAdvancementDistance.Value / 25f); // Convert pixels to waypoint steps
+                var forceAdvancement = remainingPathWaypoints <= 5 ? Math.Max(baseAdvancement / 2, 3) : baseAdvancement;
                 _currentPathIndex = Math.Min(_currentPathIndex + forceAdvancement, _currentPath.Count - 1);
                 _stuckTargetCount = 0;
                 _lastPathAdvancement = DateTime.Now;
@@ -1205,7 +1207,11 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         _lastMovementTime = DateTime.Now;
         
         LogMessage($"[MOVEMENT] 🎮 EXECUTING MOVEMENT: cursor to ({screenPos.X:F0}, {screenPos.Y:F0}) + press T (distance: {distanceToTarget:F1})");
-        LogMessage($"[MOVEMENT DEBUG] 📍 Player at ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}) → Target ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0})");
+        
+        if (Settings.DebugSettings.ShowMovementDebug.Value)
+        {
+            LogMessage($"[MOVEMENT DEBUG] 📍 Player at ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}) → Target ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0})");
+        }
         
         ClickAt((int)screenPos.X, (int)screenPos.Y);
         PressAndHoldKey(Keys.T);
@@ -1286,9 +1292,9 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     private int GetOptimizedWaypointIndex()
     {
         // CONSERVATIVE WAYPOINT SKIPPING: Better balance between distance and stability
-        const int MIN_CLICK_DISTANCE = 200; // Increased minimum distance
-        const int PREFERRED_CLICK_DISTANCE = 350; // Increased preferred distance for smoother movement
-        const int MAX_LOOKAHEAD = 15; // Reduced to prevent over-analysis
+        var MIN_CLICK_DISTANCE = Settings.ConfigurationSettings.MinClickDistance.Value;
+        var PREFERRED_CLICK_DISTANCE = Settings.ConfigurationSettings.PreferredClickDistance.Value;
+        var MAX_LOOKAHEAD = Settings.ConfigurationSettings.MaxLookaheadWaypoints.Value;
         
         var playerScreenPos = GetPlayerScreenPosition();
         if (!playerScreenPos.HasValue)
@@ -2471,8 +2477,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                     LogMessage($"[AREA INTERACTION] Clicking on area transition at ({screenPos.X:F0}, {screenPos.Y:F0})");
                     ClickAt((int)screenPos.X, (int)screenPos.Y);
                     
-                    // Wait a moment for the transition
-                    Thread.Sleep(1000);
+                    // Wait based on configured area transition delay  
+                    Thread.Sleep(Settings.TimingSettings.AreaTransitionDelay.Value);
                 }
             }
         }
@@ -2512,8 +2518,11 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         var score = 0.5f + (directionalProgress / 200f) + explorationBonus; // Baseline 0.5, +/- up to ~0.5 based on direction
         score = Math.Max(0f, Math.Min(1f, score)); // Clamp to 0-1 range
         
-        LogMessage($"[DIRECTION ANALYSIS] {pathName}: spawn=({_initialSpawnPosition.X:F0},{_initialSpawnPosition.Y:F0}), start=({pathStart.X:F0},{pathStart.Y:F0}), end=({pathEnd.X:F0},{pathEnd.Y:F0})");
-        LogMessage($"[DIRECTION ANALYSIS] {pathName}: distance to start={distanceToStart:F1}, distance to end={distanceToEnd:F1}, progress={directionalProgress:F1}, score={score:F2}");
+        if (Settings.DebugSettings.LogPathAnalysis.Value)
+        {
+            LogMessage($"[DIRECTION ANALYSIS] {pathName}: spawn=({_initialSpawnPosition.X:F0},{_initialSpawnPosition.Y:F0}), start=({pathStart.X:F0},{pathStart.Y:F0}), end=({pathEnd.X:F0},{pathEnd.Y:F0})");
+            LogMessage($"[DIRECTION ANALYSIS] {pathName}: distance to start={distanceToStart:F1}, distance to end={distanceToEnd:F1}, progress={directionalProgress:F1}, score={score:F2}");
+        }
         
         return score;
     }
@@ -2558,11 +2567,15 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             if (intersection.HasValue)
             {
                 var distanceToIntersection = System.Numerics.Vector2.Distance(playerWorldPos, intersection.Value);
-                LogMessage($"[PURSUIT DEBUG] Intersection at segment {i}: ({intersection.Value.X:F0}, {intersection.Value.Y:F0}), distance: {distanceToIntersection:F1}");
+                if (Settings.DebugSettings.ShowIntersectionPoints.Value)
+                {
+                    LogMessage($"[PURSUIT DEBUG] Intersection at segment {i}: ({intersection.Value.X:F0}, {intersection.Value.Y:F0}), distance: {distanceToIntersection:F1}");
+                }
                 
                 // Accept intersections within a reasonable range (more lenient for end of path)
-                var minRadius = dynamicRadius * 0.4f; // More lenient minimum
-                var maxRadius = dynamicRadius * 1.6f; // More lenient maximum
+                var tolerance = Settings.ConfigurationSettings.CircleIntersectionTolerance.Value;
+                var minRadius = dynamicRadius * tolerance; 
+                var maxRadius = dynamicRadius * (2.0f - tolerance); // Inversely related for balance
                 
                 if (distanceToIntersection >= minRadius && distanceToIntersection <= maxRadius)
                 {
@@ -2685,5 +2698,43 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         }
         
         return bestIntersection;
+    }
+    
+    // Add after the existing DrawPathDebug method (around line 2690)
+    
+    private void DrawPlayerCircle()
+    {
+        try
+        {
+            var playerPos = GetPlayerPosition();
+            if (playerPos == null) return;
+            
+            var playerWorldPos = new System.Numerics.Vector2(playerPos.GridPos.X, playerPos.GridPos.Y);
+            var radius = Settings.MovementSettings.PursuitRadius.Value;
+            
+            // Convert world position to screen position
+            var worldPos = new Vector3(playerWorldPos.X * 250f / 23f, playerWorldPos.Y * 250f / 23f, 0);
+            var screenPosSharp = GameController.IngameState.Camera.WorldToScreen(worldPos);
+            var centerScreen = new System.Numerics.Vector2(screenPosSharp.X, screenPosSharp.Y);
+            
+            // Calculate screen radius based on zoom level
+            var radiusWorldPos = new Vector3((playerWorldPos.X + radius) * 250f / 23f, playerWorldPos.Y * 250f / 23f, 0);
+            var radiusScreenPosSharp = GameController.IngameState.Camera.WorldToScreen(radiusWorldPos); 
+            var screenRadius = Math.Abs(radiusScreenPosSharp.X - screenPosSharp.X);
+            
+            // Draw circle using ImGui
+            var drawList = ImGui.GetBackgroundDrawList();
+            var color = ImGui.ColorConvertFloat4ToU32(new System.Numerics.Vector4(0.0f, 1.0f, 0.0f, 0.3f)); // Semi-transparent green
+            
+            // Draw multiple circles for better visibility
+            for (int i = 0; i < 3; i++)
+            {
+                drawList.AddCircle(centerScreen, screenRadius + i, color, 64, 2.0f);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Don't spam errors for rendering issues
+        }
     }
 }
