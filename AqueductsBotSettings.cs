@@ -8,10 +8,10 @@ namespace AqueductsBot;
 [Submenu]
 public class BotSettings
 {
-    [Menu(null, "Maximum runs before stopping (0 = infinite)")]
+    [Menu("Max Runs", "Maximum runs before stopping (0 = infinite)")]
     public RangeNode<int> MaxRuns { get; set; } = new RangeNode<int>(0, 0, 1000);
     
-    [Menu(null, "Maximum runtime in minutes before stopping (0 = infinite)")]
+    [Menu("Max Runtime Minutes", "Maximum runtime in minutes before stopping (0 = infinite)")]
     public RangeNode<int> MaxRuntimeMinutes { get; set; } = new RangeNode<int>(0, 0, 300);
 }
 
@@ -30,6 +30,9 @@ public class RadarSettings
     [Menu("Show Player Circle", "Show diameter circle around player representing calculation radius")]
     public ToggleNode ShowPlayerCircle { get; set; } = new ToggleNode(false);
     
+    [Menu("Player Circle Radius", "Radius of the visual circle around player (pixels)", 66)]
+    public RangeNode<float> PlayerCircleRadius { get; set; } = new RangeNode<float>(200f, 50f, 500f);
+    
     [Menu("Waypoint Check Frequency", "How often to check for next waypoint (ms)", 64)]
     public RangeNode<int> WaypointCheckFrequency { get; set; } = new RangeNode<int>(500, 100, 2000);
     
@@ -40,11 +43,11 @@ public class RadarSettings
 [Submenu]
 public class MovementSettings
 {
-    [Menu(null, "Use keyboard key for movement instead of mouse clicks")]
+    [Menu("Use Keyboard Movement", "Use keyboard key for movement instead of mouse clicks")]
     public ToggleNode UseMovementKey { get; set; } = new ToggleNode(false);
     
-    [Menu(null, "Movement key to use (requires UseMovementKey enabled)")]
-    public HotkeyNode MovementKey { get; set; } = new HotkeyNode(Keys.None);
+    [Menu("Movement Key", "Movement key to use (requires UseMovementKey enabled)")]
+    public HotkeyNode MovementKey { get; set; } = new HotkeyNode(Keys.T);
     
     [Menu("Movement Precision", "Precision for waypoint detection (pixels)", 51)]
     public RangeNode<float> MovementPrecision { get; set; } = new RangeNode<float>(10f, 5f, 50f);
@@ -93,7 +96,7 @@ public class DebugSettings
     [Menu("Debug Messages", "Enable detailed logging and debug information")]
     public ToggleNode DebugMode { get; set; } = new ToggleNode(false);
     
-    [Menu(null, "Show visual path points on screen")]
+    [Menu("Show Path Points", "Show visual path points on screen")]
     public ToggleNode ShowPathPoints { get; set; } = new ToggleNode(true);
     
     [Menu("Show Intersection Points", "Display path intersection calculations")]
@@ -107,6 +110,12 @@ public class DebugSettings
     
     [Menu("Show Radar Status", "Display radar connection and pathfinding status")]
     public ToggleNode ShowRadarStatus { get; set; } = new ToggleNode(true);
+    
+    [Menu("Popout Status Window", "Show status information in separate moveable window")]
+    public ToggleNode ShowPopoutStatus { get; set; } = new ToggleNode(false);
+    
+    [Menu("Popout Pathfinding Window", "Show pathfinding details in separate moveable window")]
+    public ToggleNode ShowPopoutPathfinding { get; set; } = new ToggleNode(false);
 }
 
 [Submenu]
@@ -132,11 +141,7 @@ public class AqueductsBotSettings : ISettings
 {
     public ToggleNode Enable { get; set; } = new ToggleNode(false);
     
-    [Menu("Movement", "Use keyboard key for movement instead of mouse clicks")]
-    public ToggleNode UseMovementKey { get; set; } = new ToggleNode(false);
-    
-    [Menu("Movement Key", "Key to press for movement (leave as None to use mouse clicks)")]
-    public HotkeyNode MovementKey { get; set; } = new HotkeyNode(Keys.T);
+    // Removed duplicate movement settings - they're now only in MovementSettings section
     
     [Menu("Bot Settings", "")]
     public BotSettings BotSettings { get; set; } = new BotSettings();

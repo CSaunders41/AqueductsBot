@@ -347,128 +347,159 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         base.DrawSettings();
         
         ImGui.Separator();
-        ImGui.Separator();
         
-        // Then add our custom status display below
-        // Declare variables early for UI usage
-        bool keyboardEnabled = Settings.UseMovementKey || Settings.MovementSettings.UseMovementKey;
-        Keys currentMovementKey = Settings.MovementKey.Value != Keys.None ? Settings.MovementKey.Value : Settings.MovementSettings.MovementKey.Value;
+        // Draw popout windows if enabled
+        if (Settings.DebugSettings.ShowPopoutStatus.Value)
+        {
+            DrawPopoutStatusWindow();
+        }
         
-        // ===== ENHANCED STATUS DISPLAY =====
+        if (Settings.DebugSettings.ShowPopoutPathfinding.Value)
+        {
+            DrawPopoutPathfindingWindow();
+        }
+        
+        // Streamlined main status display
+        DrawMainStatusDisplay();
+    }
+    
+    private void DrawPopoutStatusWindow()
+    {
+        if (ImGui.Begin("AqueductsBot Status", ref Settings.DebugSettings.ShowPopoutStatus.Value))
+        {
+            // Declare variables for UI usage
+            bool keyboardEnabled = Settings.MovementSettings.UseMovementKey.Value;
+            Keys currentMovementKey = Settings.MovementSettings.MovementKey.Value;
+            
+            ImGui.TextColored(new System.Numerics.Vector4(0, 1, 0, 1), "🚀 AQUADUCTS BOT STATUS");
+            ImGui.Separator();
+            
+            // Core Status Information
+            ImGui.Text($"Bot State: {_currentState}");
+            ImGui.Text($"Radar Connection: {(_radarAvailable ? "✅ Connected" : "❌ Disconnected")}");
+            ImGui.Text($"Runs Completed: {_runsCompleted}");
+            ImGui.Text($"Movement Method: {(keyboardEnabled ? $"🎮 Keyboard ({currentMovementKey})" : "🖱️ Mouse Clicks")}");
+            
+            // Path Information
+            if (_currentPath.Count > 0)
+            {
+                ImGui.TextColored(new System.Numerics.Vector4(0, 0.8f, 1, 1), $"📍 Current Path: {_currentPathIndex + 1}/{_currentPath.Count} waypoints");
+                var progress = (float)_currentPathIndex / _currentPath.Count;
+                ImGui.ProgressBar(progress, new System.Numerics.Vector2(200, 20), $"{progress * 100:F1}%");
+            }
+            else
+            {
+                ImGui.Text("📍 Current Path: No active path");
+            }
+            
+            // Runtime Information
+            if (_botStartTime != default)
+            {
+                var runtime = DateTime.Now - _botStartTime;
+                ImGui.Text($"⏱️ Runtime: {runtime:hh\\:mm\\:ss}");
+            }
+        }
+        ImGui.End();
+    }
+    
+    private void DrawPopoutPathfindingWindow()
+    {
+        if (ImGui.Begin("AqueductsBot Pathfinding", ref Settings.DebugSettings.ShowPopoutPathfinding.Value))
+        {
+            ImGui.TextColored(new System.Numerics.Vector4(0, 1, 0, 1), "🧭 PATHFINDING SYSTEM");
+            ImGui.Separator();
+            
+            ImGui.BulletText("Smart target selection with 30+ strategic points");
+            ImGui.BulletText("Path optimization with waypoint reduction");
+            ImGui.BulletText("Dynamic movement precision and timing");
+            ImGui.BulletText("Stuck detection and recovery system");
+            ImGui.BulletText("Automatic area transition detection");
+            ImGui.BulletText("Cardinal direction + edge-based exploration");
+            
+            ImGui.Separator();
+            
+            // Current State Display
+            switch (_currentState)
+            {
+                case BotState.Disabled:
+                    if (_radarAvailable)
+                    {
+                        ImGui.TextColored(new System.Numerics.Vector4(0, 1, 0, 1), "🟢 READY TO START");
+                        ImGui.Text("Bot is ready! Press F1 or start button to begin.");
+                    }
+                    else
+                    {
+                        ImGui.TextColored(new System.Numerics.Vector4(1, 0.5f, 0, 1), "🟡 WAITING FOR RADAR");
+                        ImGui.Text("Radar plugin connection required for pathfinding.");
+                    }
+                    break;
+                    
+                case BotState.WaitingForRadar:
+                    ImGui.TextColored(new System.Numerics.Vector4(1, 0.5f, 0, 1), "🔍 CONNECTING TO RADAR...");
+                    ImGui.Text("Attempting to establish pathfinding connection.");
+                    break;
+                    
+                case BotState.WaitingForAqueducts:
+                    ImGui.TextColored(new System.Numerics.Vector4(0, 0.8f, 1, 1), "🗺️ WAITING FOR AQUEDUCTS");
+                    ImGui.Text("Navigate to Aqueducts area to begin automated farming.");
+                    break;
+                    
+                case BotState.MovingAlongPath:
+                    ImGui.TextColored(new System.Numerics.Vector4(0, 1, 0, 1), "🏃 NAVIGATING TO EXIT");
+                    ImGui.Text("Following optimized path with intelligent movement.");
+                    if (_currentPath.Count > 0)
+                    {
+                        var remaining = _currentPath.Count - _currentPathIndex;
+                        ImGui.Text($"Waypoints remaining: {remaining} | Stuck detection: Active");
+                    }
+                    break;
+                    
+                case BotState.AtAreaExit:
+                    ImGui.TextColored(new System.Numerics.Vector4(0, 1, 1, 1), "🚪 AT AREA EXIT");
+                    ImGui.Text("Monitoring for area transition or requesting extended path.");
+                    break;
+                    
+                case BotState.Error:
+                    ImGui.TextColored(new System.Numerics.Vector4(1, 0, 0, 1), "❌ ERROR STATE");
+                    ImGui.Text("Bot encountered an error. Check logs and restart.");
+                    break;
+            }
+        }
+        ImGui.End();
+    }
+    
+    private void DrawMainStatusDisplay()
+    {
+        // Streamlined main display
         ImGui.TextColored(new System.Numerics.Vector4(0, 1, 0, 1), "🚀 AQUADUCTS BOT - PATHFINDING ENABLED");
-        ImGui.Separator();
         
-        // Core Status Information
-        ImGui.Text($"Bot State: {_currentState}");
-        ImGui.Text($"Radar Connection: {(_radarAvailable ? "✅ Connected" : "❌ Disconnected")}");
-        ImGui.Text($"Runs Completed: {_runsCompleted}");
-        ImGui.Text($"Movement Method: {(keyboardEnabled ? $"🎮 Keyboard ({currentMovementKey})" : "🖱️ Mouse Clicks")}");
+        // Quick status line
+        var statusColor = _currentState switch
+        {
+            BotState.Disabled => new System.Numerics.Vector4(0.7f, 0.7f, 0.7f, 1),
+            BotState.WaitingForRadar => new System.Numerics.Vector4(1, 0.5f, 0, 1),
+            BotState.WaitingForAqueducts => new System.Numerics.Vector4(0, 0.8f, 1, 1),
+            BotState.MovingAlongPath => new System.Numerics.Vector4(0, 1, 0, 1),
+            BotState.AtAreaExit => new System.Numerics.Vector4(0, 1, 1, 1),
+            BotState.Error => new System.Numerics.Vector4(1, 0, 0, 1),
+            _ => new System.Numerics.Vector4(1, 1, 1, 1)
+        };
         
-        // Path Information
+        ImGui.TextColored(statusColor, $"Status: {_currentState} | Radar: {(_radarAvailable ? "Connected" : "Disconnected")} | Runs: {_runsCompleted}");
+        
         if (_currentPath.Count > 0)
         {
-            ImGui.TextColored(new System.Numerics.Vector4(0, 0.8f, 1, 1), $"📍 Current Path: {_currentPathIndex + 1}/{_currentPath.Count} waypoints");
             var progress = (float)_currentPathIndex / _currentPath.Count;
-            ImGui.ProgressBar(progress, new System.Numerics.Vector2(200, 20), $"{progress * 100:F1}%");
-        }
-        else
-        {
-            ImGui.Text("📍 Current Path: No active path");
-        }
-        
-        // Runtime Information
-        if (_botStartTime != default)
-        {
-            var runtime = DateTime.Now - _botStartTime;
-            ImGui.Text($"⏱️ Runtime: {runtime:hh\\:mm\\:ss}");
+            ImGui.ProgressBar(progress, new System.Numerics.Vector2(-1, 20), $"Path Progress: {_currentPathIndex + 1}/{_currentPath.Count} ({progress * 100:F1}%)");
         }
         
         ImGui.Separator();
         
-        // ===== ENHANCED SYSTEM STATUS =====
-        ImGui.TextColored(new System.Numerics.Vector4(0, 1, 0, 1), "✅ PATHFINDING SYSTEM ACTIVE:");
-        ImGui.BulletText("Smart target selection with 30+ strategic points");
-        ImGui.BulletText("Path optimization with waypoint reduction");
-        ImGui.BulletText("Dynamic movement precision and timing");
-        ImGui.BulletText("Stuck detection and recovery system");
-        ImGui.BulletText("Automatic area transition detection");
-        ImGui.BulletText("Cardinal direction + edge-based exploration");
-        
-        ImGui.Separator();
-        
-        // ===== CURRENT STATE DISPLAY =====
-        switch (_currentState)
-        {
-            case BotState.Disabled:
-                if (_radarAvailable)
-                {
-                    ImGui.TextColored(new System.Numerics.Vector4(0, 1, 0, 1), "🟢 READY TO START");
-                    ImGui.Text("Bot is ready! Press F1 or 'Start Bot' to begin intelligent navigation.");
-                }
-                else
-                {
-                    ImGui.TextColored(new System.Numerics.Vector4(1, 0.5f, 0, 1), "🟡 WAITING FOR RADAR");
-                    ImGui.Text("Radar plugin connection required for pathfinding.");
-                }
-                break;
-                
-            case BotState.WaitingForRadar:
-                ImGui.TextColored(new System.Numerics.Vector4(1, 0.5f, 0, 1), "🔍 CONNECTING TO RADAR...");
-                ImGui.Text("Attempting to establish pathfinding connection.");
-                break;
-                
-            case BotState.WaitingForAqueducts:
-                ImGui.TextColored(new System.Numerics.Vector4(0, 0.8f, 1, 1), "🗺️ WAITING FOR AQUEDUCTS");
-                ImGui.Text("Navigate to Aqueducts area to begin automated farming.");
-                break;
-                
-            case BotState.GettingPath:
-                ImGui.TextColored(new System.Numerics.Vector4(1, 1, 0, 1), "🧭 CALCULATING OPTIMAL PATH...");
-                ImGui.Text("Smart pathfinding: Trying multiple strategic targets.");
-                if (_lastPathRequest != DateTime.MinValue)
-                {
-                    var elapsed = (DateTime.Now - _lastPathRequest).TotalSeconds;
-                    ImGui.Text($"Search time: {elapsed:F1}s (testing cardinal directions, edges, spiral patterns)");
-                }
-                break;
-                
-            case BotState.MovingAlongPath:
-                ImGui.TextColored(new System.Numerics.Vector4(0, 1, 0, 1), "🏃 NAVIGATING TO EXIT");
-                ImGui.Text("Following optimized path with intelligent movement.");
-                if (_currentPath.Count > 0)
-                {
-                    var remaining = _currentPath.Count - _currentPathIndex;
-                    ImGui.Text($"Waypoints remaining: {remaining} | Stuck detection: Active");
-                }
-                break;
-                
-            case BotState.AtAreaExit:
-                ImGui.TextColored(new System.Numerics.Vector4(0, 1, 1, 1), "🚪 AT AREA EXIT");
-                ImGui.Text("Monitoring for area transition or requesting extended path.");
-                break;
-                
-            case BotState.Error:
-                ImGui.TextColored(new System.Numerics.Vector4(1, 0, 0, 1), "❌ ERROR STATE");
-                ImGui.Text("Bot encountered an error. Check logs and restart.");
-                break;
-        }
-        
-        ImGui.Separator();
-        
-        // ===== CONTROL BUTTONS =====
-        ImGui.TextColored(new System.Numerics.Vector4(0.8f, 0.8f, 1, 1), "🎮 CONTROLS:");
-        ImGui.TextColored(new System.Numerics.Vector4(1, 1, 0, 1), "HOTKEYS: Press ',' (comma) to START | Press '.' (period) to STOP");
-        
-        if (ImGui.Button("🚀 Start Intelligent Bot"))
+        // Control buttons in a more compact layout
+        if (ImGui.Button("🚀 Start Bot"))
         {
             if (!Settings.Enable.Value)
             {
-                LogMessage("[UI] Start button pressed - attempting to start bot");
-                if (!_radarAvailable)
-                {
-                    LogMessage("[UI] Radar not available - trying to connect first");
-                    TryConnectToRadar();
-                }
                 ToggleBot();
             }
         }
@@ -488,60 +519,42 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             EmergencyStop();
         }
         
-        // Second row of buttons
-        if (ImGui.Button("🧪 Test Enhanced Movement"))
+        ImGui.SameLine();
+        ImGui.TextColored(new System.Numerics.Vector4(1, 1, 0, 1), "Hotkeys: ',' start | '.' stop");
+        
+        // Test buttons in second row
+        if (ImGui.Button("🧪 Test Movement"))
         {
             TestMouseClick();
         }
         
         ImGui.SameLine();
-        if (ImGui.Button("📡 Test Radar Connection"))
+        if (ImGui.Button("📡 Test Radar"))
         {
             TestRadarConnection();
         }
         
         ImGui.SameLine();
-        if (ImGui.Button("🎯 Debug Coordinates"))
+        if (ImGui.Button("🎯 Debug Coords"))
         {
             DebugCoordinateSystem();
         }
         
-        // Movement method toggle
+        // Movement configuration
+        bool keyboardEnabled = Settings.MovementSettings.UseMovementKey.Value;
+        Keys currentMovementKey = Settings.MovementSettings.MovementKey.Value;
+        
+        ImGui.Text($"Movement: {(keyboardEnabled ? $"Keyboard ({currentMovementKey})" : "Mouse Clicks")}");
+        
+        // Compact logging
         ImGui.Separator();
-        ImGui.TextColored(new System.Numerics.Vector4(0.7f, 0.9f, 1, 1), "⚙️ MOVEMENT CONFIGURATION:");
+        ImGui.Text("Recent Log Messages:");
         
-        if (ImGui.Button(keyboardEnabled ? "Switch to Mouse Movement" : "Switch to Keyboard Movement"))
+        if (ImGui.BeginChild("CompactLog", new System.Numerics.Vector2(0, 100)))
         {
-            Settings.UseMovementKey.Value = !Settings.UseMovementKey.Value;
-            var newMethod = Settings.UseMovementKey.Value ? $"Keyboard ({currentMovementKey})" : "Mouse";
-            LogMessage($"Movement method changed to: {newMethod}");
-        }
-        
-        if (keyboardEnabled)
-        {
-            ImGui.SameLine();
-            ImGui.Text($"Current Key: {currentMovementKey}");
-            
-            // Key selection buttons
-            if (ImGui.Button("Set T")) { Settings.MovementKey.Value = Keys.T; LogMessage("Movement key set to 'T'"); }
-            ImGui.SameLine();
-            if (ImGui.Button("Set Space")) { Settings.MovementKey.Value = Keys.Space; LogMessage("Movement key set to 'Space'"); }
-            ImGui.SameLine();
-            if (ImGui.Button("Set W")) { Settings.MovementKey.Value = Keys.W; LogMessage("Movement key set to 'W'"); }
-        }
-        
-        ImGui.Separator();
-        
-        // ===== ENHANCED LOGGING DISPLAY =====
-        ImGui.TextColored(new System.Numerics.Vector4(0.9f, 0.9f, 0.6f, 1), "📋 SYSTEM LOG:");
-        
-        // Create a scrollable text box for log messages
-        if (ImGui.BeginChild("LogOutput", new System.Numerics.Vector2(0, 200)))
-        {
-            var recentLogs = GetRecentLogMessages(50);
+            var recentLogs = GetRecentLogMessages(20);
             ImGui.TextUnformatted(recentLogs);
             
-            // Auto-scroll to bottom if new messages arrive
             if (ImGui.GetScrollY() >= ImGui.GetScrollMaxY())
             {
                 ImGui.SetScrollHereY(1.0f);
@@ -549,47 +562,12 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         }
         ImGui.EndChild();
         
-        // Log control buttons
         if (ImGui.Button("🗑️ Clear Log"))
         {
             lock (_logLock)
             {
                 _logMessages.Clear();
             }
-        }
-        
-        ImGui.SameLine();
-        if (ImGui.Button("📄 Open Log File"))
-        {
-            if (!string.IsNullOrEmpty(_logFilePath) && File.Exists(_logFilePath))
-            {
-                try
-                {
-                    System.Diagnostics.Process.Start("notepad.exe", _logFilePath);
-                }
-                catch (Exception ex)
-                {
-                    LogError($"Could not open log file: {ex.Message}");
-                }
-            }
-            else
-            {
-                LogError("Log file not found or not initialized");
-            }
-        }
-        
-        ImGui.Separator();
-        
-        // ===== PERFORMANCE STATS =====
-        if (_runsCompleted > 0 && _botStartTime != default)
-        {
-            var runtime = DateTime.Now - _botStartTime;
-            var averageRunTime = runtime.TotalMinutes / _runsCompleted;
-            
-            ImGui.TextColored(new System.Numerics.Vector4(0.6f, 1, 0.6f, 1), "📊 PERFORMANCE STATISTICS:");
-            ImGui.Text($"Completed Runs: {_runsCompleted}");
-            ImGui.Text($"Average Run Time: {averageRunTime:F1} minutes");
-            ImGui.Text($"Success Rate: 100% (Enhanced pathfinding system)");
         }
     }
     
@@ -2752,7 +2730,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             if (playerPos == null) return;
             
             var playerWorldPos = new System.Numerics.Vector2(playerPos.GridPos.X, playerPos.GridPos.Y);
-            var radius = Settings.MovementSettings.PursuitRadius.Value;
+            var radius = Settings.RadarSettings.PlayerCircleRadius.Value; // Use the dedicated player circle radius setting
             
             // Convert world position to screen position
             var worldPos = new Vector3(playerWorldPos.X * 250f / 23f, playerWorldPos.Y * 250f / 23f, 0);
