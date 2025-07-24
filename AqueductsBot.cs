@@ -1190,8 +1190,9 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var playerDirection = playerWorldPos - currentWaypoint;
             
             // Use dot product to see if player is ahead of the current waypoint along the path
-            var dot = System.Numerics.Vector2.Dot(pathDirection.Normalized(), playerDirection);
             var pathSegmentLength = pathDirection.Length();
+            var normalizedPathDirection = pathSegmentLength > 0 ? pathDirection / pathSegmentLength : System.Numerics.Vector2.Zero;
+            var dot = System.Numerics.Vector2.Dot(normalizedPathDirection, playerDirection);
             
             if (dot > pathSegmentLength * 0.5f) // Player is more than halfway past this waypoint
             {
