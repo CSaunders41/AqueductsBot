@@ -56,9 +56,9 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     }
     
     private BotState _currentState = BotState.Disabled;
-    private List<Vector2i> _currentPath = new();
+    private List<Vector2i> _currentPath = new List<Vector2i>();
     private int _currentPathIndex = 0;
-    private DateTime _lastActionTime = DateTime.Now;
+    private DateTime _lastActionTime = DateTime.MinValue;
     private DateTime _botStartTime;
     private int _runsCompleted = 0;
     private Random _random = new();
@@ -87,6 +87,16 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     // Add path staleness detection
     private DateTime _currentPathStartTime = DateTime.MinValue;
     private int _lastAcceptedPathLength = 0;
+    
+    // DIRECTIONAL INTELLIGENCE: Track spawn position to avoid going backwards
+    private System.Numerics.Vector2 _initialSpawnPosition = System.Numerics.Vector2.Zero;
+    private bool _hasRecordedSpawnPosition = false;
+    private HashSet<string> _visitedAreas = new HashSet<string>();
+    
+    // Movement tracking for stuck detection
+    private System.Numerics.Vector2 _lastPlayerPosition = System.Numerics.Vector2.Zero;
+    private DateTime _lastMovementTime = DateTime.MinValue;
+    private List<System.Numerics.Vector2> _stuckPositionHistory = new List<System.Numerics.Vector2>();
     
     private void InitializeLogging()
     {
@@ -540,6 +550,18 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 break;
                 
             case BotState.WaitingForAqueducts:
+                // DIRECTIONAL INTELLIGENCE: Record initial spawn position when we first enter Aqueducts
+                if (!_hasRecordedSpawnPosition && IsInAqueducts())
+                {
+                    var playerPos = GetPlayerPosition();
+                    if (playerPos.HasValue)
+                    {
+                        _initialSpawnPosition = new System.Numerics.Vector2(playerPos.Value.GridPos.X, playerPos.Value.GridPos.Y);
+                        _hasRecordedSpawnPosition = true;
+                        LogMessage($"[SPAWN TRACKING] 📍 Recorded initial spawn position: ({_initialSpawnPosition.X:F1}, {_initialSpawnPosition.Y:F1})");
+                    }
+                }
+                
                 // ENHANCED: Check for area transition while waiting
                 CheckForAreaTransition();
                 break;
@@ -630,40 +652,37 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     
     private void ToggleBot()
     {
+        Settings.Enable = !Settings.Enable;
+        
         if (Settings.Enable)
         {
-            LogMessage("Stopping bot...");
-            Settings.Enable.Value = false;
-            _currentState = BotState.Disabled;
-            _pathfindingCts.Cancel();
-        }
-        else
-        {
-            LogMessage("Starting bot...");
-            Settings.Enable.Value = true;
+            LogMessage("Bot enabled - starting automation");
             _botStartTime = DateTime.Now;
-            _runsCompleted = 0;
+            _currentState = BotState.WaitingForRadar;
             
-            // Create new cancellation token source for the new bot session
-            _pathfindingCts?.Cancel(); // Cancel old one if it exists
-            _pathfindingCts = new CancellationTokenSource();
-            LogMessage("[DEBUG] Created new cancellation token source");
+            // DIRECTIONAL INTELLIGENCE: Reset spawn tracking for new session
+            _hasRecordedSpawnPosition = false;
+            _initialSpawnPosition = System.Numerics.Vector2.Zero;
+            _visitedAreas.Clear();
+            LogMessage("[SPAWN TRACKING] 🔄 Reset spawn tracking for new bot session");
             
             if (!_radarAvailable)
             {
-                _currentState = BotState.WaitingForRadar;
-                LogMessage("Waiting for Radar plugin...");
+                TryConnectToRadar();
             }
-            else if (!IsInAqueducts(GameController.Area.CurrentArea))
-            {
-                _currentState = BotState.WaitingForAqueducts;
-                LogMessage("Waiting for Aqueducts area...");
-            }
-            else
-            {
-                _currentState = BotState.GettingPath;
-                LogMessage("In Aqueducts, getting path...");
-            }
+        }
+        else
+        {
+            LogMessage("Bot disabled - stopping automation");
+            _currentState = BotState.Disabled;
+            
+            // Cancel any ongoing pathfinding
+            _pathfindingCts.Cancel();
+            _pathfindingCts = new CancellationTokenSource();
+            
+            // Clear current path
+            _currentPath.Clear();
+            _currentPathIndex = 0;
         }
     }
     
@@ -886,7 +905,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 }
             }
             
-            // FIXED: Accept new paths if we have no path OR if new path is shorter/more efficient
+            // SMART DIRECTIONAL PATH SELECTION: Avoid going back to spawn
             bool shouldAcceptPath = false;
             string acceptReason = "";
             
@@ -900,17 +919,32 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 shouldAcceptPath = true;
                 acceptReason = $"replacing stale path (age: {(DateTime.Now - _currentPathStartTime).TotalSeconds:F1}s)";
             }
-            else if (path.Count < _currentPath.Count)
+            else
             {
-                // Prefer shorter paths (more efficient)
-                shouldAcceptPath = true;
-                acceptReason = $"shorter path ({path.Count} vs {_currentPath.Count} points)";
-            }
-            else if (path.Count <= _currentPath.Count * 1.2) // Accept paths up to 20% longer if they might be better
-            {
-                // For similar length paths, prefer newer ones (might be better targets)
-                shouldAcceptPath = true;
-                acceptReason = $"similar length, newer target ({path.Count} vs {_currentPath.Count} points)";
+                // DIRECTIONAL INTELLIGENCE: Analyze path endpoints to avoid backtracking
+                var currentPathScore = AnalyzePathDirection(_currentPath, "current path");
+                var newPathScore = AnalyzePathDirection(path, targetReason);
+                
+                LogMessage($"[PATH ANALYSIS] Current path score: {currentPathScore:F2}, New path ({targetReason}) score: {newPathScore:F2}");
+                
+                // Prefer paths with better directional scores (away from spawn)
+                if (newPathScore > currentPathScore + 0.1f) // Need significant improvement to switch
+                {
+                    shouldAcceptPath = true;
+                    acceptReason = $"better direction (score: {newPathScore:F2} vs {currentPathScore:F2})";
+                }
+                // If directional scores are similar, prefer shorter paths
+                else if (Math.Abs(newPathScore - currentPathScore) <= 0.1f && path.Count < _currentPath.Count * 0.8f)
+                {
+                    shouldAcceptPath = true;
+                    acceptReason = $"similar direction, much shorter ({path.Count} vs {_currentPath.Count} points)";
+                }
+                // Accept similar length paths with similar direction (might be better targets)
+                else if (Math.Abs(newPathScore - currentPathScore) <= 0.05f && path.Count <= _currentPath.Count * 1.2)
+                {
+                    shouldAcceptPath = true;
+                    acceptReason = $"similar direction and length, newer target ({path.Count} vs {_currentPath.Count} points)";
+                }
             }
             
             if (shouldAcceptPath)
@@ -2269,5 +2303,41 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         {
             LogError($"Error interacting with area transition: {ex.Message}");
         }
+    }
+    
+    // DIRECTIONAL INTELLIGENCE: Analyze path to determine if it leads away from spawn
+    private float AnalyzePathDirection(List<Vector2i> path, string pathName)
+    {
+        if (path == null || path.Count == 0)
+            return 0f;
+            
+        if (!_hasRecordedSpawnPosition)
+        {
+            LogMessage($"[PATH ANALYSIS] No spawn position recorded yet - using neutral score for {pathName}");
+            return 0.5f; // Neutral score if we haven't recorded spawn yet
+        }
+        
+        // Get path start and end points
+        var pathStart = new System.Numerics.Vector2(path[0].X, path[0].Y);
+        var pathEnd = new System.Numerics.Vector2(path[path.Count - 1].X, path[path.Count - 1].Y);
+        
+        // Calculate distances from spawn to start and end
+        var distanceToStart = System.Numerics.Vector2.Distance(_initialSpawnPosition, pathStart);
+        var distanceToEnd = System.Numerics.Vector2.Distance(_initialSpawnPosition, pathEnd);
+        
+        // Calculate score based on how far the path takes us from spawn
+        var directionalProgress = distanceToEnd - distanceToStart;
+        
+        // Normalize score (positive = away from spawn, negative = toward spawn)
+        // Add path length factor to slightly prefer more exploration
+        var explorationBonus = Math.Min(path.Count / 500f, 0.2f); // Up to 0.2 bonus for longer exploration
+        
+        var score = 0.5f + (directionalProgress / 200f) + explorationBonus; // Baseline 0.5, +/- up to ~0.5 based on direction
+        score = Math.Max(0f, Math.Min(1f, score)); // Clamp to 0-1 range
+        
+        LogMessage($"[DIRECTION ANALYSIS] {pathName}: spawn=({_initialSpawnPosition.X:F0},{_initialSpawnPosition.Y:F0}), start=({pathStart.X:F0},{pathStart.Y:F0}), end=({pathEnd.X:F0},{pathEnd.Y:F0})");
+        LogMessage($"[DIRECTION ANALYSIS] {pathName}: distance to start={distanceToStart:F1}, distance to end={distanceToEnd:F1}, progress={directionalProgress:F1}, score={score:F2}");
+        
+        return score;
     }
 } 
