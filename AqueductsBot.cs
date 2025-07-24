@@ -1134,8 +1134,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             
             if (_stuckTargetCount >= stuckThreshold)
             {
-                LogMessage($"[STUCK DETECTION] 🚨 Stuck on same target for {_stuckTargetCount} attempts (threshold: {stuckThreshold}) - forcing advancement!");
-                LogMessage($"[STUCK DEBUG] 📍 Player position hasn't changed from ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}) - character may be physically blocked!");
+                LogMovementDebug($"[STUCK DETECTION] 🚨 Stuck on same target for {_stuckTargetCount} attempts (threshold: {stuckThreshold}) - forcing advancement!");
+                LogMovementDebug($"[STUCK DEBUG] 📍 Player position hasn't changed from ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}) - character may be physically blocked!");
                 
                 // SMART ADVANCEMENT: Less aggressive near end of path  
                 var baseAdvancement = (int)(Settings.MovementSettings.PathAdvancementDistance.Value / 25f); // Convert pixels to waypoint steps
@@ -1144,7 +1144,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 _stuckTargetCount = 0;
                 _lastPathAdvancement = DateTime.Now;
                 
-                LogMessage($"[FORCED ADVANCEMENT] 📍 Forced advance by {forceAdvancement} to path index {_currentPathIndex}/{_currentPath.Count}");
+                LogMovementDebug($"[FORCED ADVANCEMENT] 📍 Forced advance by {forceAdvancement} to path index {_currentPathIndex}/{_currentPath.Count}");
                 
                 // If we're at the very end after forced advancement, check for completion
                 if (_currentPathIndex >= _currentPath.Count - 1)
@@ -1243,11 +1243,11 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         // Execute the movement
         _lastMovementTime = DateTime.Now;
         
-        LogMessage($"[MOVEMENT] 🎮 EXECUTING MOVEMENT: cursor to ({screenPos.X:F0}, {screenPos.Y:F0}) + press T (distance: {distanceToTarget:F1})");
+        LogMovementDebug($"[MOVEMENT] 🎮 EXECUTING MOVEMENT: cursor to ({screenPos.X:F0}, {screenPos.Y:F0}) + press T (distance: {distanceToTarget:F1})");
         
         if (Settings.DebugSettings.ShowMovementDebug.Value)
         {
-            LogMessage($"[MOVEMENT DEBUG] 📍 Player at ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}) → Target ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0})");
+            LogMovementDebug($"[MOVEMENT DEBUG] 📍 Player at ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}) → Target ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0})");
         }
         
         // Store target position for visual display
