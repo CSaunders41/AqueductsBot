@@ -401,6 +401,9 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             }
         }
         ImGui.End();
+        
+        // Update the setting if the window was closed
+        Settings.DebugSettings.ShowPopoutStatus.Value = showWindow;
     }
     
     private void DrawPopoutPathfindingWindow()
