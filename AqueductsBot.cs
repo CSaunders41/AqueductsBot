@@ -921,7 +921,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             
             // PATH STABILITY: Don't accept new paths if we just started following current path
             var timeSincePathStart = (DateTime.Now - _currentPathStartTime).TotalSeconds;
-            var isPathTooNew = timeSincePathStart < 5.0; // Don't change paths for first 5 seconds
+            var isPathTooNew = timeSincePathStart < 2.5; // Don't change paths for first 2.5 seconds (reduced from 5.0s)
             
             if (_currentPath.Count == 0)
             {
@@ -935,7 +935,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             }
             else if (isPathTooNew)
             {
-                LogMessage($"[PATH STABILITY] ⏸️ Rejecting path change - current path too new ({timeSincePathStart:F1}s < 5.0s)");
+                LogMessage($"[PATH STABILITY] ⏸️ Rejecting path change - current path too new ({timeSincePathStart:F1}s < 2.5s)");
                 return; // Don't even analyze the new path
             }
             else
