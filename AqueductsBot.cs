@@ -365,7 +365,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     
     private void DrawPopoutStatusWindow()
     {
-        if (ImGui.Begin("AqueductsBot Status", ref Settings.DebugSettings.ShowPopoutStatus.Value))
+        var showWindow = Settings.DebugSettings.ShowPopoutStatus.Value;
+        if (ImGui.Begin("AqueductsBot Status", ref showWindow))
         {
             // Declare variables for UI usage
             bool keyboardEnabled = Settings.MovementSettings.UseMovementKey.Value;
@@ -404,7 +405,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     
     private void DrawPopoutPathfindingWindow()
     {
-        if (ImGui.Begin("AqueductsBot Pathfinding", ref Settings.DebugSettings.ShowPopoutPathfinding.Value))
+        var showWindow = Settings.DebugSettings.ShowPopoutPathfinding.Value;
+        if (ImGui.Begin("AqueductsBot Pathfinding", ref showWindow))
         {
             ImGui.TextColored(new System.Numerics.Vector4(0, 1, 0, 1), "🧭 PATHFINDING SYSTEM");
             ImGui.Separator();
@@ -466,6 +468,9 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             }
         }
         ImGui.End();
+        
+        // Update the setting if the window was closed
+        Settings.DebugSettings.ShowPopoutPathfinding.Value = showWindow;
     }
     
     private void DrawMainStatusDisplay()
