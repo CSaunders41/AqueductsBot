@@ -81,8 +81,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     private bool _periodKeyPressed = false;
     
     // Add pathfinding failure tracking
-    private int _pathfindingFailures = 0;
-    private DateTime _lastPathfindingFailure = DateTime.MinValue;
+    // private int _pathfindingFailures = 0;
+    // private DateTime _lastPathfindingFailure = DateTime.MinValue;
     
     private void InitializeLogging()
     {
@@ -557,9 +557,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                     var timeSinceRequest = (DateTime.Now - _lastPathRequest).TotalSeconds;
                     if (timeSinceRequest > 15)
                     {
-                        LogMessage($"[PATHFINDING TIMEOUT] No valid path received after {timeSinceRequest:F1} seconds");
-                        LogMessage("[FALLBACK] All normal targets failed - trying emergency fallback strategy");
-                        TryEmergencyPathfinding();
+                        LogMessage($"[TIMEOUT] No valid path received after {timeSinceRequest:F1} seconds - retrying pathfinding");
                         _lastPathRequest = DateTime.MinValue;
                         _lastActionTime = DateTime.MinValue; // Allow immediate retry
                     }
@@ -624,86 +622,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         }
     }
     
-    private void TryEmergencyPathfinding()
-    {
-        try
-        {
-            LogMessage("[EMERGENCY PATHFINDING] All normal targets failed - trying emergency strategy");
-            
-            var player = GameController.Game.IngameState.Data.LocalPlayer;
-            if (player?.GetComponent<Positioned>() is not Positioned playerPos)
-            {
-                LogMessage("[EMERGENCY] Could not get player position");
-                return;
-            }
-            
-            var currentPos = playerPos.GridPos;
-            var currentPosNum = new System.Numerics.Vector2(currentPos.X, currentPos.Y);
-            
-            // Emergency strategy: Try very close, simple targets that should always work
-            var emergencyTargets = new List<(System.Numerics.Vector2 Position, string Reason)>();
-            
-            // Strategy 1: Very close cardinal directions (almost guaranteed to work)
-            var closeDistances = new[] { 50, 75, 100 }; // Much closer than before
-            var cardinals = new[]
-            {
-                (1, 0, "Emergency East"),
-                (0, 1, "Emergency South"),
-                (-1, 0, "Emergency West"),
-                (0, -1, "Emergency North")
-            };
-            
-            foreach (var distance in closeDistances)
-            {
-                foreach (var (x, y, reason) in cardinals)
-                {
-                    var target = new System.Numerics.Vector2(
-                        currentPosNum.X + (x * distance), 
-                        currentPosNum.Y + (y * distance)
-                    );
-                    emergencyTargets.Add((target, $"{reason} at {distance} units"));
-                }
-            }
-            
-            // Strategy 2: Try current position + tiny offsets (should almost always work)
-            var tinyOffsets = new[]
-            {
-                (20, 20, "Emergency Southeast micro-step"),
-                (-20, 20, "Emergency Southwest micro-step"),
-                (20, -20, "Emergency Northeast micro-step"),
-                (-20, -20, "Emergency Northwest micro-step")
-            };
-            
-            foreach (var (x, y, reason) in tinyOffsets)
-            {
-                var target = new System.Numerics.Vector2(currentPosNum.X + x, currentPosNum.Y + y);
-                emergencyTargets.Add((target, reason));
-            }
-            
-            LogMessage($"[EMERGENCY] Trying {emergencyTargets.Count} emergency targets with close distances");
-            
-            // Try emergency targets with shorter timeout
-            foreach (var (position, reason) in emergencyTargets.Take(5)) // Only try 5 to avoid spam
-            {
-                LogMessage($"[EMERGENCY TARGET] Trying: {reason} at ({position.X:F0}, {position.Y:F0})");
-                
-                Action<List<Vector2i>> emergencyCallback = (path) => {
-                    LogMessage($"[EMERGENCY CALLBACK] {reason} returned {path?.Count ?? 0} points");
-                    OnPathReceived(path, reason, 999); // Use high index for emergency
-                };
-                
-                _radarLookForRoute(position, emergencyCallback, CancellationToken.None);
-                Thread.Sleep(100); // Slightly longer delay for emergency requests
-            }
-            
-            LogMessage("[EMERGENCY] Emergency pathfinding requests sent - if these fail, manual intervention needed");
-        }
-        catch (Exception ex)
-        {
-            LogError($"Error in emergency pathfinding: {ex.Message}");
-            LogMessage("[CRITICAL] Emergency pathfinding failed - bot may need manual restart");
-        }
-    }
+
     
     private void ToggleBot()
     {
@@ -821,8 +740,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     {
         var targets = new List<(System.Numerics.Vector2, string)>();
         
-        // Strategy 1: More conservative cardinal directions (start closer, more likely to succeed)
-        var cardinalDistances = new[] { 100, 200, 350, 600 }; // Start closer than before (was 150, 300, 500, 800)
+        // Strategy 1: Explore in cardinal directions (likely to find exits)
+        var cardinalDistances = new[] { 150, 300, 500, 800 }; // Progressively farther
         var cardinalDirections = new[]
         {
             (1, 0, "East - common exit direction"),
@@ -847,47 +766,37 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             }
         }
         
-        // Strategy 2: Conservative area-based exploration (only if we have area data)
+        // Strategy 2: Area-based exploration (try to reach map edges)
         var areaData = GameController.IngameState.Data.AreaDimensions;
         if (areaData != null && areaData.X > 0 && areaData.Y > 0)
         {
             var dimensions = areaData;
             LogMessage($"[AREA INFO] Map dimensions: {dimensions.X} x {dimensions.Y}");
             
-            // More conservative edge targets (don't go all the way to edges)
+            // Target edges where exits are likely to be
             var edgeTargets = new[]
             {
-                (dimensions.X * 0.7f, currentPos.Y, "Eastern area - conservative"),
-                (dimensions.X * 0.8f, currentPos.Y, "Far eastern area - moderate"),
-                (currentPos.X, dimensions.Y * 0.7f, "Southern area - conservative"),
-                (dimensions.X * 0.7f, dimensions.Y * 0.7f, "Southeast area - moderate"),
-                (dimensions.X * 0.3f, currentPos.Y, "Western area - conservative"),
-                (currentPos.X, dimensions.Y * 0.3f, "Northern area - conservative")
+                (dimensions.X * 0.8f, currentPos.Y, "Eastern edge - primary exit zone"),
+                (dimensions.X * 0.9f, currentPos.Y, "Far eastern edge - secondary exit"),
+                (currentPos.X, dimensions.Y * 0.8f, "Southern edge exploration"),
+                (dimensions.X * 0.8f, dimensions.Y * 0.8f, "Southeast corner - exit cluster"),
+                (dimensions.X * 0.1f, currentPos.Y, "Western edge - alternate exit"),
+                (currentPos.X, dimensions.Y * 0.1f, "Northern edge check")
             };
             
             foreach (var (x, y, reason) in edgeTargets)
             {
-                // Validate that targets are reasonable distances
-                var distance = Math.Sqrt(Math.Pow(x - currentPos.X, 2) + Math.Pow(y - currentPos.Y, 2));
-                if (distance > 50 && distance < 1000) // Only add targets that are not too close or too far
-                {
-                    targets.Add((new System.Numerics.Vector2(x, y), reason));
-                }
+                targets.Add((new System.Numerics.Vector2(x, y), reason));
             }
         }
-        else
-        {
-            LogMessage("[AREA INFO] No area dimensions available - using cardinal directions only");
-        }
         
-        // Strategy 3: Reduced spiral exploration (fewer points, closer range)
-        var spiralPoints = GenerateSpiralPattern(currentPos, 80, 4); // Reduced from 100, 6 to 80, 4
+        // Strategy 3: Spiral exploration pattern (systematic coverage)
+        var spiralPoints = GenerateSpiralPattern(currentPos, 100, 6); // 6 points in spiral
         for (int i = 0; i < spiralPoints.Count; i++)
         {
             targets.Add((spiralPoints[i], $"Spiral exploration point {i + 1}"));
         }
         
-        LogMessage($"[TARGET GENERATION] Generated {targets.Count} strategic targets (more conservative approach)");
         return targets;
     }
     
@@ -958,21 +867,6 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             if (path == null || path.Count == 0)
             {
                 LogMessage($"[CALLBACK {targetIndex}] No path found for {targetReason} - waiting for other attempts");
-                
-                // Track pathfinding failures for emergency situations
-                if (targetIndex == 999) // Emergency pathfinding failed
-                {
-                    _pathfindingFailures++;
-                    _lastPathfindingFailure = DateTime.Now;
-                    LogMessage($"[FAILURE TRACKING] Emergency pathfinding failed. Total failures: {_pathfindingFailures}");
-                    
-                    if (_pathfindingFailures >= 3)
-                    {
-                        LogMessage("[CRITICAL] Multiple pathfinding failures detected - trying manual movement mode");
-                        TryManualMovementMode();
-                    }
-                }
-                
                 return; // Don't change state, wait for other attempts
             }
             
@@ -982,9 +876,6 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 _currentPath = path;
                 _currentPathIndex = 0;
                 _currentState = BotState.MovingAlongPath;
-                
-                // Reset failure tracking on success
-                _pathfindingFailures = 0;
                 
                 LogMessage($"[SUCCESS {targetIndex}] ACCEPTED path from {targetReason} with {path.Count} points!");
                 LogMessage($"[PATH INFO] Start: ({path[0].X}, {path[0].Y}) -> End: ({path[path.Count-1].X}, {path[path.Count-1].Y})");
@@ -1004,53 +895,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         }
     }
     
-    private void TryManualMovementMode()
-    {
-        try
-        {
-            LogMessage("[MANUAL MODE] Pathfinding completely failed - trying manual movement");
-            
-            var player = GameController.Game.IngameState.Data.LocalPlayer;
-            if (player?.GetComponent<Positioned>() is not Positioned playerPos)
-            {
-                LogMessage("[MANUAL MODE] Could not get player position");
-                return;
-            }
-            
-            var currentPos = playerPos.GridPos;
-            
-            // Create a simple path with just a few points in a straight line (no Radar needed)
-            var manualPath = new List<Vector2i>();
-            
-            // Try moving east (common direction for area exits)
-            for (int i = 1; i <= 10; i++)
-            {
-                var point = new Vector2i(
-                    (int)(currentPos.X + (i * 30)), // Move 30 units east each step
-                    (int)currentPos.Y
-                );
-                manualPath.Add(point);
-            }
-            
-            if (manualPath.Count > 0)
-            {
-                _currentPath = manualPath;
-                _currentPathIndex = 0;
-                _currentState = BotState.MovingAlongPath;
-                
-                LogMessage($"[MANUAL MODE] Created manual path with {manualPath.Count} points moving east");
-                LogMessage("[MANUAL MODE] Bot will now attempt manual movement without Radar pathfinding");
-            }
-            else
-            {
-                LogMessage("[MANUAL MODE] Failed to create manual path");
-            }
-        }
-        catch (Exception ex)
-        {
-            LogError($"Error in manual movement mode: {ex.Message}");
-        }
-    }
+
     
     private void MoveAlongPath()
     {
