@@ -308,6 +308,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             }
             
             // Show player calculation circle if enabled
+            LogMessage($"[CIRCLE DEBUG] ShowPlayerCircle setting: {Settings.RadarSettings.ShowPlayerCircle.Value}");
             if (Settings.RadarSettings.ShowPlayerCircle.Value)
             {
                 DrawPlayerCircle();
@@ -2727,11 +2728,19 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     {
         try
         {
+            LogMessage($"[CIRCLE DEBUG] DrawPlayerCircle called");
+            
             var playerPos = GetPlayerPosition();
-            if (playerPos == null) return;
+            if (playerPos == null) 
+            {
+                LogMessage($"[CIRCLE DEBUG] Player position is null");
+                return;
+            }
             
             var playerWorldPos = new System.Numerics.Vector2(playerPos.GridPos.X, playerPos.GridPos.Y);
             var radius = Settings.MovementSettings.PursuitRadius.Value; // Use the same radius as movement calculations
+            
+            LogMessage($"[CIRCLE DEBUG] Player at ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}), radius: {radius}");
             
             // Convert world position to screen position
             var worldPos = new Vector3(playerWorldPos.X * 250f / 23f, playerWorldPos.Y * 250f / 23f, 0);
@@ -2743,6 +2752,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var radiusScreenPosSharp = GameController.IngameState.Camera.WorldToScreen(radiusWorldPos); 
             var screenRadius = Math.Abs(radiusScreenPosSharp.X - screenPosSharp.X);
             
+            LogMessage($"[CIRCLE DEBUG] Screen center: ({centerScreen.X:F0}, {centerScreen.Y:F0}), screen radius: {screenRadius:F0}");
+            
             // Draw circle using ImGui
             var drawList = ImGui.GetBackgroundDrawList();
             var color = ImGui.ColorConvertFloat4ToU32(new System.Numerics.Vector4(0.0f, 1.0f, 0.0f, 0.3f)); // Semi-transparent green
@@ -2752,6 +2763,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             {
                 drawList.AddCircle(centerScreen, screenRadius + i, color, 64, 2.0f);
             }
+            
+            LogMessage($"[CIRCLE DEBUG] Drew {3} circles successfully");
         }
         catch (Exception ex)
         {
