@@ -328,7 +328,9 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 var playerRender = GameController.Player.GetComponent<Render>();
                 if (playerRender != null)
                 {
-                    Vector3 pos = playerRender.Pos;
+                    // Convert SharpDX.Vector3 to System.Numerics.Vector3
+                    var sharpDxPos = playerRender.Pos;
+                    var pos = new Vector3(sharpDxPos.X, sharpDxPos.Y, sharpDxPos.Z);
                     DrawEllipseToWorld(pos, (int)Settings.MovementSettings.PursuitRadius.Value, 25, 2, Color.LawnGreen);
                 }
                 DrawTargetPoint(); // Also show where we're actually targeting
