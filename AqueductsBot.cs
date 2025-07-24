@@ -2980,22 +2980,14 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
 
     private void LogMovementDebug(string message)
     {
-        // Only log movement debug messages to file if setting is enabled
-        if (!Settings.DebugSettings.SaveMovementDebugToFile.Value) return;
-        
-        // Also log to console if debug messages are enabled
-        if (Settings.DebugSettings.DebugMode.Value)
-        {
-            LogMessage(message);
-        }
-        
-        // Always log to movement debug file
+        // TEMP DEBUG: Always write to file to help diagnose the issue
         try
         {
             lock (_movementDebugLock)
             {
                 var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
-                var fullMessage = $"[{timestamp}] {message}{Environment.NewLine}";
+                var settingStatus = Settings.DebugSettings.SaveMovementDebugToFile.Value ? "ENABLED" : "DISABLED";
+                var fullMessage = $"[{timestamp}] [SaveToFile:{settingStatus}] {message}{Environment.NewLine}";
                 File.AppendAllText(_movementDebugFilePath, fullMessage);
             }
         }
@@ -3003,6 +2995,12 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         {
             // If file logging fails, continue without file logging
             LogMessage($"[FILE LOG ERROR] Could not write to movement debug file: {ex.Message}");
+        }
+        
+        // Also log to console if debug messages are enabled
+        if (Settings.DebugSettings.DebugMode.Value)
+        {
+            LogMessage(message);
         }
     }
 }
