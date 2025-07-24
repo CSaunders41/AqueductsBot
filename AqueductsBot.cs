@@ -2739,12 +2739,11 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var playerPos = GetPlayerPosition();
             if (playerPos == null) 
             {
-                // Only log this error once per render cycle to avoid spam
-                static DateTime lastErrorLog = DateTime.MinValue;
-                if ((DateTime.Now - lastErrorLog).TotalSeconds > 5)
+                // Only log this error once every 5 seconds to avoid spam
+                if ((DateTime.Now - _lastCircleErrorLog).TotalSeconds > 5)
                 {
                     LogImportant($"[CIRCLE ERROR] Player position is null - circle cannot be drawn");
-                    lastErrorLog = DateTime.Now;
+                    _lastCircleErrorLog = DateTime.Now;
                 }
                 return;
             }
@@ -2770,11 +2769,10 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var screenRadius = Math.Abs(radiusScreenPosSharp.X - screenPosSharp.X);
             
             // Only log debug info if there are issues or on first successful draw
-            static bool firstDrawLogged = false;
-            if (!firstDrawLogged || screenRadius <= 0)
+            if (!_firstCircleDrawLogged || screenRadius <= 0)
             {
                 LogImportant($"[CIRCLE DEBUG] Drawing circle - Screen center: ({centerScreen.X:F0}, {centerScreen.Y:F0}), screen radius: {screenRadius:F0}");
-                firstDrawLogged = true;
+                _firstCircleDrawLogged = true;
             }
             
             // Draw circle using ImGui
@@ -2795,6 +2793,10 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
 
     // Add target point visualization
     private System.Numerics.Vector2? _lastTargetWorldPos = null;
+    
+    // Circle drawing debug tracking
+    private DateTime _lastCircleErrorLog = DateTime.MinValue;
+    private bool _firstCircleDrawLogged = false;
     
     private void DrawTargetPoint()
     {
