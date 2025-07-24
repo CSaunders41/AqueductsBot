@@ -193,13 +193,25 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         // Debug and testing buttons
         if (ImGui.Button("Start Bot") && _radarLookForRoute != null)
         {
-            StartBot();
+            if (!Settings.Enable)
+            {
+                ToggleBot();
+            }
         }
         
         ImGui.SameLine();
         if (ImGui.Button("Stop Bot"))
         {
-            StopBot();
+            if (Settings.Enable)
+            {
+                ToggleBot();
+            }
+        }
+        
+        ImGui.SameLine();
+        if (ImGui.Button("Emergency Stop"))
+        {
+            EmergencyStop();
         }
         
         ImGui.SameLine();
