@@ -1092,14 +1092,15 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             _stuckTargetCount++;
             
             // DYNAMIC STUCK THRESHOLD: Be more sensitive near end of path
-            var stuckThreshold = remainingPathWaypoints <= 5 ? 5 : 10; // More sensitive near end
+            var stuckThreshold = remainingPathWaypoints <= 5 ? 3 : 5; // Reduced for debugging: was 5:10, now 3:5
             
             if (_stuckTargetCount >= stuckThreshold)
             {
                 LogMessage($"[STUCK DETECTION] 🚨 Stuck on same target for {_stuckTargetCount} attempts (threshold: {stuckThreshold}) - forcing advancement!");
+                LogMessage($"[STUCK DEBUG] 📍 Player position hasn't changed from ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}) - character may be physically blocked!");
                 
                 // SMART ADVANCEMENT: Less aggressive near end of path
-                var forceAdvancement = remainingPathWaypoints <= 5 ? 2 : 8;
+                var forceAdvancement = remainingPathWaypoints <= 5 ? 3 : 10; // Increased advancement for debugging
                 _currentPathIndex = Math.Min(_currentPathIndex + forceAdvancement, _currentPath.Count - 1);
                 _stuckTargetCount = 0;
                 _lastPathAdvancement = DateTime.Now;
@@ -1191,19 +1192,29 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         // Calculate movement delay based on distance
         var movementDelay = CalculateImprovedMovementDelay(distanceToTarget);
         
+        // DEBUG: Force faster movement to test if character can move at all
+        var debugFastMovement = true; // Enable for testing
+        if (debugFastMovement)
+        {
+            movementDelay = Math.Min(movementDelay, 100); // Force very short delays for testing
+            LogMessage($"[MOVEMENT DEBUG] 🚀 Debug mode: forced delay to {movementDelay}ms (original would be {CalculateImprovedMovementDelay(distanceToTarget)}ms)");
+        }
+        
         // Check movement delay timing
         var timeSinceLastMovement = (DateTime.Now - _lastMovementTime).TotalMilliseconds;
         if (timeSinceLastMovement < movementDelay)
         {
             var remainingDelay = movementDelay - timeSinceLastMovement;
-            LogMessage($"[MOVEMENT] ⏳ Waiting {remainingDelay:F0}ms before next movement (preventing oscillation)");
+            LogMessage($"[MOVEMENT] ⏳ Waiting {remainingDelay:F0}ms before next movement (last movement: {timeSinceLastMovement:F0}ms ago)");
             return;
         }
 
         // Execute the movement
         _lastMovementTime = DateTime.Now;
         
-        LogMessage($"[MOVEMENT] 🎮 Keyboard: cursor to ({screenPos.X:F0}, {screenPos.Y:F0}) + press T");
+        LogMessage($"[MOVEMENT] 🎮 EXECUTING MOVEMENT: cursor to ({screenPos.X:F0}, {screenPos.Y:F0}) + press T (distance: {distanceToTarget:F1})");
+        LogMessage($"[MOVEMENT DEBUG] 📍 Player at ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}) → Target ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0})");
+        
         ClickAt((int)screenPos.X, (int)screenPos.Y);
         PressAndHoldKey(Keys.T);
 
@@ -2527,11 +2538,14 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         var playerWorldPos = new System.Numerics.Vector2(playerPos.GridPos.X, playerPos.GridPos.Y);
         var basePursuitRadius = Settings.MovementSettings.PursuitRadius.Value;
         
+        // DEBUG: Show actual settings values
+        LogMessage($"[SETTINGS DEBUG] 🔧 Pursuit radius setting: {basePursuitRadius} (min: {Settings.MovementSettings.PursuitRadius.Min}, max: {Settings.MovementSettings.PursuitRadius.Max})");
+        
         // DYNAMIC RADIUS: Increase radius near end of path for better targeting
         var remainingWaypoints = path.Count - startIndex;
         var dynamicRadius = remainingWaypoints <= 10 ? basePursuitRadius * 1.5f : basePursuitRadius;
         
-        LogMessage($"[PURSUIT DEBUG] Player at ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}), looking from index {startIndex}/{path.Count}, radius {dynamicRadius:F0} (base: {basePursuitRadius:F0})");
+        LogMessage($"[PURSUIT DEBUG] Player at ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}), looking from index {startIndex}/{path.Count}, radius {dynamicRadius:F0} (base: {basePursuitRadius:F0}, remaining: {remainingWaypoints})");
         
         // Look ahead from current position in path
         System.Numerics.Vector2? bestIntersection = null;
