@@ -1266,12 +1266,12 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             LogMovementDebug($"[CLICK VALIDATION] World distance: {distanceToTarget:F1} units (expected: ~{expectedRadius:F1})");
             
             // Additional safety check - if screen distance is way too large, something is wrong
-            if (screenDistance > 800) // More than 800 pixels from player is suspicious
+            if (screenDistance > 1200) // Increased from 800 to 1200 pixels - less restrictive
             {
-                LogMovementDebug($"[CLICK VALIDATION] ❌ BLOCKED: Screen distance too large ({screenDistance:F1} > 800 pixels) - coordinate issue!");
+                LogMovementDebug($"[CLICK VALIDATION] ❌ BLOCKED: Screen distance too large ({screenDistance:F1} > 1200 pixels) - coordinate issue!");
                 return; // Skip this movement to prevent off-screen clicking
             }
-            LogMovementDebug($"[CLICK VALIDATION] ✅ Screen distance check passed ({screenDistance:F1} <= 800 pixels)");
+            LogMovementDebug($"[CLICK VALIDATION] ✅ Screen distance check passed ({screenDistance:F1} <= 1200 pixels)");
         }
         
         // Update path progress tracking
