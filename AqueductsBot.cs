@@ -591,6 +591,15 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 break;
                 
             case BotState.GettingPath:
+                // TRANSITION FIX: If we have a valid path, start moving!
+                if (_currentPath != null && _currentPath.Count > 0)
+                {
+                    LogMessage($"[STATE TRANSITION] ✅ Got valid path with {_currentPath.Count} points - transitioning to movement!");
+                    _currentState = BotState.MovingAlongPath;
+                    _currentPathIndex = 0;
+                    break;
+                }
+                
                 if (CanRequestNewPath())
                 {
                     // Only request path if we haven't requested one recently (prevent spam)
