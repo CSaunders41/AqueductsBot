@@ -2748,7 +2748,6 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 return;
             }
             
-            var playerWorldPos = new System.Numerics.Vector2(playerPos.GridPos.X, playerPos.GridPos.Y);
             var radius = Settings.MovementSettings.PursuitRadius.Value; // Use the same radius as movement calculations
             
             // Fallback to hardcoded radius if setting is invalid
@@ -2761,35 +2760,15 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 }
             }
             
-            // Convert world position to screen position
-            var worldPos = new Vector3(playerWorldPos.X * 250f / 23f, playerWorldPos.Y * 250f / 23f, 0);
-            var screenPosSharp = GameController.IngameState.Camera.WorldToScreen(worldPos);
-            var centerScreen = new System.Numerics.Vector2(screenPosSharp.X, screenPosSharp.Y);
-            
-            // Calculate screen radius based on zoom level
-            var radiusWorldPos = new Vector3((playerWorldPos.X + radius) * 250f / 23f, playerWorldPos.Y * 250f / 23f, 0);
-            var radiusScreenPosSharp = GameController.IngameState.Camera.WorldToScreen(radiusWorldPos); 
-            var screenRadius = Math.Abs(radiusScreenPosSharp.X - screenPosSharp.X);
-            
-            // Only log debug info on first successful draw or if there are issues (and only if debug is enabled)
-            if (Settings.DebugSettings.DebugMode.Value && (!_firstCircleDrawLogged || screenRadius <= 0))
+            // Only log debug info on first successful draw (and only if debug is enabled)
+            if (Settings.DebugSettings.DebugMode.Value && !_firstCircleDrawLogged)
             {
-                LogMessage($"[CIRCLE DEBUG] Drawing circle - Screen center: ({centerScreen.X:F0}, {centerScreen.Y:F0}), screen radius: {screenRadius:F0}");
-                if (screenRadius > 0) // Only mark as logged if it's a successful draw
-                {
-                    _firstCircleDrawLogged = true;
-                }
+                LogMessage($"[CIRCLE DEBUG] Drawing pursuit radius circle with radius: {radius}");
+                _firstCircleDrawLogged = true;
             }
             
-            // Draw circle using ImGui
-            var drawList = ImGui.GetBackgroundDrawList();
-            var color = ImGui.ColorConvertFloat4ToU32(new System.Numerics.Vector4(0.0f, 1.0f, 0.0f, 0.3f)); // Semi-transparent green
-            
-            // Draw multiple circles for better visibility
-            for (int i = 0; i < 3; i++)
-            {
-                drawList.AddCircle(centerScreen, screenRadius + i, color, 64, 2.0f);
-            }
+            // Use Aim-Bot's approach: Draw circle using ExileCore Graphics.DrawLine
+            DrawEllipseToWorld(new Vector3(playerPos.GridPos.X, playerPos.GridPos.Y, 0), (int)radius, 25, 2, Color.LawnGreen);
         }
         catch (Exception ex)
         {
@@ -2797,6 +2776,42 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             if (Settings.DebugSettings.DebugMode.Value)
             {
                 LogMessage($"[CIRCLE ERROR] Error drawing circle: {ex.Message}");
+            }
+        }
+    }
+    
+    // Implementation of DrawEllipseToWorld method (copied from Aim-Bot)
+    private void DrawEllipseToWorld(Vector3 vector3Pos, int radius, int points, int lineWidth, Color color)
+    {
+        try
+        {
+            var plottedCirclePoints = new List<Vector3>();
+            for (var i = 0; i <= 360; i += 360 / points)
+            {
+                var angle = i * (Math.PI / 180f);
+                var x = (float)(vector3Pos.X + radius * Math.Cos(angle));
+                var y = (float)(vector3Pos.Y + radius * Math.Sin(angle));
+                plottedCirclePoints.Add(new Vector3(x, y, vector3Pos.Z));
+            }
+
+            for (var i = 0; i < plottedCirclePoints.Count; i++)
+            {
+                if (i >= plottedCirclePoints.Count - 1)
+                {
+                    continue;
+                }
+
+                var camera = GameController.Game.IngameState.Camera;
+                Vector2 point1 = camera.WorldToScreen(plottedCirclePoints[i]);
+                Vector2 point2 = camera.WorldToScreen(plottedCirclePoints[i + 1]);
+                Graphics.DrawLine(point1, point2, lineWidth, color);
+            }
+        }
+        catch (Exception ex)
+        {
+            if (Settings.DebugSettings.DebugMode.Value)
+            {
+                LogMessage($"[CIRCLE ERROR] Error in DrawEllipseToWorld: {ex.Message}");
             }
         }
     }
