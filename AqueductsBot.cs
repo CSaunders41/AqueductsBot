@@ -1162,6 +1162,28 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         var screenPosSharp = GameController.IngameState.Camera.WorldToScreen(worldPos);
         var screenPos = new Vector2(screenPosSharp.X, screenPosSharp.Y);
         
+        // 🖥️ CRITICAL: VALIDATE SCREEN COORDINATES BEFORE CLICKING
+        var gameWindow = GameController.Window.GetWindowRectangle();
+        var isWithinGameWindow = screenPos.X >= 0 && screenPos.X <= gameWindow.Width && 
+                                screenPos.Y >= 0 && screenPos.Y <= gameWindow.Height;
+        
+        LogMovementDebug($"[SCREEN VALIDATION] Game window: {gameWindow.Width}x{gameWindow.Height}");
+        LogMovementDebug($"[SCREEN VALIDATION] Target screen: ({screenPos.X:F0}, {screenPos.Y:F0})");
+        LogMovementDebug($"[SCREEN VALIDATION] Within window: {isWithinGameWindow}");
+        
+        if (!isWithinGameWindow)
+        {
+            LogMovementDebug($"[SCREEN VALIDATION] ❌ CRITICAL: Target outside game window! Clamping to safe bounds.");
+            
+            // Clamp to safe area within game window (with margin for safety)
+            var margin = 50f;
+            var safeX = Math.Max(margin, Math.Min(gameWindow.Width - margin, screenPos.X));
+            var safeY = Math.Max(margin, Math.Min(gameWindow.Height - margin, screenPos.Y));
+            
+            LogMovementDebug($"[SCREEN VALIDATION] ✅ Clamped: ({screenPos.X:F0}, {screenPos.Y:F0}) → ({safeX:F0}, {safeY:F0})");
+            screenPos = new Vector2(safeX, safeY);
+        }
+        
         var distanceToTarget = System.Numerics.Vector2.Distance(playerWorldPos, targetPoint.Value);
         
         // 📏 FINAL VALIDATION: Log exactly where we're clicking relative to player and circle
@@ -1170,9 +1192,16 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         {
             var screenDistance = Vector2.Distance(screenPos, playerScreenPos.Value);
             LogMovementDebug($"[CLICK VALIDATION] Player screen: ({playerScreenPos.Value.X:F0}, {playerScreenPos.Value.Y:F0})");
-            LogMovementDebug($"[CLICK VALIDATION] Target screen: ({screenPos.X:F0}, {screenPos.Y:F0})");
+            LogMovementDebug($"[CLICK VALIDATION] Final target screen: ({screenPos.X:F0}, {screenPos.Y:F0})");
             LogMovementDebug($"[CLICK VALIDATION] Screen distance: {screenDistance:F1} pixels");
             LogMovementDebug($"[CLICK VALIDATION] World distance: {distanceToTarget:F1} units (expected: ~{expectedRadius:F1})");
+            
+            // Additional safety check - if screen distance is way too large, something is wrong
+            if (screenDistance > 800) // More than 800 pixels from player is suspicious
+            {
+                LogMovementDebug($"[CLICK VALIDATION] ⚠️ WARNING: Screen distance very large ({screenDistance:F1} pixels) - possible coordinate issue!");
+                return; // Skip this movement to prevent off-screen clicking
+            }
         }
         
         // Update path progress tracking
@@ -1332,6 +1361,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         // Execute the movement
         _lastMovementTime = DateTime.Now;
         
+        // 🖥️ FINAL SAFETY CHECK: Verify coordinates before clicking
         LogMovementDebug($"[MOVEMENT] 🎮 EXECUTING MOVEMENT: cursor to ({screenPos.X:F0}, {screenPos.Y:F0}) + press T (distance: {distanceToTarget:F1})");
         
         if (Settings.DebugSettings.ShowMovementDebug.Value)
@@ -1339,9 +1369,17 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             LogMovementDebug($"[MOVEMENT DEBUG] 📍 Player at ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}) → Target ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0})");
         }
         
+        // Additional sanity check on final screen coordinates
+        if (screenPos.X < -1000 || screenPos.X > 5000 || screenPos.Y < -1000 || screenPos.Y > 5000)
+        {
+            LogMovementDebug($"[MOVEMENT] ❌ CRITICAL: Insane screen coordinates ({screenPos.X:F0}, {screenPos.Y:F0}) - ABORTING CLICK!");
+            return; // Don't click with crazy coordinates
+        }
+        
         // Store target position for visual display
         _lastTargetWorldPos = targetPoint.Value;
         
+        LogMovementDebug($"[MOVEMENT] ✅ SAFE CLICK: Executing click at ({screenPos.X:F0}, {screenPos.Y:F0})");
         ClickAt((int)screenPos.X, (int)screenPos.Y);
         PressAndHoldKey(Keys.T);
 
