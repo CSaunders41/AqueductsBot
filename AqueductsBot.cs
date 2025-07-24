@@ -3047,39 +3047,60 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         var direction = lineEnd - lineStart;
         var directionLength = direction.Length();
         
+        // DEBUG: Log the input parameters (only for first few to avoid spam)
+        bool debugThis = lineStart.X <= 515 && lineStart.Y <= 263; // Only debug early path segments
+        if (debugThis)
+        {
+            LogMovementDebug($"[INTERSECTION MATH] Line: ({lineStart.X:F1},{lineStart.Y:F1}) → ({lineEnd.X:F1},{lineEnd.Y:F1}), Circle: ({circleCenter.X:F1},{circleCenter.Y:F1}), Radius: {radius:F1}");
+            LogMovementDebug($"[INTERSECTION MATH] Direction: ({direction.X:F1},{direction.Y:F1}), Length: {directionLength:F1}");
+        }
+        
         // Avoid division by zero for very short segments
-        if (directionLength < 0.001f) return null;
+        if (directionLength < 0.001f) 
+        {
+            if (debugThis) LogMovementDebug($"[INTERSECTION MATH] ❌ Segment too short: {directionLength:F3}");
+            return null;
+        }
         
         // Normalize direction vector
         direction = direction / directionLength;
+        if (debugThis) LogMovementDebug($"[INTERSECTION MATH] Normalized direction: ({direction.X:F3},{direction.Y:F3})");
         
         var toCircleCenter = circleCenter - lineStart;
         var projectionLength = System.Numerics.Vector2.Dot(toCircleCenter, direction);
+        if (debugThis) LogMovementDebug($"[INTERSECTION MATH] ToCenter: ({toCircleCenter.X:F1},{toCircleCenter.Y:F1}), Projection: {projectionLength:F1}");
         
         // Find closest point on infinite line to circle center
         var closestPoint = lineStart + direction * projectionLength;
         var distanceToCenter = System.Numerics.Vector2.Distance(closestPoint, circleCenter);
+        if (debugThis) LogMovementDebug($"[INTERSECTION MATH] Closest point: ({closestPoint.X:F1},{closestPoint.Y:F1}), Distance to center: {distanceToCenter:F1}");
         
         // No intersection if line is too far from circle
         if (distanceToCenter > radius)
         {
+            if (debugThis) LogMovementDebug($"[INTERSECTION MATH] ❌ Line too far from circle: {distanceToCenter:F1} > {radius:F1}");
             return null;
         }
         
         // Calculate intersection points
         var halfChordLength = (float)Math.Sqrt(radius * radius - distanceToCenter * distanceToCenter);
+        if (debugThis) LogMovementDebug($"[INTERSECTION MATH] Half chord length: {halfChordLength:F1}");
         
         // Two potential intersection points
         var intersection1 = closestPoint - direction * halfChordLength;
         var intersection2 = closestPoint + direction * halfChordLength;
+        if (debugThis) LogMovementDebug($"[INTERSECTION MATH] Intersection 1: ({intersection1.X:F1},{intersection1.Y:F1})");
+        if (debugThis) LogMovementDebug($"[INTERSECTION MATH] Intersection 2: ({intersection2.X:F1},{intersection2.Y:F1})");
         
         // Check which intersections are within the line segment
         // Note: direction is already normalized, so dot product gives projection length directly
         var t1 = System.Numerics.Vector2.Dot(intersection1 - lineStart, direction);
         var t2 = System.Numerics.Vector2.Dot(intersection2 - lineStart, direction);
+        if (debugThis) LogMovementDebug($"[INTERSECTION MATH] t1: {t1:F1}, t2: {t2:F1}");
         
         // Since direction is normalized, we need to compare against the actual segment length
         var segmentLength = directionLength;
+        if (debugThis) LogMovementDebug($"[INTERSECTION MATH] Segment length: {segmentLength:F1}, checking bounds [0, {segmentLength:F1}]");
         
         // Choose the intersection that's further along the path (prefer forward progress)
         System.Numerics.Vector2? bestIntersection = null;
@@ -3087,16 +3108,27 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         
         if (t1 >= 0 && t1 <= segmentLength && t1 > bestT)
         {
+            if (debugThis) LogMovementDebug($"[INTERSECTION MATH] ✅ t1 VALID: {t1:F1} in [0, {segmentLength:F1}]");
             bestIntersection = intersection1;
             bestT = t1;
+        }
+        else
+        {
+            if (debugThis) LogMovementDebug($"[INTERSECTION MATH] ❌ t1 INVALID: {t1:F1} not in [0, {segmentLength:F1}]");
         }
         
         if (t2 >= 0 && t2 <= segmentLength && t2 > bestT)
         {
+            if (debugThis) LogMovementDebug($"[INTERSECTION MATH] ✅ t2 VALID: {t2:F1} in [0, {segmentLength:F1}], better than {bestT:F1}");
             bestIntersection = intersection2;
             bestT = t2;
         }
+        else
+        {
+            if (debugThis) LogMovementDebug($"[INTERSECTION MATH] ❌ t2 INVALID: {t2:F1} not in [0, {segmentLength:F1}] or not better than {bestT:F1}");
+        }
         
+        if (debugThis) LogMovementDebug($"[INTERSECTION MATH] 📍 RESULT: {(bestIntersection.HasValue ? $"({bestIntersection.Value.X:F1},{bestIntersection.Value.Y:F1})" : "None")}");
         return bestIntersection;
     }
     
