@@ -3074,20 +3074,24 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         var intersection2 = closestPoint + direction * halfChordLength;
         
         // Check which intersections are within the line segment
-        var t1 = System.Numerics.Vector2.Dot(intersection1 - lineStart, direction) / directionLength;
-        var t2 = System.Numerics.Vector2.Dot(intersection2 - lineStart, direction) / directionLength;
+        // Note: direction is already normalized, so dot product gives projection length directly
+        var t1 = System.Numerics.Vector2.Dot(intersection1 - lineStart, direction);
+        var t2 = System.Numerics.Vector2.Dot(intersection2 - lineStart, direction);
+        
+        // Since direction is normalized, we need to compare against the actual segment length
+        var segmentLength = directionLength;
         
         // Choose the intersection that's further along the path (prefer forward progress)
         System.Numerics.Vector2? bestIntersection = null;
         float bestT = -1f;
         
-        if (t1 >= 0 && t1 <= 1 && t1 > bestT)
+        if (t1 >= 0 && t1 <= segmentLength && t1 > bestT)
         {
             bestIntersection = intersection1;
             bestT = t1;
         }
         
-        if (t2 >= 0 && t2 <= 1 && t2 > bestT)
+        if (t2 >= 0 && t2 <= segmentLength && t2 > bestT)
         {
             bestIntersection = intersection2;
             bestT = t2;
