@@ -2912,9 +2912,45 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         // DEBUG: Show actual settings values
         LogMovementDebug($"[SETTINGS DEBUG] 🔧 Pursuit radius setting: {basePursuitRadius} (min: {Settings.MovementSettings.PursuitRadius.Min}, max: {Settings.MovementSettings.PursuitRadius.Max})");
         
-        // DYNAMIC RADIUS: Increase radius near end of path for better targeting
+        // INTELLIGENT RADIUS SCALING: Scale radius based on remaining path length and segment sizes
         var remainingWaypoints = path.Count - startIndex;
-        var dynamicRadius = remainingWaypoints <= 10 ? basePursuitRadius * 1.5f : basePursuitRadius;
+        
+        // Calculate average segment length in remaining path
+        float totalPathLength = 0f;
+        int segmentCount = 0;
+        for (int i = Math.Max(startIndex, 1); i < Math.Min(startIndex + 20, path.Count); i++)
+        {
+            var segLen = System.Numerics.Vector2.Distance(
+                new System.Numerics.Vector2(path[i-1].X, path[i-1].Y),
+                new System.Numerics.Vector2(path[i].X, path[i].Y));
+            totalPathLength += segLen;
+            segmentCount++;
+        }
+        
+        var avgSegmentLength = segmentCount > 0 ? totalPathLength / segmentCount : 1f;
+        var cumulativePathLength = totalPathLength;
+        
+        // Scale radius based on path characteristics
+        var dynamicRadius = basePursuitRadius;
+        
+        // If remaining path is very short, scale radius down dramatically
+        if (remainingWaypoints <= 15 && cumulativePathLength < basePursuitRadius * 0.3f)
+        {
+            dynamicRadius = Math.Max(cumulativePathLength * 0.8f, avgSegmentLength * 5f);
+            LogMovementDebug($"[RADIUS SCALING] 🔽 Very short path remaining - scaled radius: {basePursuitRadius:F1} → {dynamicRadius:F1} (path length: {cumulativePathLength:F1})");
+        }
+        // If segments are very small compared to radius, scale down proportionally  
+        else if (avgSegmentLength < basePursuitRadius * 0.02f)
+        {
+            dynamicRadius = Math.Max(avgSegmentLength * 20f, basePursuitRadius * 0.1f);
+            LogMovementDebug($"[RADIUS SCALING] 🔽 Tiny segments detected - scaled radius: {basePursuitRadius:F1} → {dynamicRadius:F1} (avg segment: {avgSegmentLength:F1})");
+        }
+        // Near end of path, increase radius for better targeting
+        else if (remainingWaypoints <= 10)
+        {
+            dynamicRadius = basePursuitRadius * 1.5f;
+            LogMovementDebug($"[RADIUS SCALING] 🔼 Near path end - increased radius: {basePursuitRadius:F1} → {dynamicRadius:F1}");
+        }
         
         LogMovementDebug($"[PURSUIT DEBUG] Player at ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}), looking from index {startIndex}/{path.Count}, radius {dynamicRadius:F0} (base: {basePursuitRadius:F0}, remaining: {remainingWaypoints})");
         
@@ -2982,13 +3018,38 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         // AGGRESSIVE FALLBACK LOGIC: Always find a target!
         LogMessage($"[PURSUIT DEBUG] No circle intersection found, trying fallback options...");
         
-        // END-OF-PATH SPECIAL HANDLING: If very close to end, just target the final destination
+        // END-OF-PATH SPECIAL HANDLING: If very close to end, target appropriately  
         if (remainingWaypoints <= 5)
         {
             var finalPoint = new System.Numerics.Vector2(path[path.Count - 1].X, path[path.Count - 1].Y);
             var finalDistance = System.Numerics.Vector2.Distance(playerWorldPos, finalPoint);
-            LogMessage($"[PURSUIT] 🎯 Near path end - targeting final destination ({finalPoint.X:F0}, {finalPoint.Y:F0}), distance {finalDistance:F1}");
-            return finalPoint;
+            
+            // If final point is very close, look for a point that's at least a reasonable distance away
+            if (finalDistance < basePursuitRadius * 0.1f)
+            {
+                // Find the furthest reachable point in remaining path
+                var bestPoint = finalPoint;
+                var bestDistance = finalDistance;
+                
+                for (int i = startIndex; i < path.Count; i++)
+                {
+                    var testPoint = new System.Numerics.Vector2(path[i].X, path[i].Y);
+                    var testDistance = System.Numerics.Vector2.Distance(playerWorldPos, testPoint);
+                    if (testDistance > bestDistance)
+                    {
+                        bestPoint = testPoint;
+                        bestDistance = testDistance;
+                    }
+                }
+                
+                LogMovementDebug($"[PURSUIT] 🎯 Path end - found best reachable point ({bestPoint.X:F0}, {bestPoint.Y:F0}), distance {bestDistance:F1}");
+                return bestPoint;
+            }
+            else
+            {
+                LogMovementDebug($"[PURSUIT] 🎯 Near path end - targeting final destination ({finalPoint.X:F0}, {finalPoint.Y:F0}), distance {finalDistance:F1}");
+                return finalPoint;
+            }
         }
         
         // Option 1: Look for any point that's far enough ahead - use pursuit radius as minimum
@@ -3047,13 +3108,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         var direction = lineEnd - lineStart;
         var directionLength = direction.Length();
         
-        // DEBUG: Log the input parameters (only for first few to avoid spam)
-        bool debugThis = lineStart.X <= 515 && lineStart.Y <= 263; // Only debug early path segments
-        if (debugThis)
-        {
-            LogMovementDebug($"[INTERSECTION MATH] Line: ({lineStart.X:F1},{lineStart.Y:F1}) → ({lineEnd.X:F1},{lineEnd.Y:F1}), Circle: ({circleCenter.X:F1},{circleCenter.Y:F1}), Radius: {radius:F1}");
-            LogMovementDebug($"[INTERSECTION MATH] Direction: ({direction.X:F1},{direction.Y:F1}), Length: {directionLength:F1}");
-        }
+        // Only debug if we might find an intersection (radius is reasonable compared to segment)
+        bool debugThis = radius <= directionLength * 50f; // Only debug when radius isn't massively larger than segment
         
         // Avoid division by zero for very short segments
         if (directionLength < 0.001f) 
