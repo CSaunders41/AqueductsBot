@@ -1049,9 +1049,22 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         
         if (!targetPoint.HasValue)
         {
-            LogMessage("[PURSUIT] ❌ No valid intersection point found - requesting new path");
-            _currentState = BotState.GettingPath;
-            return;
+            LogMessage("[PURSUIT] ❌ CRITICAL: Even aggressive fallback failed - advancing manually along path");
+            
+            // Manual advancement: skip ahead in the path and try again
+            _currentPathIndex = Math.Min(_currentPathIndex + 5, _currentPath.Count - 1);
+            
+            if (_currentPathIndex >= _currentPath.Count - 1)
+            {
+                LogMessage("[PURSUIT] 📍 Reached end of path manually");
+                _currentState = BotState.AtAreaExit;
+                return;
+            }
+            
+            // Try to get a simple waypoint as target
+            var waypoint = _currentPath[_currentPathIndex];
+            targetPoint = new System.Numerics.Vector2(waypoint.X, waypoint.Y);
+            LogMessage($"[PURSUIT] 🔧 Using manual waypoint {_currentPathIndex}: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0})");
         }
 
         // Convert world position to screen coordinates for clicking
@@ -2433,9 +2446,12 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         var playerWorldPos = new System.Numerics.Vector2(playerPos.GridPos.X, playerPos.GridPos.Y);
         var pursuitRadius = Settings.MovementSettings.PursuitRadius.Value;
         
-        LogMessage($"[PURSUIT DEBUG] Looking for intersections from index {startIndex}/{path.Count} with radius {pursuitRadius}");
+        LogMessage($"[PURSUIT DEBUG] Player at ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}), looking from index {startIndex}/{path.Count}, radius {pursuitRadius}");
         
         // Look ahead from current position in path
+        System.Numerics.Vector2? bestIntersection = null;
+        float bestDistance = 0f;
+        
         for (int i = Math.Max(startIndex, 1); i < path.Count; i++)
         {
             var currentPoint = new System.Numerics.Vector2(path[i - 1].X, path[i - 1].Y);
@@ -2443,7 +2459,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             
             // Skip very short segments to avoid numerical issues
             var segmentLength = System.Numerics.Vector2.Distance(currentPoint, nextPoint);
-            if (segmentLength < 5f) continue;
+            if (segmentLength < 2f) continue;
             
             // Find intersection of line segment with circle around player
             var intersection = FindLineCircleIntersection(currentPoint, nextPoint, playerWorldPos, pursuitRadius);
@@ -2451,34 +2467,59 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             if (intersection.HasValue)
             {
                 var distanceToIntersection = System.Numerics.Vector2.Distance(playerWorldPos, intersection.Value);
-                LogMessage($"[PURSUIT DEBUG] Found intersection at segment {i}: ({intersection.Value.X:F0}, {intersection.Value.Y:F0}), distance: {distanceToIntersection:F1}");
+                LogMessage($"[PURSUIT DEBUG] Intersection at segment {i}: ({intersection.Value.X:F0}, {intersection.Value.Y:F0}), distance: {distanceToIntersection:F1}");
                 
-                // Only accept intersections that are at a reasonable distance
-                if (distanceToIntersection >= pursuitRadius * 0.8f && distanceToIntersection <= pursuitRadius * 1.2f)
+                // Accept intersections within a reasonable range (more lenient)
+                if (distanceToIntersection >= pursuitRadius * 0.5f && distanceToIntersection <= pursuitRadius * 1.5f)
                 {
-                    LogMessage($"[PURSUIT] 🎯 Found valid path intersection at ({intersection.Value.X:F0}, {intersection.Value.Y:F0}) with radius {pursuitRadius}");
+                    LogMessage($"[PURSUIT] 🎯 Found valid path intersection at ({intersection.Value.X:F0}, {intersection.Value.Y:F0}) with distance {distanceToIntersection:F1}");
                     return intersection.Value;
                 }
             }
         }
         
-        // CONSERVATIVE FALLBACK: Use a point that's actually worth moving to
-        var lookaheadDistance = Math.Min(20, path.Count - startIndex - 1); // Look further ahead
-        if (lookaheadDistance > 0)
+        // AGGRESSIVE FALLBACK LOGIC: Always find a target!
+        LogMessage($"[PURSUIT DEBUG] No circle intersection found, trying fallback options...");
+        
+        // Option 1: Look for any point that's far enough ahead
+        for (int distance = 5; distance <= 30; distance += 5)
         {
-            var fallbackIndex = startIndex + lookaheadDistance;
+            int fallbackIndex = Math.Min(startIndex + distance, path.Count - 1);
+            if (fallbackIndex <= startIndex) continue;
+            
             var fallbackPoint = new System.Numerics.Vector2(path[fallbackIndex].X, path[fallbackIndex].Y);
             var fallbackDistance = System.Numerics.Vector2.Distance(playerWorldPos, fallbackPoint);
             
-            // Only use fallback if it's far enough to be worth moving to
-            if (fallbackDistance >= 100f) // Increased from 50f
+            if (fallbackDistance >= 30f) // Much more lenient minimum distance
             {
-                LogMessage($"[PURSUIT] ⚠️ No intersection found, using conservative fallback at ({fallbackPoint.X:F0}, {fallbackPoint.Y:F0}), distance: {fallbackDistance:F1}");
+                LogMessage($"[PURSUIT] ⚡ Using distance-based fallback: index {fallbackIndex}, point ({fallbackPoint.X:F0}, {fallbackPoint.Y:F0}), distance {fallbackDistance:F1}");
                 return fallbackPoint;
             }
         }
         
-        LogMessage($"[PURSUIT] ❌ No valid intersection or fallback found");
+        // Option 2: Just use the next valid point in the path, regardless of distance
+        for (int i = startIndex + 1; i < path.Count; i++)
+        {
+            var point = new System.Numerics.Vector2(path[i].X, path[i].Y);
+            var distance = System.Numerics.Vector2.Distance(playerWorldPos, point);
+            
+            if (distance >= 10f) // Minimum distance to avoid clicking on self
+            {
+                LogMessage($"[PURSUIT] 🔧 Emergency fallback: index {i}, point ({point.X:F0}, {point.Y:F0}), distance {distance:F1}");
+                return point;
+            }
+        }
+        
+        // Option 3: Last resort - use the final destination
+        if (path.Count > 0)
+        {
+            var lastPoint = new System.Numerics.Vector2(path[path.Count - 1].X, path[path.Count - 1].Y);
+            var lastDistance = System.Numerics.Vector2.Distance(playerWorldPos, lastPoint);
+            LogMessage($"[PURSUIT] 🚨 Last resort fallback: final destination ({lastPoint.X:F0}, {lastPoint.Y:F0}), distance {lastDistance:F1}");
+            return lastPoint;
+        }
+        
+        LogMessage($"[PURSUIT] ❌ CRITICAL: No fallback found at all!");
         return null;
     }
     
