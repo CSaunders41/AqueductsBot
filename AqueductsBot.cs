@@ -843,38 +843,40 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         try
         {
             byte vkCode = (byte)key;
-            LogMessage($"[KEYBOARD] *** TESTING MULTIPLE KEY PRESS METHODS FOR {key} (VK Code: {vkCode}) ***");
+            LogMessage($"[KEYBOARD] *** TESTING KEY PRESS WITH PROPER WINDOW FOCUS FOR {key} ***");
             
-            // Method 1: Exact AreWeThereYet approach with int flags
-            LogMessage("[KEYBOARD] Method 1: EXACT AreWeThereYet (int flags, EXTENDEDKEY)");
+            // CRITICAL: Set focus to Path of Exile window before pressing key
+            LogMessage("[KEYBOARD] Step 1: Finding Path of Exile window...");
+            IntPtr poeWindow = FindWindow(null, "Path of Exile");
+            if (poeWindow == IntPtr.Zero)
+            {
+                LogMessage("[KEYBOARD] Path of Exile window not found, trying alternative names...");
+                poeWindow = FindWindow("POEWindowClass", null);
+            }
+            
+            if (poeWindow != IntPtr.Zero)
+            {
+                LogMessage($"[KEYBOARD] Step 2: Found PoE window handle: {poeWindow}");
+                LogMessage("[KEYBOARD] Step 3: Setting window focus...");
+                
+                // Bring window to foreground and set focus
+                SetForegroundWindow(poeWindow);
+                Thread.Sleep(50); // Small delay for focus to take effect
+                
+                LogMessage("[KEYBOARD] Step 4: Window focus set - now pressing key");
+            }
+            else
+            {
+                LogMessage("[KEYBOARD] WARNING: Could not find Path of Exile window - key press may fail");
+            }
+            
+            // Now press the key with the exact AreWeThereYet method
+            LogMessage($"[KEYBOARD] Step 5: Pressing {key} with EXTENDEDKEY flags...");
             keybd_event(vkCode, 0, 0x0001, 0); // Key down with EXTENDEDKEY
             Thread.Sleep(20);
             keybd_event(vkCode, 0, 0x0003, 0); // Key up with EXTENDEDKEY | KEYUP
-            Thread.Sleep(100);
             
-            // Method 2: Simple approach without EXTENDEDKEY flag
-            LogMessage("[KEYBOARD] Method 2: Simple approach (no EXTENDEDKEY flag)");
-            keybd_event(vkCode, 0, 0, 0); // Key down - no flags
-            Thread.Sleep(20);
-            keybd_event(vkCode, 0, 0x0002, 0); // Key up - just KEYUP flag
-            Thread.Sleep(100);
-            
-            // Method 3: Longer hold time
-            LogMessage("[KEYBOARD] Method 3: Longer hold time (100ms like mouse)");
-            keybd_event(vkCode, 0, 0x0001, 0); // Key down
-            Thread.Sleep(100); // Longer hold
-            keybd_event(vkCode, 0, 0x0003, 0); // Key up
-            Thread.Sleep(100);
-            
-            // Method 4: Use scan codes instead of virtual key codes
-            LogMessage("[KEYBOARD] Method 4: Using scan codes instead of VK codes");
-            byte scanCode = (byte)MapVirtualKey((uint)vkCode, 0);
-            LogMessage($"[KEYBOARD] VK {vkCode} -> Scan Code {scanCode}");
-            keybd_event(0, scanCode, 0x0008, 0); // Key down with SCANCODE flag
-            Thread.Sleep(20);
-            keybd_event(0, scanCode, 0x0008 | 0x0002, 0); // Key up with SCANCODE | KEYUP
-            
-            LogMessage($"[KEYBOARD] *** ALL 4 METHODS TESTED FOR {key} - CHECK IF ANY MOVED CHARACTER! ***");
+            LogMessage($"[KEYBOARD] *** KEY PRESS COMPLETED FOR {key} WITH PROPER FOCUS - CHECK CHARACTER MOVEMENT! ***");
         }
         catch (Exception ex)
         {
