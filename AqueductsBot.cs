@@ -2768,7 +2768,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         }
         catch (Exception ex)
         {
-            // Don't spam errors for rendering issues
+            LogMessage($"[CIRCLE DEBUG] Error drawing circle: {ex.Message}");
         }
     }
 
