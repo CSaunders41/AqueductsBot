@@ -87,6 +87,9 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     private bool _commaKeyPressed = false;
     private bool _periodKeyPressed = false;
     
+    // Add state logging tracking
+    private DateTime _lastStateLog = DateTime.MinValue;
+    
     // Add pathfinding failure tracking
     // private int _pathfindingFailures = 0;
     // private DateTime _lastPathfindingFailure = DateTime.MinValue;
@@ -313,6 +316,13 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             // Main bot logic - only run if bot is enabled (separate from plugin enable)
             if (_botEnabled && _currentState != BotState.Disabled)
             {
+                // TEMP DEBUG: Log bot state periodically to see what's happening
+                if (DateTime.Now.Subtract(_lastStateLog).TotalSeconds >= 2)
+                {
+                    LogMovementDebug($"[BOT STATE] Current state: {_currentState}, Path count: {_currentPath.Count}, Path index: {_currentPathIndex}");
+                    _lastStateLog = DateTime.Now;
+                }
+                
                 ProcessBotLogic();
             }
             
@@ -799,8 +809,9 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     {
         try
         {
-            LogMessage("[DEBUG] RequestPathToExit started with smart target selection");
-            _lastActionTime = DateTime.Now;
+                    LogMessage("[DEBUG] RequestPathToExit started with smart target selection");
+        LogMovementDebug("[PATHFINDING] RequestPathToExit started - requesting path from radar");
+        _lastActionTime = DateTime.Now;
             
             // Check if radar is still available
             if (!_radarAvailable || _radarLookForRoute == null)
