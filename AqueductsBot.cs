@@ -1192,14 +1192,6 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         // Calculate movement delay based on distance
         var movementDelay = CalculateImprovedMovementDelay(distanceToTarget);
         
-        // DEBUG: Force faster movement to test if character can move at all
-        var debugFastMovement = true; // Enable for testing
-        if (debugFastMovement)
-        {
-            movementDelay = Math.Min(movementDelay, 100); // Force very short delays for testing
-            LogMessage($"[MOVEMENT DEBUG] 🚀 Debug mode: forced delay to {movementDelay}ms (original would be {CalculateImprovedMovementDelay(distanceToTarget)}ms)");
-        }
-        
         // Check movement delay timing
         var timeSinceLastMovement = (DateTime.Now - _lastMovementTime).TotalMilliseconds;
         if (timeSinceLastMovement < movementDelay)
