@@ -131,7 +131,7 @@ public class ConfigurationSettings
     public RangeNode<int> MaxLookaheadWaypoints { get; set; } = new RangeNode<int>(15, 5, 25);
     
     [Menu("Circle Intersection Tolerance", "Tolerance for circle intersection calculations", 84)]
-    public RangeNode<float> CircleIntersectionTolerance { get; set; } = new RangeNode<float>(0.6f, 0.2f, 1.0f);
+            public RangeNode<float> CircleIntersectionTolerance { get; set; } = new RangeNode<float>(0.1f, 0.05f, 1.0f);
     
     [Menu("Path Score Threshold", "Minimum score improvement to accept new path", 85)]
     public RangeNode<float> PathScoreThreshold { get; set; } = new RangeNode<float>(0.15f, 0.05f, 0.5f);

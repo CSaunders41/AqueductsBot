@@ -2894,6 +2894,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         int segmentsChecked = 0;
         int intersectionsFound = 0;
         
+        LogMovementDebug($"[PURSUIT DEBUG] Starting main intersection loop from index {Math.Max(startIndex, 1)} to {path.Count - 1}");
+        
         for (int i = Math.Max(startIndex, 1); i < path.Count; i++)
         {
             var currentPoint = new System.Numerics.Vector2(path[i - 1].X, path[i - 1].Y);
@@ -2908,6 +2910,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             // Find intersection of line segment with circle around player
             var intersection = FindLineCircleIntersection(currentPoint, nextPoint, playerWorldPos, dynamicRadius);
             
+            LogMovementDebug($"[INTERSECTION] Segment {i}: ({currentPoint.X:F0},{currentPoint.Y:F0}) → ({nextPoint.X:F0},{nextPoint.Y:F0}), length: {segmentLength:F1}, intersection: {(intersection.HasValue ? $"({intersection.Value.X:F0},{intersection.Value.Y:F0})" : "None")}");
+            
             if (intersection.HasValue)
             {
                 intersectionsFound++;
@@ -2920,7 +2924,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 var minRadius = dynamicRadius * tolerance; 
                 var maxRadius = dynamicRadius * (2.0f - tolerance); // Inversely related for balance
                 
-                LogMovementDebug($"[PURSUIT DEBUG] Checking bounds: {minRadius:F1} <= {distanceToIntersection:F1} <= {maxRadius:F1}");
+                LogMovementDebug($"[PURSUIT DEBUG] Tolerance: {tolerance:F2}, bounds: {minRadius:F1} <= {distanceToIntersection:F1} <= {maxRadius:F1}");
                 
                 if (distanceToIntersection >= minRadius && distanceToIntersection <= maxRadius)
                 {
@@ -2934,7 +2938,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             }
         }
         
-        LogMovementDebug($"[PURSUIT DEBUG] Checked {segmentsChecked} segments, found {intersectionsFound} intersections, none valid");
+        LogMovementDebug($"[PURSUIT DEBUG] SUMMARY: Checked {segmentsChecked} segments, found {intersectionsFound} total intersections, none within tolerance bounds");
         
         // AGGRESSIVE FALLBACK LOGIC: Always find a target!
         LogMessage($"[PURSUIT DEBUG] No circle intersection found, trying fallback options...");
