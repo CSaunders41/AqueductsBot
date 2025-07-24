@@ -316,9 +316,19 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             // Main bot logic - only run if bot is enabled (separate from plugin enable)
             if (_botEnabled && _currentState != BotState.Disabled)
             {
-                // TEMP DEBUG: Log bot state periodically to see what's happening
-                if (DateTime.Now.Subtract(_lastStateLog).TotalSeconds >= 2)
+                // BASIC DIAGNOSTIC: Log directly to file without using LogMovementDebug
+                if (DateTime.Now.Subtract(_lastStateLog).TotalSeconds >= 3)
                 {
+                    try
+                    {
+                        var diagnosticMsg = $"[{DateTime.Now:HH:mm:ss.fff}] [DIAGNOSTIC] Bot running - State: {_currentState}, Path: {_currentPath.Count}, Index: {_currentPathIndex}{Environment.NewLine}";
+                        File.AppendAllText(_movementDebugFilePath, diagnosticMsg);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogMessage($"[DIAGNOSTIC ERROR] Can't write to file: {ex.Message}");
+                    }
+                    
                     LogMovementDebug($"[BOT STATE] Current state: {_currentState}, Path count: {_currentPath.Count}, Path index: {_currentPathIndex}");
                     _lastStateLog = DateTime.Now;
                 }
@@ -559,6 +569,50 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         if (ImGui.Button("🎯 Debug Coords"))
         {
             DebugCoordinateSystem();
+        }
+        
+        // Third row - File access and diagnostics
+        if (ImGui.Button("📁 Open Movement Log"))
+        {
+            try
+            {
+                if (File.Exists(_movementDebugFilePath))
+                {
+                    System.Diagnostics.Process.Start("notepad.exe", _movementDebugFilePath);
+                    LogMessage($"[FILE] Opening movement debug file: {_movementDebugFilePath}");
+                }
+                else
+                {
+                    LogMessage($"[FILE] Movement debug file doesn't exist: {_movementDebugFilePath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"[FILE] Error opening movement debug file: {ex.Message}");
+            }
+        }
+        
+        ImGui.SameLine();
+        if (ImGui.Button("🔧 Test File Write"))
+        {
+            try
+            {
+                var testMessage = $"TEST WRITE - {DateTime.Now}: Bot enabled: {_botEnabled}, State: {_currentState}";
+                File.AppendAllText(_movementDebugFilePath, testMessage + Environment.NewLine);
+                LogMessage($"[TEST] Successfully wrote to file: {_movementDebugFilePath}");
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"[TEST] Failed to write to file: {ex.Message}");
+            }
+        }
+        
+        ImGui.SameLine();
+        if (ImGui.Button("📊 Show File Path"))
+        {
+            LogMessage($"[FILE INFO] Movement debug file path: {_movementDebugFilePath}");
+            LogMessage($"[FILE INFO] File exists: {File.Exists(_movementDebugFilePath)}");
+            LogMessage($"[FILE INFO] Bot enabled: {_botEnabled}, State: {_currentState}");
         }
         
         // Movement configuration
