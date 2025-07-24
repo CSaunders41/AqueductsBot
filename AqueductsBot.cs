@@ -148,6 +148,17 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         // Only log if debug messages are enabled
         if (!Settings.DebugSettings.DebugMode.Value) return;
         
+        LogMessageInternal(message);
+    }
+    
+    private void LogImportant(string message)
+    {
+        // Always log important messages regardless of debug settings
+        LogMessageInternal(message);
+    }
+    
+    private void LogMessageInternal(string message)
+    {
         lock (_logLock)
         { 
             if (message == _lastLogMessage) return; // Prevent spam
@@ -264,8 +275,23 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             {
                 if (!Settings.Enable.Value)
                 {
-                    LogMessage("[HOTKEY] Comma pressed - Starting bot!");
-                    ToggleBot();
+                    LogImportant("[HOTKEY] Comma pressed - Starting bot!");
+                    Settings.Enable.Value = true; // Direct enable instead of toggle
+                    if (_currentState == BotState.Disabled)
+                    {
+                        _botStartTime = DateTime.Now;
+                        _currentState = BotState.WaitingForRadar;
+                        
+                        // Reset tracking for new session
+                        _hasRecordedSpawnPosition = false;
+                        _initialSpawnPosition = System.Numerics.Vector2.Zero;
+                        _visitedAreas.Clear();
+                        
+                        if (!_radarAvailable)
+                        {
+                            TryConnectToRadar();
+                        }
+                    }
                 }
             }
             _commaKeyPressed = commaPressed;
@@ -275,8 +301,17 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             {
                 if (Settings.Enable.Value)
                 {
-                    LogMessage("[HOTKEY] Period pressed - Stopping bot!");
-                    ToggleBot();
+                    LogImportant("[HOTKEY] Period pressed - Stopping bot!");
+                    Settings.Enable.Value = false; // Direct disable instead of toggle
+                    _currentState = BotState.Disabled;
+                    
+                    // Cancel any ongoing pathfinding
+                    _pathfindingCts.Cancel();
+                    _pathfindingCts = new CancellationTokenSource();
+                    
+                    // Clear current path
+                    _currentPath.Clear();
+                    _currentPathIndex = 0;
                 }
             }
             _periodKeyPressed = periodPressed;
@@ -308,6 +343,13 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     
     public override void DrawSettings()
     {
+        // First, draw the automatic settings UI with all our sliders and checkboxes
+        base.DrawSettings();
+        
+        ImGui.Separator();
+        ImGui.Separator();
+        
+        // Then add our custom status display below
         // Declare variables early for UI usage
         bool keyboardEnabled = Settings.UseMovementKey || Settings.MovementSettings.UseMovementKey;
         Keys currentMovementKey = Settings.MovementKey.Value != Keys.None ? Settings.MovementKey.Value : Settings.MovementSettings.MovementKey.Value;
@@ -689,7 +731,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         
         if (Settings.Enable.Value)
         {
-            LogMessage("Bot enabled - starting automation");
+            LogImportant("Bot enabled - starting automation");
             _botStartTime = DateTime.Now;
             _currentState = BotState.WaitingForRadar;
             
@@ -720,7 +762,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         }
         else
         {
-            LogMessage("Bot disabled - stopping automation");
+            LogImportant("Bot disabled - stopping automation");
             _currentState = BotState.Disabled;
             
             // Cancel any ongoing pathfinding
@@ -735,7 +777,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     
     private void EmergencyStop()
     {
-        LogMessage("EMERGENCY STOP activated!");
+        LogImportant("EMERGENCY STOP activated!");
         Settings.Enable.Value = false;
         _currentState = BotState.Disabled;
         _pathfindingCts.Cancel();
