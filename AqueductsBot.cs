@@ -1040,8 +1040,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         
         if (!targetPoint.HasValue)
         {
-            LogMessage("[PURSUIT] ❌ No valid intersection point found - path may be complete");
-            _currentState = BotState.WaitingForAqueducts;
+            LogMessage("[PURSUIT] ❌ No valid intersection point found - requesting new path");
+            _currentState = BotState.GettingPath;
             return;
         }
 
@@ -1057,27 +1057,37 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         
         LogMessage($"[PURSUIT] 🎯 Moving to intersection point ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {distanceToTarget:F1}");
 
-        // Calculate movement delay based on distance
-        var movementDelay = CalculateImprovedMovementDelay(distanceToTarget);
-        
-        // Check if we're close enough to consider this target "reached"
-        if (distanceToTarget < 50f) // More generous than waypoint precision
+        // CONSERVATIVE ADVANCEMENT: Only advance path index when we're very close and have actually moved
+        if (distanceToTarget < 30f) // Much more conservative than 50f
         {
-            LogMessage($"[PURSUIT] ✅ Close to intersection point (distance: {distanceToTarget:F1} < 50), advancing along path");
+            LogMessage($"[PURSUIT] ✅ Close to intersection point (distance: {distanceToTarget:F1} < 30), advancing slowly along path");
             
-            // Advance our position along the path
-            _currentPathIndex = Math.Min(_currentPathIndex + 5, _currentPath.Count - 10);
+            // Advance more conservatively - only a few points at a time
+            _currentPathIndex = Math.Min(_currentPathIndex + 2, _currentPath.Count - 5);
             _lastIntersectionPoint = targetPoint.Value;
+            
+            // Still try to move to get even closer
+            if (distanceToTarget > 15f)
+            {
+                // Execute movement to get closer
+                LogMessage($"[MOVEMENT] 🎮 Fine-tuning: cursor to ({screenPos.X:F0}, {screenPos.Y:F0}) + press T");
+                ClickAt((int)screenPos.X, (int)screenPos.Y);
+                PressAndHoldKey(Keys.T);
+                _lastMovementTime = DateTime.Now;
+            }
             return;
         }
 
-        // Perform the movement
-        if (distanceToTarget < 15)
+        // Check if we should skip movement due to being too close for micro-adjustments
+        if (distanceToTarget < 10f)
         {
             LogMessage($"[PURSUIT] ⏸️ Very close to target, skipping movement to avoid micro-adjustments");
             return;
         }
 
+        // Calculate movement delay based on distance
+        var movementDelay = CalculateImprovedMovementDelay(distanceToTarget);
+        
         // Check movement delay timing
         var timeSinceLastMovement = (DateTime.Now - _lastMovementTime).TotalMilliseconds;
         if (timeSinceLastMovement < movementDelay)
@@ -2412,9 +2422,9 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         if (playerPos == null || path.Count == 0) return null;
         
         var playerWorldPos = new System.Numerics.Vector2(playerPos.GridPos.X, playerPos.GridPos.Y);
-        var bestIntersection = System.Numerics.Vector2.Zero;
-        var bestDistance = float.MaxValue;
-        var foundIntersection = false;
+        var pursuitRadius = Settings.MovementSettings.PursuitRadius.Value;
+        
+        LogMessage($"[PURSUIT DEBUG] Looking for intersections from index {startIndex}/{path.Count} with radius {pursuitRadius}");
         
         // Look ahead from current position in path
         for (int i = Math.Max(startIndex, 1); i < path.Count; i++)
@@ -2422,38 +2432,44 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var currentPoint = new System.Numerics.Vector2(path[i - 1].X, path[i - 1].Y);
             var nextPoint = new System.Numerics.Vector2(path[i].X, path[i].Y);
             
+            // Skip very short segments to avoid numerical issues
+            var segmentLength = System.Numerics.Vector2.Distance(currentPoint, nextPoint);
+            if (segmentLength < 5f) continue;
+            
             // Find intersection of line segment with circle around player
-            var pursuitRadius = Settings.MovementSettings.PursuitRadius.Value;
             var intersection = FindLineCircleIntersection(currentPoint, nextPoint, playerWorldPos, pursuitRadius);
             
             if (intersection.HasValue)
             {
-                // Prefer intersections that are further along the path
-                var distanceAlongPath = i;
-                if (distanceAlongPath < bestDistance)
+                var distanceToIntersection = System.Numerics.Vector2.Distance(playerWorldPos, intersection.Value);
+                LogMessage($"[PURSUIT DEBUG] Found intersection at segment {i}: ({intersection.Value.X:F0}, {intersection.Value.Y:F0}), distance: {distanceToIntersection:F1}");
+                
+                // Only accept intersections that are at a reasonable distance
+                if (distanceToIntersection >= pursuitRadius * 0.8f && distanceToIntersection <= pursuitRadius * 1.2f)
                 {
-                    bestDistance = distanceAlongPath;
-                    bestIntersection = intersection.Value;
-                    foundIntersection = true;
+                    LogMessage($"[PURSUIT] 🎯 Found valid path intersection at ({intersection.Value.X:F0}, {intersection.Value.Y:F0}) with radius {pursuitRadius}");
+                    return intersection.Value;
                 }
             }
         }
         
-        if (foundIntersection)
+        // CONSERVATIVE FALLBACK: Use a point that's actually worth moving to
+        var lookaheadDistance = Math.Min(20, path.Count - startIndex - 1); // Look further ahead
+        if (lookaheadDistance > 0)
         {
-            var pursuitRadius = Settings.MovementSettings.PursuitRadius.Value;
-            LogMessage($"[PURSUIT] 🎯 Found path intersection at ({bestIntersection.X:F0}, {bestIntersection.Y:F0}) with radius {pursuitRadius}");
-            return bestIntersection;
+            var fallbackIndex = startIndex + lookaheadDistance;
+            var fallbackPoint = new System.Numerics.Vector2(path[fallbackIndex].X, path[fallbackIndex].Y);
+            var fallbackDistance = System.Numerics.Vector2.Distance(playerWorldPos, fallbackPoint);
+            
+            // Only use fallback if it's far enough to be worth moving to
+            if (fallbackDistance >= 100f) // Increased from 50f
+            {
+                LogMessage($"[PURSUIT] ⚠️ No intersection found, using conservative fallback at ({fallbackPoint.X:F0}, {fallbackPoint.Y:F0}), distance: {fallbackDistance:F1}");
+                return fallbackPoint;
+            }
         }
         
-        // Fallback: if no intersection found, use a point further along the path
-        if (startIndex + 10 < path.Count)
-        {
-            var fallbackPoint = new System.Numerics.Vector2(path[startIndex + 10].X, path[startIndex + 10].Y);
-            LogMessage($"[PURSUIT] ⚠️ No intersection found, using fallback point at ({fallbackPoint.X:F0}, {fallbackPoint.Y:F0})");
-            return fallbackPoint;
-        }
-        
+        LogMessage($"[PURSUIT] ❌ No valid intersection or fallback found");
         return null;
     }
     
@@ -2467,28 +2483,54 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         float radius)
     {
         var direction = lineEnd - lineStart;
-        var toCenter = lineStart - circleCenter;
+        var directionLength = direction.Length();
         
-        var a = System.Numerics.Vector2.Dot(direction, direction);
-        var b = 2 * System.Numerics.Vector2.Dot(toCenter, direction);
-        var c = System.Numerics.Vector2.Dot(toCenter, toCenter) - radius * radius;
+        // Avoid division by zero for very short segments
+        if (directionLength < 0.001f) return null;
         
-        var discriminant = b * b - 4 * a * c;
+        // Normalize direction vector
+        direction = direction / directionLength;
         
-        if (discriminant < 0) return null; // No intersection
+        var toCircleCenter = circleCenter - lineStart;
+        var projectionLength = System.Numerics.Vector2.Dot(toCircleCenter, direction);
         
-        var sqrtDiscriminant = (float)Math.Sqrt(discriminant);
-        var t1 = (-b - sqrtDiscriminant) / (2 * a);
-        var t2 = (-b + sqrtDiscriminant) / (2 * a);
+        // Find closest point on infinite line to circle center
+        var closestPoint = lineStart + direction * projectionLength;
+        var distanceToCenter = System.Numerics.Vector2.Distance(closestPoint, circleCenter);
         
-        // Choose the intersection point that's further along the line (prefer forward movement)
-        var t = (t2 > t1 && t2 >= 0 && t2 <= 1) ? t2 : t1;
-        
-        if (t >= 0 && t <= 1) // Intersection is within the line segment
+        // No intersection if line is too far from circle
+        if (distanceToCenter > radius)
         {
-            return lineStart + t * direction;
+            return null;
         }
         
-        return null;
+        // Calculate intersection points
+        var halfChordLength = (float)Math.Sqrt(radius * radius - distanceToCenter * distanceToCenter);
+        
+        // Two potential intersection points
+        var intersection1 = closestPoint - direction * halfChordLength;
+        var intersection2 = closestPoint + direction * halfChordLength;
+        
+        // Check which intersections are within the line segment
+        var t1 = System.Numerics.Vector2.Dot(intersection1 - lineStart, direction) / directionLength;
+        var t2 = System.Numerics.Vector2.Dot(intersection2 - lineStart, direction) / directionLength;
+        
+        // Choose the intersection that's further along the path (prefer forward progress)
+        System.Numerics.Vector2? bestIntersection = null;
+        float bestT = -1f;
+        
+        if (t1 >= 0 && t1 <= 1 && t1 > bestT)
+        {
+            bestIntersection = intersection1;
+            bestT = t1;
+        }
+        
+        if (t2 >= 0 && t2 <= 1 && t2 > bestT)
+        {
+            bestIntersection = intersection2;
+            bestT = t2;
+        }
+        
+        return bestIntersection;
     }
 }
