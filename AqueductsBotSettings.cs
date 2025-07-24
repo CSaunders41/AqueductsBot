@@ -113,6 +113,9 @@ public class DebugSettings
     
     [Menu("Popout Pathfinding Window", "Show pathfinding details in separate moveable window")]
     public ToggleNode ShowPopoutPathfinding { get; set; } = new ToggleNode(false);
+    
+    [Menu("Save Movement Debug To File", "Save movement and pathfinding debug messages to a log file")]
+    public ToggleNode SaveMovementDebugToFile { get; set; } = new ToggleNode(false);
 }
 
 [Submenu]

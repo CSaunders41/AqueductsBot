@@ -79,6 +79,10 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     private string _lastLogMessage = "";
     private string _logFilePath = "";
     
+    // Movement debug file logging
+    private string _movementDebugFilePath = "";
+    private readonly object _movementDebugLock = new object();
+    
     // Add hotkey state tracking
     private bool _commaKeyPressed = false;
     private bool _periodKeyPressed = false;
@@ -135,9 +139,11 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             // Create log file in the plugin directory
             var pluginDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             _logFilePath = Path.Combine(pluginDir, $"AqueductsBot_{DateTime.Now:yyyyMMdd}.log");
+            _movementDebugFilePath = Path.Combine(pluginDir, $"AqueductsBot_Movement_{DateTime.Now:yyyyMMdd}.log");
             
             // Write header to log file
             File.AppendAllText(_logFilePath, $"=== AqueductsBot Log Started: {DateTime.Now} ==={Environment.NewLine}");
+            File.AppendAllText(_movementDebugFilePath, $"=== AqueductsBot Movement Debug Log Started: {DateTime.Now} ==={Environment.NewLine}");
         }
         catch (Exception ex)
         {
@@ -1085,7 +1091,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         
         if (!targetPoint.HasValue)
         {
-            LogMessage("[PURSUIT] ❌ CRITICAL: Even aggressive fallback failed - advancing manually along path");
+            LogMovementDebug("[PURSUIT] ❌ CRITICAL: Even aggressive fallback failed - advancing manually along path");
             
             // Manual advancement: skip ahead in the path and try again
             _currentPathIndex = Math.Min(_currentPathIndex + 5, _currentPath.Count - 1);
@@ -1101,7 +1107,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var waypoint = _currentPath[_currentPathIndex];
             targetPoint = new System.Numerics.Vector2(waypoint.X, waypoint.Y);
             var distanceToFallback = System.Numerics.Vector2.Distance(playerWorldPos, targetPoint.Value);
-            LogMessage($"[PURSUIT] 🔧 Using manual waypoint {_currentPathIndex}: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {distanceToFallback:F1}");
+            LogMovementDebug($"[PURSUIT] 🔧 Using manual waypoint {_currentPathIndex}: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {distanceToFallback:F1}");
         }
 
         // Convert world position to screen coordinates for clicking
@@ -2574,13 +2580,13 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         var basePursuitRadius = Settings.MovementSettings.PursuitRadius.Value;
         
         // DEBUG: Show actual settings values
-        LogMessage($"[SETTINGS DEBUG] 🔧 Pursuit radius setting: {basePursuitRadius} (min: {Settings.MovementSettings.PursuitRadius.Min}, max: {Settings.MovementSettings.PursuitRadius.Max})");
+        LogMovementDebug($"[SETTINGS DEBUG] 🔧 Pursuit radius setting: {basePursuitRadius} (min: {Settings.MovementSettings.PursuitRadius.Min}, max: {Settings.MovementSettings.PursuitRadius.Max})");
         
         // DYNAMIC RADIUS: Increase radius near end of path for better targeting
         var remainingWaypoints = path.Count - startIndex;
         var dynamicRadius = remainingWaypoints <= 10 ? basePursuitRadius * 1.5f : basePursuitRadius;
         
-        LogMessage($"[PURSUIT DEBUG] Player at ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}), looking from index {startIndex}/{path.Count}, radius {dynamicRadius:F0} (base: {basePursuitRadius:F0}, remaining: {remainingWaypoints})");
+        LogMovementDebug($"[PURSUIT DEBUG] Player at ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}), looking from index {startIndex}/{path.Count}, radius {dynamicRadius:F0} (base: {basePursuitRadius:F0}, remaining: {remainingWaypoints})");
         
         // Look ahead from current position in path
         System.Numerics.Vector2? bestIntersection = null;
@@ -2603,7 +2609,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 var distanceToIntersection = System.Numerics.Vector2.Distance(playerWorldPos, intersection.Value);
                 if (Settings.DebugSettings.ShowIntersectionPoints.Value)
                 {
-                    LogMessage($"[PURSUIT DEBUG] Intersection at segment {i}: ({intersection.Value.X:F0}, {intersection.Value.Y:F0}), distance: {distanceToIntersection:F1}");
+                    LogMovementDebug($"[PURSUIT DEBUG] Intersection at segment {i}: ({intersection.Value.X:F0}, {intersection.Value.Y:F0}), distance: {distanceToIntersection:F1}");
                 }
                 
                 // Accept intersections within a reasonable range (more lenient for end of path)
@@ -2613,7 +2619,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 
                 if (distanceToIntersection >= minRadius && distanceToIntersection <= maxRadius)
                 {
-                    LogMessage($"[PURSUIT] 🎯 Found valid path intersection at ({intersection.Value.X:F0}, {intersection.Value.Y:F0}) with distance {distanceToIntersection:F1}");
+                    LogMovementDebug($"[PURSUIT] 🎯 Found valid path intersection at ({intersection.Value.X:F0}, {intersection.Value.Y:F0}) with distance {distanceToIntersection:F1}");
                     return intersection.Value;
                 }
             }
@@ -2643,7 +2649,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             
             if (fallbackDistance >= minimumTargetDistance) // Use pursuit radius as minimum distance
             {
-                LogMessage($"[PURSUIT] ⚡ Using distance-based fallback: index {fallbackIndex}, point ({fallbackPoint.X:F0}, {fallbackPoint.Y:F0}), distance {fallbackDistance:F1} (min: {minimumTargetDistance:F1})");
+                LogMovementDebug($"[PURSUIT] ⚡ Using distance-based fallback: index {fallbackIndex}, point ({fallbackPoint.X:F0}, {fallbackPoint.Y:F0}), distance {fallbackDistance:F1} (min: {minimumTargetDistance:F1})");
                 return fallbackPoint;
             }
         }
@@ -2657,7 +2663,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             
             if (distance >= absoluteMinimumDistance)
             {
-                LogMessage($"[PURSUIT] 🔧 Emergency fallback: index {i}, point ({point.X:F0}, {point.Y:F0}), distance {distance:F1} (min: {absoluteMinimumDistance:F1})");
+                LogMovementDebug($"[PURSUIT] 🔧 Emergency fallback: index {i}, point ({point.X:F0}, {point.Y:F0}), distance {distance:F1} (min: {absoluteMinimumDistance:F1})");
                 return point;
             }
         }
@@ -2806,6 +2812,34 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             {
                 LogMessage($"[TARGET POINT ERROR] Error drawing target point: {ex.Message}");
             }
+        }
+    }
+
+    private void LogMovementDebug(string message)
+    {
+        // Only log movement debug messages to file if setting is enabled
+        if (!Settings.DebugSettings.SaveMovementDebugToFile.Value) return;
+        
+        // Also log to console if debug messages are enabled
+        if (Settings.DebugSettings.DebugMode.Value)
+        {
+            LogMessage(message);
+        }
+        
+        // Always log to movement debug file
+        try
+        {
+            lock (_movementDebugLock)
+            {
+                var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
+                var fullMessage = $"[{timestamp}] {message}{Environment.NewLine}";
+                File.AppendAllText(_movementDebugFilePath, fullMessage);
+            }
+        }
+        catch (Exception ex)
+        {
+            // If file logging fails, continue without file logging
+            LogMessage($"[FILE LOG ERROR] Could not write to movement debug file: {ex.Message}");
         }
     }
 }
