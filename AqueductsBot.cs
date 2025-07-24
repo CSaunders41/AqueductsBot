@@ -976,19 +976,21 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             {
                 var distance = Vector2.Distance(screenPos, playerScreenPos.Value);
                 
-                // Dynamic precision based on path progress and distance
-                var precision = CalculateDynamicPrecision(distance, _currentPathIndex, _currentPath.Count);
+                // FIXED: Much more generous precision for final waypoints to prevent oscillation
+                var precision = CalculateImprovedPrecision(distance, _currentPathIndex, _currentPath.Count);
+                
+                LogMessage($"[WAYPOINT DEBUG] Waypoint {_currentPathIndex + 1}/{_currentPath.Count}: distance={distance:F1}, precision={precision:F1}, target=({screenPos.X:F0},{screenPos.Y:F0})");
                 
                 if (distance < precision)
                 {
                     // Close enough, move to next point
                     _currentPathIndex++;
-                    LogMessage($"[WAYPOINT] Reached waypoint {_currentPathIndex}/{_currentPath.Count} (distance: {distance:F1}, precision: {precision:F1})");
+                    LogMessage($"[WAYPOINT] ✅ Reached waypoint {_currentPathIndex}/{_currentPath.Count} (distance: {distance:F1} < precision: {precision:F1})");
                     
                     // Check if we've reached the end
                     if (_currentPathIndex >= _currentPath.Count)
                     {
-                        LogMessage("[PATH COMPLETE] Reached end of path!");
+                        LogMessage("[PATH COMPLETE] ✅ Reached end of path! Transitioning to area exit detection.");
                         _currentState = BotState.AtAreaExit;
                     }
                     return;
@@ -1002,20 +1004,28 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 }
             }
             
-            // Check if enough time has passed since last action
+            // FIXED: More conservative movement timing to prevent rapid oscillation
             var timeSinceLastAction = (DateTime.Now - _lastActionTime).TotalMilliseconds;
-            var requiredDelay = CalculateMovementDelay(Vector2.Distance(screenPos, playerScreenPos ?? Vector2.Zero));
+            var requiredDelay = CalculateImprovedMovementDelay(Vector2.Distance(screenPos, playerScreenPos ?? Vector2.Zero));
             
             if (timeSinceLastAction >= requiredDelay)
             {
+                // ADDITIONAL CHECK: Don't move if we're very close to target (prevents micro-oscillations)
+                var distanceToTarget = Vector2.Distance(screenPos, playerScreenPos ?? Vector2.Zero);
+                if (distanceToTarget < 15) // Very close - let character movement settle
+                {
+                    LogMessage($"[MOVEMENT] ⏸️ Skipping movement - too close to target (distance: {distanceToTarget:F1})");
+                    _lastActionTime = DateTime.Now; // Update time to prevent spam
+                    return;
+                }
+                
                 // Perform the move using selected method
                 bool useKeyboardMovement = Settings.UseMovementKey || Settings.MovementSettings.UseMovementKey;
                 Keys movementKey = Settings.MovementKey.Value != Keys.None ? Settings.MovementKey.Value : Settings.MovementSettings.MovementKey.Value;
                 
                 if (useKeyboardMovement && movementKey != Keys.None)
                 {
-                    // ENHANCED: Use AreWeThereYet approach with better focus handling
-                    LogMessage($"[MOVEMENT] Enhanced keyboard: cursor to ({screenPos.X:F0}, {screenPos.Y:F0}) + press {movementKey}");
+                    LogMessage($"[MOVEMENT] 🎮 Keyboard: cursor to ({screenPos.X:F0}, {screenPos.Y:F0}) + press {movementKey}");
                     
                     // Step 1: Position cursor at target (like working bot)
                     SetCursorPos((int)screenPos.X, (int)screenPos.Y);
@@ -1026,8 +1036,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 }
                 else
                 {
-                    // Enhanced mouse click with better positioning
-                    LogMessage($"[MOVEMENT] Enhanced mouse click at ({screenPos.X:F0}, {screenPos.Y:F0})");
+                    LogMessage($"[MOVEMENT] 🖱️ Mouse click at ({screenPos.X:F0}, {screenPos.Y:F0})");
                     ClickAt((int)screenPos.X, (int)screenPos.Y);
                 }
                 
@@ -1040,14 +1049,70 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 {
                     var moveMethod = useKeyboardMovement ? $"Key({movementKey})" : "Mouse";
                     var remainingDistance = playerScreenPos.HasValue ? Vector2.Distance(screenPos, playerScreenPos.Value) : -1;
-                    LogMessage($"[MOVEMENT] Point {_currentPathIndex}/{_currentPath.Count} using {moveMethod}: Grid({targetPoint.X}, {targetPoint.Y}) -> Screen({screenPos.X:F0}, {screenPos.Y:F0}) [Distance: {remainingDistance:F1}]");
+                    LogMessage($"[MOVEMENT DEBUG] Point {_currentPathIndex + 1}/{_currentPath.Count} using {moveMethod}: Grid({targetPoint.X}, {targetPoint.Y}) -> Screen({screenPos.X:F0}, {screenPos.Y:F0}) [Distance: {remainingDistance:F1}]");
                 }
+            }
+            else
+            {
+                var remainingDelay = requiredDelay - timeSinceLastAction;
+                LogMessage($"[MOVEMENT] ⏳ Waiting {remainingDelay:F0}ms before next movement (preventing oscillation)");
             }
         }
         catch (Exception ex)
         {
             LogError($"Error in MoveAlongPath: {ex.Message}");
         }
+    }
+    
+    private float CalculateImprovedPrecision(float distanceToTarget, int currentIndex, int totalPoints)
+    {
+        // Base precision from settings
+        var basePrecision = Settings.MovementSettings.MovementPrecision;
+        
+        // FIXED: Much more generous precision for final waypoints
+        var progressRatio = (float)currentIndex / totalPoints;
+        
+        // For final waypoints (last 20% of path), use much larger precision to prevent oscillation
+        if (progressRatio > 0.8f)
+        {
+            var finalPrecision = Math.Max(basePrecision * 3.0f, 30f); // At least 30 pixels for final waypoints
+            LogMessage($"[PRECISION] Final waypoint precision: {finalPrecision:F1} (progress: {progressRatio:P0})");
+            return finalPrecision;
+        }
+        
+        // For very close targets, use larger precision to avoid micro-movements
+        if (distanceToTarget < 30)
+        {
+            return Math.Max(basePrecision * 2.0f, 25f); // At least 25 pixels for close targets
+        }
+        
+        // For far targets, use standard precision
+        return basePrecision;
+    }
+    
+    private int CalculateImprovedMovementDelay(float distanceToTarget)
+    {
+        // FIXED: More conservative delays to prevent oscillation
+        var minDelay = Settings.MovementSettings.MinMoveDelayMs;
+        var maxDelay = Settings.MovementSettings.MaxMoveDelayMs;
+        
+        // For very close targets, use much longer delays to let movement settle
+        if (distanceToTarget < 30)
+        {
+            return _random.Next(maxDelay * 2, maxDelay * 3); // 2-3x longer delay for close targets
+        }
+        // For close targets, use longer delays
+        else if (distanceToTarget < 100)
+        {
+            return _random.Next(minDelay * 2, maxDelay * 2); // 2x longer delay for close targets
+        }
+        // For far targets, use faster movement
+        else if (distanceToTarget > 200)
+        {
+            return _random.Next(minDelay / 2, maxDelay / 2); // Faster for long distances
+        }
+        
+        return _random.Next(minDelay, maxDelay); // Standard delay
     }
     
     private int GetOptimizedWaypointIndex()
@@ -1082,52 +1147,6 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         }
         
         return currentIndex;
-    }
-    
-    private float CalculateDynamicPrecision(float distanceToTarget, int currentIndex, int totalPoints)
-    {
-        // Base precision from settings
-        var basePrecision = Settings.MovementSettings.MovementPrecision;
-        
-        // Adjust precision based on:
-        // 1. How far we are in the path (tighter precision near the end)
-        // 2. How close we are to the target (looser precision for far targets)
-        
-        var progressRatio = (float)currentIndex / totalPoints;
-        var distanceFactor = Math.Min(distanceToTarget / 200f, 1f); // Normalize distance
-        
-        // Near the end of path, use tighter precision
-        if (progressRatio > 0.8f)
-        {
-            return basePrecision * 0.7f; // 30% tighter
-        }
-        
-        // For very close targets, use looser precision to avoid micro-movements
-        if (distanceToTarget < 50)
-        {
-            return basePrecision * 1.5f; // 50% looser
-        }
-        
-        // For far targets, use standard precision
-        return basePrecision;
-    }
-    
-    private int CalculateMovementDelay(float distanceToTarget)
-    {
-        // Dynamic delay based on distance - closer targets need less frequent updates
-        var minDelay = Settings.MovementSettings.MinMoveDelayMs;
-        var maxDelay = Settings.MovementSettings.MaxMoveDelayMs;
-        
-        if (distanceToTarget < 50)
-        {
-            return _random.Next(minDelay * 2, maxDelay * 2); // Slower for precision
-        }
-        else if (distanceToTarget > 200)
-        {
-            return _random.Next(minDelay / 2, maxDelay / 2); // Faster for long distances
-        }
-        
-        return _random.Next(minDelay, maxDelay); // Standard delay
     }
     
     // STUCK DETECTION SYSTEM
