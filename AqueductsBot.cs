@@ -104,6 +104,9 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     
     // RADIUS-BASED PATH INTERSECTION: Pure pursuit algorithm for smooth navigation
     private System.Numerics.Vector2 _lastIntersectionPoint = System.Numerics.Vector2.Zero;
+    private DateTime _lastPathAdvancement = DateTime.MinValue;
+    private int _stuckTargetCount = 0;
+    private System.Numerics.Vector2 _lastTargetPoint = System.Numerics.Vector2.Zero;
     
     /// <summary>
     /// Update progress tracking along the current path
@@ -708,6 +711,9 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             _lastIntersectionPoint = System.Numerics.Vector2.Zero;
             _lastMovementTime = DateTime.MinValue;
             _lastProgressLog = DateTime.MinValue;
+            _lastPathAdvancement = DateTime.MinValue;
+            _stuckTargetCount = 0;
+            _lastTargetPoint = System.Numerics.Vector2.Zero;
             LogMessage("[PURSUIT] 🔄 Reset pursuit navigation tracking for new bot session");
             
             if (!_radarAvailable)
@@ -1077,6 +1083,26 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         // Update path progress tracking
         UpdatePathProgress(targetPoint.Value, distanceToTarget);
         
+        // STUCK DETECTION: Force advancement if targeting same point repeatedly
+        var targetDistance = System.Numerics.Vector2.Distance(_lastTargetPoint, targetPoint.Value);
+        if (targetDistance < 5f) // Same target (within 5 units)
+        {
+            _stuckTargetCount++;
+            if (_stuckTargetCount >= 10) // Stuck on same target for 10+ attempts
+            {
+                LogMessage($"[STUCK DETECTION] 🚨 Stuck on same target for {_stuckTargetCount} attempts - forcing advancement!");
+                _currentPathIndex = Math.Min(_currentPathIndex + 8, _currentPath.Count - 1);
+                _stuckTargetCount = 0;
+                _lastPathAdvancement = DateTime.Now;
+                LogMessage($"[FORCED ADVANCEMENT] 📍 Forced advance to path index {_currentPathIndex}/{_currentPath.Count}");
+            }
+        }
+        else
+        {
+            _stuckTargetCount = 0; // Reset if we have a new target
+        }
+        _lastTargetPoint = targetPoint.Value;
+        
         LogMessage($"[PURSUIT] 🎯 Moving to intersection point ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {distanceToTarget:F1}");
 
         // CONSERVATIVE ADVANCEMENT: Only advance path index when we're very close and have actually moved
@@ -1084,12 +1110,15 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         {
             LogMessage($"[PURSUIT] ✅ Close to intersection point (distance: {distanceToTarget:F1} < 30), advancing slowly along path");
             
-            // Advance more conservatively - only a few points at a time
-            _currentPathIndex = Math.Min(_currentPathIndex + 2, _currentPath.Count - 5);
+            // IMPROVED ADVANCEMENT: Advance more aggressively to prevent getting stuck
+            var advancementAmount = distanceToTarget < 15f ? 5 : 3; // Advance more when very close
+            _currentPathIndex = Math.Min(_currentPathIndex + advancementAmount, _currentPath.Count - 1);
+            
+            LogMessage($"[PATH ADVANCEMENT] 📍 Advanced path index to {_currentPathIndex}/{_currentPath.Count} (advanced by {advancementAmount})");
             _lastIntersectionPoint = targetPoint.Value;
             
-            // Still try to move to get even closer
-            if (distanceToTarget > 15f)
+            // Still try to move to get even closer if not extremely close
+            if (distanceToTarget > 10f)
             {
                 // Execute movement to get closer
                 LogMessage($"[MOVEMENT] 🎮 Fine-tuning: cursor to ({screenPos.X:F0}, {screenPos.Y:F0}) + press T");
@@ -1167,36 +1196,36 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     
     private int CalculateImprovedMovementDelay(float distanceToTarget)
     {
-        // CONSERVATIVE DELAYS: Much longer delays to prevent overcorrection
+        // REASONABLE DELAYS: Allow actual movement while preventing spam
         var minDelay = Settings.MovementSettings.MinMoveDelayMs;
         var maxDelay = Settings.MovementSettings.MaxMoveDelayMs;
         
-        // STABILITY FIX: Much longer base delays to allow character movement
-        var baseMinDelay = Math.Max(minDelay, 800); // At least 800ms between movements
-        var baseMaxDelay = Math.Max(maxDelay, 1500); // Up to 1.5s between movements
+        // Use more reasonable base delays that allow movement
+        var baseMinDelay = Math.Max(minDelay, 300); // At least 300ms between movements
+        var baseMaxDelay = Math.Max(maxDelay, 800); // Up to 800ms between movements
         
-        // For very close targets, use much longer delays to let movement settle
-        if (distanceToTarget < 30)
+        // For very close targets, use slightly longer delays but still allow movement
+        if (distanceToTarget < 15f)
         {
-            return _random.Next(baseMaxDelay * 3, baseMaxDelay * 4); // 4.5-6s delay for very close targets
+            return _random.Next(baseMaxDelay, baseMaxDelay + 400); // 800-1200ms for very close
         }
-        // For close targets, use longer delays
-        else if (distanceToTarget < 100)
+        // For close targets, use reasonable delays
+        else if (distanceToTarget < 50f)
         {
-            return _random.Next(baseMaxDelay * 2, baseMaxDelay * 3); // 3-4.5s delay for close targets
+            return _random.Next(baseMinDelay + 200, baseMaxDelay); // 500-800ms for close targets
         }
-        // For medium distance targets, use standard longer delays
-        else if (distanceToTarget < 200)
+        // For medium distance targets, use standard delays
+        else if (distanceToTarget < 150f)
         {
-            return _random.Next(baseMinDelay * 2, baseMaxDelay * 2); // 1.6-3s delay
+            return _random.Next(baseMinDelay, baseMaxDelay); // 300-800ms standard
         }
-        // For far targets, use faster movement but still conservative
-        else if (distanceToTarget > 300)
+        // For far targets, use faster movement
+        else if (distanceToTarget > 300f)
         {
-            return _random.Next(baseMinDelay, baseMaxDelay); // 0.8-1.5s delay
+            return _random.Next(baseMinDelay, baseMinDelay + 200); // 300-500ms for far targets
         }
         
-        return _random.Next(baseMinDelay, baseMaxDelay); // Standard conservative delay
+        return _random.Next(baseMinDelay, baseMaxDelay); // Standard delay
     }
     
     private int GetOptimizedWaypointIndex()
