@@ -311,6 +311,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             if (Settings.RadarSettings.ShowPlayerCircle.Value)
             {
                 DrawPlayerCircle();
+                DrawTargetPoint(); // Also show where we're actually targeting
             }
         }
         catch (Exception ex)
@@ -1227,6 +1228,9 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         {
             LogMessage($"[MOVEMENT DEBUG] 📍 Player at ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}) → Target ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0})");
         }
+        
+        // Store target position for visual display
+        _lastTargetWorldPos = targetPoint.Value;
         
         ClickAt((int)screenPos.X, (int)screenPos.Y);
         PressAndHoldKey(Keys.T);
@@ -2748,6 +2752,47 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             {
                 drawList.AddCircle(centerScreen, screenRadius + i, color, 64, 2.0f);
             }
+        }
+        catch (Exception ex)
+        {
+            // Don't spam errors for rendering issues
+        }
+    }
+
+    // Add target point visualization
+    private System.Numerics.Vector2? _lastTargetWorldPos = null;
+    
+    private void DrawTargetPoint()
+    {
+        try
+        {
+            if (_lastTargetWorldPos == null || _currentPath.Count == 0) return;
+            
+            // Convert world position to screen position
+            var worldPos = new Vector3(_lastTargetWorldPos.Value.X * 250f / 23f, _lastTargetWorldPos.Value.Y * 250f / 23f, 0);
+            var screenPosSharp = GameController.IngameState.Camera.WorldToScreen(worldPos);
+            var targetScreen = new System.Numerics.Vector2(screenPosSharp.X, screenPosSharp.Y);
+            
+            // Draw target point using ImGui
+            var drawList = ImGui.GetBackgroundDrawList();
+            var targetColor = ImGui.ColorConvertFloat4ToU32(new System.Numerics.Vector4(1.0f, 0.0f, 0.0f, 0.8f)); // Red
+            var crosshairColor = ImGui.ColorConvertFloat4ToU32(new System.Numerics.Vector4(1.0f, 1.0f, 1.0f, 1.0f)); // White
+            
+            // Draw a red circle at the target point
+            drawList.AddCircleFilled(targetScreen, 8, targetColor);
+            drawList.AddCircle(targetScreen, 8, crosshairColor, 16, 2.0f);
+            
+            // Draw crosshair
+            drawList.AddLine(
+                new System.Numerics.Vector2(targetScreen.X - 12, targetScreen.Y),
+                new System.Numerics.Vector2(targetScreen.X + 12, targetScreen.Y),
+                crosshairColor, 2.0f
+            );
+            drawList.AddLine(
+                new System.Numerics.Vector2(targetScreen.X, targetScreen.Y - 12),
+                new System.Numerics.Vector2(targetScreen.X, targetScreen.Y + 12),
+                crosshairColor, 2.0f
+            );
         }
         catch (Exception ex)
         {
