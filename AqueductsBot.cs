@@ -317,7 +317,6 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             }
             
             // Show player calculation circle if enabled
-            LogImportant($"[CIRCLE DEBUG] ShowPlayerCircle setting: {Settings.RadarSettings.ShowPlayerCircle.Value}");
             if (Settings.RadarSettings.ShowPlayerCircle.Value)
             {
                 DrawPlayerCircle();
@@ -2737,12 +2736,16 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     {
         try
         {
-            LogImportant($"[CIRCLE DEBUG] DrawPlayerCircle called");
-            
             var playerPos = GetPlayerPosition();
             if (playerPos == null) 
             {
-                LogImportant($"[CIRCLE DEBUG] Player position is null");
+                // Only log this error once per render cycle to avoid spam
+                static DateTime lastErrorLog = DateTime.MinValue;
+                if ((DateTime.Now - lastErrorLog).TotalSeconds > 5)
+                {
+                    LogImportant($"[CIRCLE ERROR] Player position is null - circle cannot be drawn");
+                    lastErrorLog = DateTime.Now;
+                }
                 return;
             }
             
@@ -2753,10 +2756,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             if (radius <= 0)
             {
                 radius = 300f; // Default fallback
-                LogImportant($"[CIRCLE DEBUG] Using fallback radius: {radius}");
+                LogImportant($"[CIRCLE DEBUG] Using fallback radius: {radius} (setting was invalid)");
             }
-            
-            LogImportant($"[CIRCLE DEBUG] Player at ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}), radius: {radius}");
             
             // Convert world position to screen position
             var worldPos = new Vector3(playerWorldPos.X * 250f / 23f, playerWorldPos.Y * 250f / 23f, 0);
@@ -2768,7 +2769,13 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var radiusScreenPosSharp = GameController.IngameState.Camera.WorldToScreen(radiusWorldPos); 
             var screenRadius = Math.Abs(radiusScreenPosSharp.X - screenPosSharp.X);
             
-            LogImportant($"[CIRCLE DEBUG] Screen center: ({centerScreen.X:F0}, {centerScreen.Y:F0}), screen radius: {screenRadius:F0}");
+            // Only log debug info if there are issues or on first successful draw
+            static bool firstDrawLogged = false;
+            if (!firstDrawLogged || screenRadius <= 0)
+            {
+                LogImportant($"[CIRCLE DEBUG] Drawing circle - Screen center: ({centerScreen.X:F0}, {centerScreen.Y:F0}), screen radius: {screenRadius:F0}");
+                firstDrawLogged = true;
+            }
             
             // Draw circle using ImGui
             var drawList = ImGui.GetBackgroundDrawList();
@@ -2779,8 +2786,6 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             {
                 drawList.AddCircle(centerScreen, screenRadius + i, color, 64, 2.0f);
             }
-            
-            LogImportant($"[CIRCLE DEBUG] Drew {3} circles successfully");
         }
         catch (Exception ex)
         {
