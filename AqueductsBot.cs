@@ -303,7 +303,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         ImGui.SameLine();
         if (ImGui.Button("Test Movement"))
         {
-            TestMovementSystem();
+            TestMouseClick();
         }
         
         ImGui.SameLine();
@@ -444,7 +444,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         }
         
         ImGui.SameLine();
-        if (ImGui.Button("Test Mouse Click"))
+        if (ImGui.Button("Test Movement"))
         {
             TestMouseClick();
         }
@@ -728,18 +728,20 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 
                 if (useKeyboardMovement && movementKey != Keys.None)
                 {
-                    // Use keyboard movement: Move cursor to target, then press key
-                    var windowRect = GameController.Window.GetWindowRectangle();
-                    int absoluteX = (int)screenPos.X + (int)windowRect.X;
-                    int absoluteY = (int)screenPos.Y + (int)windowRect.Y;
+                    // FIXED: Use AreWeThereYet approach - position cursor then press key (don't click!)
+                    LogMessage($"[MOVEMENT] Using AreWeThereYet method: cursor to ({screenPos.X:F0}, {screenPos.Y:F0}) + press {movementKey}");
                     
-                    SetCursorPos(absoluteX, absoluteY);
-                    Thread.Sleep(10);
-                    PressKey(movementKey);
+                    // Step 1: Position cursor at target (like working bot)
+                    SetCursorPos((int)screenPos.X, (int)screenPos.Y);
+                    Thread.Sleep(50); // Match working bot timing
+                    
+                    // Step 2: Press and hold movement key (like working bot)
+                    PressAndHoldKey(movementKey);
                 }
                 else
                 {
-                    // Use mouse click movement (ClickAt already handles window offset)
+                    // Fallback: Use mouse click for movement (keep existing click method)
+                    LogMessage($"[MOVEMENT] Using mouse click fallback at ({screenPos.X:F0}, {screenPos.Y:F0})");
                     ClickAt((int)screenPos.X, (int)screenPos.Y);
                 }
                 
@@ -832,6 +834,30 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         catch (Exception ex)
         {
             LogError($"Error pressing key {key}: {ex.Message}");
+        }
+    }
+    
+    private void PressAndHoldKey(Keys key)
+    {
+        try
+        {
+            byte vkCode = (byte)key;
+            LogMessage($"[KEYBOARD] Pressing and holding key {key} (VK Code: {vkCode})");
+            
+            // Key down
+            keybd_event(vkCode, 0, 0, 0);
+            
+            // Hold for a short period (e.g., 100ms)
+            Thread.Sleep(100);
+            
+            // Key up
+            keybd_event(vkCode, 0, KEYEVENTF_KEYUP_SENDINPUT, 0);
+            
+            LogMessage($"[KEYBOARD] Key press and hold sequence completed for {key}");
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error pressing and holding key {key}: {ex.Message}");
         }
     }
     
@@ -1524,7 +1550,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     {
         try
         {
-            LogMessage("[MOUSE TEST] Testing mouse click in game...");
+            LogMessage("[MOVEMENT TEST] Testing both movement methods...");
             
             var player = GameController.Game.IngameState.Data.LocalPlayer;
             if (player?.GetComponent<Positioned>() is Positioned playerPos)
@@ -1539,27 +1565,41 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                     var testX = (int)(screenPos.X + 150);
                     var testY = (int)(screenPos.Y + 100);
                     
-                    LogMessage($"[MOUSE TEST] Player at screen ({screenPos.X:F0}, {screenPos.Y:F0})");
-                    LogMessage($"[MOUSE TEST] Clicking at ({testX}, {testY}) - watch if character moves!");
+                    LogMessage($"[MOVEMENT TEST] Player at screen ({screenPos.X:F0}, {screenPos.Y:F0})");
+                    LogMessage($"[MOVEMENT TEST] Testing at ({testX}, {testY}) - watch if character moves!");
                     
-                    // Perform the click
-                    ClickAt(testX, testY);
+                    // Test Method 1: AreWeThereYet approach (cursor + key press)
+                    bool useKeyboardMovement = Settings.UseMovementKey || Settings.MovementSettings.UseMovementKey;
+                    Keys movementKey = Settings.MovementKey.Value != Keys.None ? Settings.MovementKey.Value : Settings.MovementSettings.MovementKey.Value;
                     
-                    LogMessage("[MOUSE TEST] Click executed - did the character move toward the clicked location?");
+                    if (useKeyboardMovement && movementKey != Keys.None)
+                    {
+                        LogMessage($"[MOVEMENT TEST] Method 1: AreWeThereYet approach (cursor + {movementKey} key)");
+                        SetCursorPos(testX, testY);
+                        Thread.Sleep(50);
+                        PressAndHoldKey(movementKey);
+                        LogMessage("[MOVEMENT TEST] AreWeThereYet method executed - did character move?");
+                    }
+                    else
+                    {
+                        LogMessage("[MOVEMENT TEST] Method 2: Mouse click fallback");
+                        ClickAt(testX, testY);
+                        LogMessage("[MOVEMENT TEST] Mouse click executed - did character move?");
+                    }
                 }
                 else
                 {
-                    LogMessage("[MOUSE TEST] ERROR: Could not get player render component");
+                    LogMessage("[MOVEMENT TEST] ERROR: Could not get player render component");
                 }
             }
             else
             {
-                LogMessage("[MOUSE TEST] ERROR: Could not get player position");
+                LogMessage("[MOVEMENT TEST] ERROR: Could not get player position");
             }
         }
         catch (Exception ex)
         {
-            LogError($"Error in mouse test: {ex.Message}");
+            LogError($"Error in movement test: {ex.Message}");
         }
     }
 } 
