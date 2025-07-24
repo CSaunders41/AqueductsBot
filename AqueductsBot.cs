@@ -1499,6 +1499,45 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         // Store target position for visual display
         _lastTargetWorldPos = targetPoint.Value;
         
+        // DUPLICATE CLICK DETECTION
+        var currentScreenPos = new System.Numerics.Vector2(screenPos.X, screenPos.Y);
+        var clickTolerance = 10f; // 10 pixel tolerance for "same" click
+        var isSameClick = System.Numerics.Vector2.Distance(currentScreenPos, _lastClickScreenPos) <= clickTolerance;
+        
+        if (isSameClick)
+        {
+            _duplicateClickCount++;
+            LogMovementDebug($"[DUPLICATE DETECTION] 🚨 Same click location detected! Count: {_duplicateClickCount}/{MAX_DUPLICATE_CLICKS}");
+            
+            if (_duplicateClickCount >= MAX_DUPLICATE_CLICKS)
+            {
+                LogMovementDebug($"[DUPLICATE DETECTION] ⚠️ MAX DUPLICATES REACHED - FORCING PATH ADVANCEMENT!");
+                
+                // Force advance the path significantly to break the loop
+                var oldIndex = _currentPathIndex;
+                _currentPathIndex = Math.Min(_currentPathIndex + 10, _currentPath.Count - 1);
+                
+                LogMovementDebug($"[FORCED ADVANCEMENT] 📍 Advanced path from {oldIndex} to {_currentPathIndex} due to duplicate clicks");
+                
+                // Reset duplicate detection
+                _duplicateClickCount = 0;
+                _lastClickScreenPos = System.Numerics.Vector2.Zero;
+                
+                // Don't execute the click, just return to recalculate with new path index
+                LogMovementDebug($"[DUPLICATE DETECTION] ❌ SKIPPING CLICK - Recalculating with advanced path");
+                return;
+            }
+        }
+        else
+        {
+            // Different click location, reset counter
+            _duplicateClickCount = 0;
+            LogMovementDebug($"[DUPLICATE DETECTION] ✅ New click location - resetting duplicate counter");
+        }
+        
+        // Update last click position
+        _lastClickScreenPos = currentScreenPos;
+        
         LogMovementDebug($"[MOVEMENT] ✅ SAFE CLICK: Executing click at ({screenPos.X:F0}, {screenPos.Y:F0})");
         ClickAt((int)screenPos.X, (int)screenPos.Y);
         PressAndHoldKey(Keys.T);
@@ -2834,7 +2873,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             
             // Skip very short segments to avoid numerical issues
             var segmentLength = System.Numerics.Vector2.Distance(currentPoint, nextPoint);
-            if (segmentLength < 2f) continue;
+            if (segmentLength < 0.5f) continue; // Lowered from 2f to 0.5f to allow short path segments
             
             // Find intersection of line segment with circle around player
             var intersection = FindLineCircleIntersection(currentPoint, nextPoint, playerWorldPos, radius);
@@ -2903,7 +2942,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             
             // Skip very short segments to avoid numerical issues
             var segmentLength = System.Numerics.Vector2.Distance(currentPoint, nextPoint);
-            if (segmentLength < 2f) continue;
+            if (segmentLength < 0.5f) continue; // Lowered from 2f to 0.5f to allow short path segments
             
             segmentsChecked++;
             
@@ -3089,6 +3128,11 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
 
     // Add target point visualization
     private System.Numerics.Vector2? _lastTargetWorldPos = null;
+    
+    // Duplicate click detection
+    private System.Numerics.Vector2 _lastClickScreenPos = System.Numerics.Vector2.Zero;
+    private int _duplicateClickCount = 0;
+    private const int MAX_DUPLICATE_CLICKS = 2;
     
     // Circle drawing debug tracking
     private DateTime _lastCircleErrorLog = DateTime.MinValue;
