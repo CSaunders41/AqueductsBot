@@ -316,10 +316,15 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 DrawPathDebug();
             }
             
-            // Show player calculation circle if enabled
+            // Show player calculation circle if enabled - using exact Aim-Bot approach
             if (Settings.RadarSettings.ShowPlayerCircle.Value)
             {
-                DrawPlayerCircle();
+                var playerRender = GameController.Player.GetComponent<Render>();
+                if (playerRender != null)
+                {
+                    Vector3 pos = playerRender.Pos;
+                    DrawEllipseToWorld(pos, (int)Settings.MovementSettings.PursuitRadius.Value, 25, 2, Color.LawnGreen);
+                }
                 DrawTargetPoint(); // Also show where we're actually targeting
             }
         }
@@ -1080,8 +1085,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         
         if (!targetPoint.HasValue)
         {
-            LogImportant("[PURSUIT] ❌ CRITICAL: Even aggressive fallback failed - advancing manually along path");
-            LogImportant($"[PURSUIT DEBUG] This means the radius-based targeting is not working - fallback to close waypoint");
+            LogMessage("[PURSUIT] ❌ CRITICAL: Even aggressive fallback failed - advancing manually along path");
             
             // Manual advancement: skip ahead in the path and try again
             _currentPathIndex = Math.Min(_currentPathIndex + 5, _currentPath.Count - 1);
@@ -1097,12 +1101,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var waypoint = _currentPath[_currentPathIndex];
             targetPoint = new System.Numerics.Vector2(waypoint.X, waypoint.Y);
             var distanceToFallback = System.Numerics.Vector2.Distance(playerWorldPos, targetPoint.Value);
-            LogImportant($"[PURSUIT] 🔧 Using manual waypoint {_currentPathIndex}: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {distanceToFallback:F1}");
-        }
-        else
-        {
-            var pursuitDistance = System.Numerics.Vector2.Distance(playerWorldPos, targetPoint.Value);
-            LogImportant($"[PURSUIT] ✅ Found radius-based target: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {pursuitDistance:F1}");
+            LogMessage($"[PURSUIT] 🔧 Using manual waypoint {_currentPathIndex}: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {distanceToFallback:F1}");
         }
 
         // Convert world position to screen coordinates for clicking
@@ -2575,13 +2574,13 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         var basePursuitRadius = Settings.MovementSettings.PursuitRadius.Value;
         
         // DEBUG: Show actual settings values
-        LogImportant($"[SETTINGS DEBUG] 🔧 Pursuit radius setting: {basePursuitRadius} (min: {Settings.MovementSettings.PursuitRadius.Min}, max: {Settings.MovementSettings.PursuitRadius.Max})");
+        LogMessage($"[SETTINGS DEBUG] 🔧 Pursuit radius setting: {basePursuitRadius} (min: {Settings.MovementSettings.PursuitRadius.Min}, max: {Settings.MovementSettings.PursuitRadius.Max})");
         
         // DYNAMIC RADIUS: Increase radius near end of path for better targeting
         var remainingWaypoints = path.Count - startIndex;
         var dynamicRadius = remainingWaypoints <= 10 ? basePursuitRadius * 1.5f : basePursuitRadius;
         
-        LogImportant($"[PURSUIT DEBUG] Player at ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}), looking from index {startIndex}/{path.Count}, radius {dynamicRadius:F0} (base: {basePursuitRadius:F0}, remaining: {remainingWaypoints})");
+        LogMessage($"[PURSUIT DEBUG] Player at ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}), looking from index {startIndex}/{path.Count}, radius {dynamicRadius:F0} (base: {basePursuitRadius:F0}, remaining: {remainingWaypoints})");
         
         // Look ahead from current position in path
         System.Numerics.Vector2? bestIntersection = null;
@@ -2739,94 +2738,31 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     
     // Add after the existing DrawPathDebug method (around line 2690)
     
-    private void DrawPlayerCircle()
-    {
-        try
-        {
-            var playerPos = GetPlayerPosition();
-            if (playerPos == null) 
-            {
-                // Only log this error once every 5 seconds to avoid spam, and only if debug is enabled
-                if (Settings.DebugSettings.DebugMode.Value && (DateTime.Now - _lastCircleErrorLog).TotalSeconds > 5)
-                {
-                    LogMessage($"[CIRCLE ERROR] Player position is null - circle cannot be drawn");
-                    _lastCircleErrorLog = DateTime.Now;
-                }
-                return;
-            }
-            
-            var radius = Settings.MovementSettings.PursuitRadius.Value; // Use the same radius as movement calculations
-            
-            // Fallback to hardcoded radius if setting is invalid
-            if (radius <= 0)
-            {
-                radius = 300f; // Default fallback
-                if (Settings.DebugSettings.DebugMode.Value)
-                {
-                    LogMessage($"[CIRCLE DEBUG] Using fallback radius: {radius} (setting was invalid)");
-                }
-            }
-            
-            // Always log debug info to see what's happening
-            LogImportant($"[CIRCLE DEBUG] DrawPlayerCircle called - Player at ({playerPos.GridPos.X:F0}, {playerPos.GridPos.Y:F0}), radius: {radius}");
-            
-            // Use Aim-Bot's approach: Draw circle using ExileCore Graphics.DrawLine
-            LogImportant($"[CIRCLE DEBUG] Calling DrawEllipseToWorld with radius {radius}");
-            DrawEllipseToWorld(new Vector3(playerPos.GridPos.X, playerPos.GridPos.Y, 0), (int)radius, 25, 2, Color.LawnGreen);
-        }
-        catch (Exception ex)
-        {
-            // Only log errors if debug is enabled
-            if (Settings.DebugSettings.DebugMode.Value)
-            {
-                LogMessage($"[CIRCLE ERROR] Error drawing circle: {ex.Message}");
-            }
-        }
-    }
+    // Remove the separate DrawPlayerCircle method - now using Aim-Bot's direct approach
     
-    // Implementation of DrawEllipseToWorld method (copied from Aim-Bot)
+    // Implementation of DrawEllipseToWorld method (copied exactly from Aim-Bot)
     private void DrawEllipseToWorld(Vector3 vector3Pos, int radius, int points, int lineWidth, Color color)
     {
-        try
+        var plottedCirclePoints = new List<Vector3>();
+        for (var i = 0; i <= 360; i += 360 / points)
         {
-            LogImportant($"[ELLIPSE DEBUG] DrawEllipseToWorld called - pos: ({vector3Pos.X:F0}, {vector3Pos.Y:F0}), radius: {radius}");
-            
-            var plottedCirclePoints = new List<Vector3>();
-            for (var i = 0; i <= 360; i += 360 / points)
-            {
-                var angle = i * (Math.PI / 180f);
-                var x = (float)(vector3Pos.X + radius * Math.Cos(angle));
-                var y = (float)(vector3Pos.Y + radius * Math.Sin(angle));
-                plottedCirclePoints.Add(new Vector3(x, y, vector3Pos.Z));
-            }
-
-            LogImportant($"[ELLIPSE DEBUG] Generated {plottedCirclePoints.Count} circle points");
-
-            int linesDrawn = 0;
-            for (var i = 0; i < plottedCirclePoints.Count; i++)
-            {
-                if (i >= plottedCirclePoints.Count - 1)
-                {
-                    continue;
-                }
-
-                var camera = GameController.Game.IngameState.Camera;
-                Vector2 point1 = camera.WorldToScreen(plottedCirclePoints[i]);
-                Vector2 point2 = camera.WorldToScreen(plottedCirclePoints[i + 1]);
-                
-                // Check if points are valid (on screen)
-                if (point1.X > 0 && point1.Y > 0 && point2.X > 0 && point2.Y > 0)
-                {
-                    Graphics.DrawLine(point1, point2, lineWidth, color);
-                    linesDrawn++;
-                }
-            }
-            
-            LogImportant($"[ELLIPSE DEBUG] Drew {linesDrawn} lines for circle");
+            var angle = i * (Math.PI / 180f);
+            var x = (float)(vector3Pos.X + radius * Math.Cos(angle));
+            var y = (float)(vector3Pos.Y + radius * Math.Sin(angle));
+            plottedCirclePoints.Add(new Vector3(x, y, vector3Pos.Z));
         }
-        catch (Exception ex)
+
+        for (var i = 0; i < plottedCirclePoints.Count; i++)
         {
-            LogImportant($"[CIRCLE ERROR] Error in DrawEllipseToWorld: {ex.Message}");
+            if (i >= plottedCirclePoints.Count - 1)
+            {
+                continue;
+            }
+
+            var camera = GameController.Game.IngameState.Camera;
+            Vector2 point1 = camera.WorldToScreen(plottedCirclePoints[i]);
+            Vector2 point2 = camera.WorldToScreen(plottedCirclePoints[i + 1]);
+            Graphics.DrawLine(point1, point2, lineWidth, color);
         }
     }
 
