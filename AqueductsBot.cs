@@ -2297,8 +2297,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                         new { X = (int)(screenPos.X - 80), Y = (int)(screenPos.Y + 80), Name = "Position 5 (Left-Down)" }
                     };
                     
-                    bool useKeyboardMovement = Settings.UseMovementKey || Settings.MovementSettings.UseMovementKey;
-                    Keys movementKey = Settings.MovementKey.Value != Keys.None ? Settings.MovementKey.Value : Settings.MovementSettings.MovementKey.Value;
+                    bool useKeyboardMovement = Settings.MovementSettings.UseMovementKey.Value;
+                    Keys movementKey = Settings.MovementSettings.MovementKey.Value;
                     
                     LogMessage($"[MOVEMENT TEST] ===== TESTING 5 POSITIONS TO CONFIRM FOCUS FIX WORKS =====");
                     
