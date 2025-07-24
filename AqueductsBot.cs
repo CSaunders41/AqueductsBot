@@ -1169,10 +1169,40 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         
         LogMessage($"[PURSUIT] 🎯 Moving to intersection point ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {distanceToTarget:F1}");
 
-        // CONSERVATIVE ADVANCEMENT: Only advance path index when we're very close and have actually moved
-        if (distanceToTarget < 30f) // Much more conservative than 50f
+        // IMPROVED ADVANCEMENT: Advance based on progress along path direction, not just proximity
+        bool shouldAdvance = false;
+        string advanceReason = "";
+        
+        // Method 1: Close to target (original logic)
+        if (distanceToTarget < 30f)
         {
-            LogMessage($"[PURSUIT] ✅ Close to intersection point (distance: {distanceToTarget:F1} < 30), advancing along path");
+            shouldAdvance = true;
+            advanceReason = $"close to target (distance: {distanceToTarget:F1} < 30)";
+        }
+        // Method 2: Player has moved past the current path segment (NEW!)
+        else if (_currentPathIndex + 1 < _currentPath.Count)
+        {
+            var currentWaypoint = new System.Numerics.Vector2(_currentPath[_currentPathIndex].X, _currentPath[_currentPathIndex].Y);
+            var nextWaypoint = new System.Numerics.Vector2(_currentPath[_currentPathIndex + 1].X, _currentPath[_currentPathIndex + 1].Y);
+            
+            // Calculate if player has moved "past" the current path segment
+            var pathDirection = nextWaypoint - currentWaypoint;
+            var playerDirection = playerWorldPos - currentWaypoint;
+            
+            // Use dot product to see if player is ahead of the current waypoint along the path
+            var dot = System.Numerics.Vector2.Dot(pathDirection.Normalized(), playerDirection);
+            var pathSegmentLength = pathDirection.Length();
+            
+            if (dot > pathSegmentLength * 0.5f) // Player is more than halfway past this waypoint
+            {
+                shouldAdvance = true;
+                advanceReason = $"moved past waypoint (progress: {dot:F1}/{pathSegmentLength:F1})";
+            }
+        }
+        
+        if (shouldAdvance)
+        {
+            LogMovementDebug($"[PURSUIT] ✅ Advancing path - {advanceReason}");
             
             // IMPROVED END-OF-PATH HANDLING: Be more conservative near the end
             var remainingWaypoints = _currentPath.Count - _currentPathIndex - 1;
@@ -1208,7 +1238,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             }
             
             _currentPathIndex = newIndex;
-            LogMessage($"[PATH ADVANCEMENT] 📍 Advanced path index to {_currentPathIndex}/{_currentPath.Count} (advanced by {advancementAmount})");
+            LogMovementDebug($"[PATH ADVANCEMENT] 📍 Advanced path index to {_currentPathIndex}/{_currentPath.Count} (advanced by {advancementAmount}) - {advanceReason}");
             _lastIntersectionPoint = targetPoint.Value;
             
             // Still try to move to get even closer if not extremely close
@@ -2589,6 +2619,15 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         var dynamicRadius = remainingWaypoints <= 10 ? basePursuitRadius * 1.5f : basePursuitRadius;
         
         LogMovementDebug($"[PURSUIT DEBUG] Player at ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}), looking from index {startIndex}/{path.Count}, radius {dynamicRadius:F0} (base: {basePursuitRadius:F0}, remaining: {remainingWaypoints})");
+        
+        // Debug: Show the next few waypoints we're looking at
+        LogMovementDebug($"[WAYPOINT DEBUG] Current path index: {startIndex}, next 5 waypoints:");
+        for (int debugI = startIndex; debugI < Math.Min(startIndex + 5, path.Count); debugI++)
+        {
+            var wp = path[debugI];
+            var wpDistance = System.Numerics.Vector2.Distance(playerWorldPos, new System.Numerics.Vector2(wp.X, wp.Y));
+            LogMovementDebug($"  [{debugI}] ({wp.X}, {wp.Y}) distance: {wpDistance:F1}");
+        }
         
         // Look ahead from current position in path
         System.Numerics.Vector2? bestIntersection = null;
