@@ -843,18 +843,18 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         try
         {
             byte vkCode = (byte)key;
-            LogMessage($"[KEYBOARD] Pressing and holding key {key} (VK Code: {vkCode})");
+            LogMessage($"[KEYBOARD] Pressing and holding key {key} (VK Code: {vkCode}) - EXACT AreWeThereYet method");
             
-            // Key down
-            keybd_event(vkCode, 0, 0, 0);
+            // Key down - EXACT same flags as working bot: KEYEVENTF_EXTENDEDKEY (0x0001)
+            keybd_event(vkCode, 0, 0x0001, 0);
             
-            // Hold for a short period (e.g., 100ms)
-            Thread.Sleep(100);
+            // Hold for 20ms - EXACT same timing as working bot
+            Thread.Sleep(20);
             
-            // Key up
-            keybd_event(vkCode, 0, KEYEVENTF_KEYUP_SENDINPUT, 0);
+            // Key up - EXACT same flags as working bot: KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP (0x0001 | 0x0002 = 0x0003)
+            keybd_event(vkCode, 0, 0x0003, 0);
             
-            LogMessage($"[KEYBOARD] Key press and hold sequence completed for {key}");
+            LogMessage($"[KEYBOARD] Key press sequence completed using AreWeThereYet method for {key}");
         }
         catch (Exception ex)
         {
