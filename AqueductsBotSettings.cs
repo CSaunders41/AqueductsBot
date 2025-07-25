@@ -18,18 +18,6 @@ public class BotSettings
 [Submenu]
 public class RadarSettings
 {
-    [Menu("Radar Path Check Radius", "Radius for checking radar path detection (larger = more area coverage)", 61)]
-    public RangeNode<float> RadarPathCheckRadius { get; set; } = new RangeNode<float>(250f, 100f, 500f);
-    
-    [Menu("Intersection Check Radius", "Radius for path intersection calculations", 62)]
-    public RangeNode<float> IntersectionCheckRadius { get; set; } = new RangeNode<float>(200f, 100f, 400f);
-    
-    [Menu("Path Intersect Range", "Range for radar path intersection detection", 63)]
-    public RangeNode<float> PathIntersectRange { get; set; } = new RangeNode<float>(150f, 75f, 300f);
-    
-    [Menu("Show Player Circle", "Show pursuit radius circle around player (matches movement calculations)")]
-    public ToggleNode ShowPlayerCircle { get; set; } = new ToggleNode(false);
-    
     [Menu("Waypoint Check Frequency", "How often to check for next waypoint (ms)", 64)]
     public RangeNode<int> WaypointCheckFrequency { get; set; } = new RangeNode<int>(500, 100, 2000);
     
@@ -57,6 +45,9 @@ public class MovementSettings
     
     [Menu("Pursuit Radius", "Radius for path intersection navigation - this is where clicks will target (larger = smoother, smaller = more precise)", 54)]
     public RangeNode<float> PursuitRadius { get; set; } = new RangeNode<float>(300f, 150f, 500f);
+    
+    [Menu("Show Player Circle", "Show pursuit radius circle around player (matches radius setting above)")]
+    public ToggleNode ShowPlayerCircle { get; set; } = new ToggleNode(false);
     
     [Menu("Auto-Click Delay", "Delay between automatic clicks (ms)", 55)]
     public RangeNode<int> AutoClickDelay { get; set; } = new RangeNode<int>(100, 25, 500);
@@ -95,9 +86,6 @@ public class DebugSettings
     
     [Menu("Show Path Points", "Show visual path points on screen")]
     public ToggleNode ShowPathPoints { get; set; } = new ToggleNode(true);
-    
-    [Menu("Show Intersection Points", "Display path intersection calculations")]
-    public ToggleNode ShowIntersectionPoints { get; set; } = new ToggleNode(false);
     
     [Menu("Show Movement Debug", "Display movement calculation details")]
     public ToggleNode ShowMovementDebug { get; set; } = new ToggleNode(false);

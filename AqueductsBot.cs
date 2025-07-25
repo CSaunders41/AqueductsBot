@@ -343,7 +343,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             }
             
             // Show player calculation circle if enabled - using exact Aim-Bot approach
-            if (Settings.RadarSettings.ShowPlayerCircle.Value)
+            if (Settings.MovementSettings.ShowPlayerCircle.Value)
             {
                 var playerRender = GameController.Player.GetComponent<Render>();
                 if (playerRender != null)
@@ -648,6 +648,18 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     
     private void ProcessBotLogic()
     {
+        // CHECK: Runtime limit reached?
+        if (Settings.BotSettings.MaxRuntimeMinutes.Value > 0 && _botStartTime != default)
+        {
+            var runtime = DateTime.Now - _botStartTime;
+            if (runtime.TotalMinutes >= Settings.BotSettings.MaxRuntimeMinutes.Value)
+            {
+                LogMessage($"[AUTO STOP] ⏰ Reached maximum runtime limit ({Settings.BotSettings.MaxRuntimeMinutes.Value} minutes) - stopping bot!");
+                StopBot();
+                return;
+            }
+        }
+        
         switch (_currentState)
         {
             case BotState.WaitingForRadar:
@@ -668,16 +680,24 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 break;
                 
             case BotState.WaitingForAqueducts:
-                // DIRECTIONAL INTELLIGENCE: Record initial spawn position when we first enter Aqueducts
-                if (!_hasRecordedSpawnPosition && IsInAqueducts(GameController.Area.CurrentArea))
+                // CHECK: Are we already in Aqueducts? (Handles bot startup mid-area)
+                if (IsInAqueducts(GameController.Area.CurrentArea))
                 {
-                    var playerPos = GetPlayerPosition();
-                    if (playerPos != null)
+                    LogMessage("✅ Already in Aqueducts - transitioning to pathfinding!");
+                    _currentState = BotState.GettingPath;
+                    
+                    // DIRECTIONAL INTELLIGENCE: Record initial spawn position when we first enter Aqueducts
+                    if (!_hasRecordedSpawnPosition)
                     {
-                        _initialSpawnPosition = new System.Numerics.Vector2(playerPos.GridPos.X, playerPos.GridPos.Y);
-                        _hasRecordedSpawnPosition = true;
-                        LogMessage($"[SPAWN TRACKING] 📍 Recorded initial spawn position: ({_initialSpawnPosition.X:F1}, {_initialSpawnPosition.Y:F1})");
+                        var playerPos = GetPlayerPosition();
+                        if (playerPos != null)
+                        {
+                            _initialSpawnPosition = new System.Numerics.Vector2(playerPos.GridPos.X, playerPos.GridPos.Y);
+                            _hasRecordedSpawnPosition = true;
+                            LogMessage($"[SPAWN TRACKING] 📍 Recorded initial spawn position: ({_initialSpawnPosition.X:F1}, {_initialSpawnPosition.Y:F1})");
+                        }
                     }
+                    break;
                 }
                 
                 // ENHANCED: Check for area transition while waiting
@@ -732,6 +752,14 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                         _runsCompleted++;
                         LogMessage($"[SUCCESS] Completed run #{_runsCompleted}! Character successfully navigated to area exit.");
                         
+                        // CHECK: Max runs limit reached?
+                        if (Settings.BotSettings.MaxRuns.Value > 0 && _runsCompleted >= Settings.BotSettings.MaxRuns.Value)
+                        {
+                            LogMessage($"[AUTO STOP] ✅ Reached maximum runs limit ({Settings.BotSettings.MaxRuns.Value}) - stopping bot!");
+                            StopBot();
+                            return;
+                        }
+                        
                         // Reset for next run
                         _currentPath.Clear();
                         _currentPathIndex = 0;
@@ -756,6 +784,15 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 {
                     LogMessage("[SUCCESS] Area transition detected! Run completed successfully.");
                     _runsCompleted++;
+                    
+                    // CHECK: Max runs limit reached?
+                    if (Settings.BotSettings.MaxRuns.Value > 0 && _runsCompleted >= Settings.BotSettings.MaxRuns.Value)
+                    {
+                        LogMessage($"[AUTO STOP] ✅ Reached maximum runs limit ({Settings.BotSettings.MaxRuns.Value}) - stopping bot!");
+                        StopBot();
+                        return;
+                    }
+                    
                     _currentState = BotState.WaitingForAqueducts;
                 }
                 else
