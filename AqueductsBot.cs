@@ -3029,20 +3029,20 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             {
                 // Find the furthest reachable point in remaining path
                 var bestPoint = finalPoint;
-                var bestDistance = finalDistance;
+                var maxReachableDistance = finalDistance;
                 
                 for (int i = startIndex; i < path.Count; i++)
                 {
                     var testPoint = new System.Numerics.Vector2(path[i].X, path[i].Y);
                     var testDistance = System.Numerics.Vector2.Distance(playerWorldPos, testPoint);
-                    if (testDistance > bestDistance)
+                    if (testDistance > maxReachableDistance)
                     {
                         bestPoint = testPoint;
-                        bestDistance = testDistance;
+                        maxReachableDistance = testDistance;
                     }
                 }
                 
-                LogMovementDebug($"[PURSUIT] 🎯 Path end - found best reachable point ({bestPoint.X:F0}, {bestPoint.Y:F0}), distance {bestDistance:F1}");
+                LogMovementDebug($"[PURSUIT] 🎯 Path end - found best reachable point ({bestPoint.X:F0}, {bestPoint.Y:F0}), distance {maxReachableDistance:F1}");
                 return bestPoint;
             }
             else
