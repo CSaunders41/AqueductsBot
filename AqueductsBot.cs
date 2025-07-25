@@ -1700,9 +1700,10 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var targetPoint = _currentPath[checkIndex];
             
             // Convert to screen coordinates
+            // Use SAME coordinate system as visual circle (direct coordinates, no scaling)
             var worldPos = new Vector3(
-                targetPoint.X * 250f / 23f,
-                targetPoint.Y * 250f / 23f,
+                targetPoint.X,
+                targetPoint.Y,
                 0
             );
             
@@ -3114,7 +3115,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     private bool IsTargetPointValid(System.Numerics.Vector2 targetPoint)
     {
         // Check if target is within reasonable screen bounds
-        var worldPos = new Vector3(targetPoint.X * 250f / 23f, targetPoint.Y * 250f / 23f, 0);
+        // Use SAME coordinate system as visual circle (direct coordinates, no scaling)
+        var worldPos = new Vector3(targetPoint.X, targetPoint.Y, 0);
         var screenPos = GameController.IngameState.Camera.WorldToScreen(worldPos);
         var gameWindow = GameController.Window.GetWindowRectangle();
         
@@ -3122,7 +3124,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         var isOnScreen = screenPos.X >= margin && screenPos.X <= gameWindow.Width - margin && 
                         screenPos.Y >= margin && screenPos.Y <= gameWindow.Height - margin;
         
-        LogMovementDebug($"[VALIDATION] Screen pos: ({screenPos.X:F0}, {screenPos.Y:F0}), on screen: {isOnScreen}");
+        LogMovementDebug($"[VALIDATION] World: ({targetPoint.X:F0}, {targetPoint.Y:F0}) → Screen: ({screenPos.X:F0}, {screenPos.Y:F0}), on screen: {isOnScreen}");
         
         return isOnScreen;
     }
@@ -3354,7 +3356,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 var testPoint = playerPos + (direction * adjustedRadius);
                 
                 // Test if this point is on screen
-                var worldPos = new Vector3(testPoint.X * 250f / 23f, testPoint.Y * 250f / 23f, 0);
+                // Use SAME coordinate system as visual circle (direct coordinates, no scaling)
+                var worldPos = new Vector3(testPoint.X, testPoint.Y, 0);
                 var screenPos = GameController.IngameState.Camera.WorldToScreen(worldPos);
                 
                 var isOnScreen = screenPos.X >= margin && screenPos.X <= gameWindow.Width - margin && 
@@ -3377,7 +3380,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var direction = new System.Numerics.Vector2((float)Math.Cos(radians), (float)Math.Sin(radians));
             var testPoint = playerPos + (direction * minRadius);
             
-            var worldPos = new Vector3(testPoint.X * 250f / 23f, testPoint.Y * 250f / 23f, 0);
+            // Use SAME coordinate system as visual circle (direct coordinates, no scaling)
+            var worldPos = new Vector3(testPoint.X, testPoint.Y, 0);
             var screenPos = GameController.IngameState.Camera.WorldToScreen(worldPos);
             
             var isOnScreen = screenPos.X >= margin && screenPos.X <= gameWindow.Width - margin && 
