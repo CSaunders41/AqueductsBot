@@ -3328,11 +3328,10 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     /// </summary>
     private System.Numerics.Vector2? FindOnScreenPerimeterPoint(System.Numerics.Vector2 playerPos, float radius)
     {
-        // Try different angles around the circle to find one that's on screen
         var gameWindow = GameController.Window.GetWindowRectangle();
         var margin = 100f;
         
-        // Test 8 cardinal/intercardinal directions
+        // Test 8 cardinal/intercardinal directions at MULTIPLE radii
         var directions = new[]
         {
             new System.Numerics.Vector2(1, 0),    // East
@@ -3345,11 +3344,39 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             new System.Numerics.Vector2(0.707f, -0.707f)   // Southeast
         };
         
-        foreach (var direction in directions)
+        // Try progressively smaller radii until we find something on-screen
+        for (float radiusMultiplier = 1.0f; radiusMultiplier >= 0.3f; radiusMultiplier -= 0.1f)
         {
-            var testPoint = playerPos + (direction * radius);
+            var adjustedRadius = radius * radiusMultiplier;
             
-            // Test if this point is on screen
+            foreach (var direction in directions)
+            {
+                var testPoint = playerPos + (direction * adjustedRadius);
+                
+                // Test if this point is on screen
+                var worldPos = new Vector3(testPoint.X * 250f / 23f, testPoint.Y * 250f / 23f, 0);
+                var screenPos = GameController.IngameState.Camera.WorldToScreen(worldPos);
+                
+                var isOnScreen = screenPos.X >= margin && screenPos.X <= gameWindow.Width - margin && 
+                                screenPos.Y >= margin && screenPos.Y <= gameWindow.Height - margin;
+                
+                if (isOnScreen)
+                {
+                    LogMovementDebug($"[ON-SCREEN PERIMETER] Found direction ({direction.X:F3}, {direction.Y:F3}) → ({testPoint.X:F0}, {testPoint.Y:F0}) at screen ({screenPos.X:F0}, {screenPos.Y:F0}), radius: {adjustedRadius:F1} ({radiusMultiplier:F1}x)");
+                    return testPoint;
+                }
+            }
+        }
+        
+        // If even reduced radii don't work, try a comprehensive sweep with very small radius
+        var minRadius = Math.Max(radius * 0.2f, 50f); // At least 50 units away
+        
+        for (int angle = 0; angle < 360; angle += 30)  // Every 30 degrees
+        {
+            var radians = angle * Math.PI / 180.0;
+            var direction = new System.Numerics.Vector2((float)Math.Cos(radians), (float)Math.Sin(radians));
+            var testPoint = playerPos + (direction * minRadius);
+            
             var worldPos = new Vector3(testPoint.X * 250f / 23f, testPoint.Y * 250f / 23f, 0);
             var screenPos = GameController.IngameState.Camera.WorldToScreen(worldPos);
             
@@ -3358,12 +3385,12 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             
             if (isOnScreen)
             {
-                LogMovementDebug($"[ON-SCREEN PERIMETER] Found direction ({direction.X:F3}, {direction.Y:F3}) → ({testPoint.X:F0}, {testPoint.Y:F0}) at screen ({screenPos.X:F0}, {screenPos.Y:F0})");
+                LogMovementDebug($"[ON-SCREEN PERIMETER] Found sweep direction at {angle}° → ({testPoint.X:F0}, {testPoint.Y:F0}) at screen ({screenPos.X:F0}, {screenPos.Y:F0}), radius: {minRadius:F1}");
                 return testPoint;
             }
         }
         
-        LogMovementDebug($"[ON-SCREEN PERIMETER] No direction found within screen bounds");
+        LogMovementDebug($"[ON-SCREEN PERIMETER] ❌ No direction found within screen bounds even with radius reduction");
         return null;
     }
 }
