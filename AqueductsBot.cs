@@ -3009,71 +3009,104 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     }
     
     /// <summary>
-    /// Determine the direction from player toward path/destination
+    /// Determine the direction from player toward path/destination - PRIORITIZE PATH FOLLOWING
     /// </summary>
     private System.Numerics.Vector2 DeterminePathDirection(List<Vector2i> path, int startIndex, System.Numerics.Vector2 playerPos)
     {
-        // STRATEGY 1: Direction toward destination (end of path)
         var destination = new System.Numerics.Vector2(path[path.Count - 1].X, path[path.Count - 1].Y);
-        var destinationDirection = destination - playerPos;
-        var destinationDistance = destinationDirection.Length();
+        var destinationDistance = System.Numerics.Vector2.Distance(playerPos, destination);
         
         LogMovementDebug($"[DIRECTION] Destination: ({destination.X:F0}, {destination.Y:F0}), distance: {destinationDistance:F1}");
         
-        // If close to destination, use destination direction
-        if (destinationDistance < Settings.MovementSettings.PursuitRadius.Value * 2f)
+        // STRATEGY 1: Follow the Radar path waypoints (PRIMARY APPROACH)
+        var pathDirection = GetPathDirection(path, startIndex, playerPos);
+        if (pathDirection.HasValue && pathDirection.Value.Length() > 5f)
         {
-            LogMovementDebug($"[DIRECTION] ✅ Using destination direction (close to end)");
-            return destinationDirection;
+            LogMovementDebug($"[DIRECTION] ✅ Following Radar path waypoints: ({pathDirection.Value.X:F1}, {pathDirection.Value.Y:F1})");
+            return pathDirection.Value;
         }
         
-        // STRATEGY 2: Direction toward nearest path point ahead of current position
-        var nearestPathPoint = FindNearestPathPointAhead(path, startIndex, playerPos);
-        if (nearestPathPoint.HasValue)
+        // STRATEGY 2: Only use destination direction when VERY close (within pursuit radius)
+        if (destinationDistance < Settings.MovementSettings.PursuitRadius.Value * 0.5f)
         {
-            var pathDirection = nearestPathPoint.Value - playerPos;
-            var pathDistance = pathDirection.Length();
-            
-            LogMovementDebug($"[DIRECTION] Nearest path point: ({nearestPathPoint.Value.X:F0}, {nearestPathPoint.Value.Y:F0}), distance: {pathDistance:F1}");
-            
-            // STRATEGY 3: Weighted combination - prefer path direction when far from destination
-            var pathWeight = Math.Min(destinationDistance / (Settings.MovementSettings.PursuitRadius.Value * 4f), 1f);
-            var destinationWeight = 1f - pathWeight;
-            
-            var combinedDirection = (pathDirection * pathWeight) + (destinationDirection * destinationWeight);
-            
-            LogMovementDebug($"[DIRECTION] ✅ Combined direction (path weight: {pathWeight:F2}, dest weight: {destinationWeight:F2})");
-            return combinedDirection;
+            LogMovementDebug($"[DIRECTION] ✅ Very close to destination, using direct approach");
+            return destination - playerPos;
         }
         
-        // FALLBACK: Just use destination direction
-        LogMovementDebug($"[DIRECTION] ✅ Using destination direction (fallback)");
-        return destinationDirection;
+        // STRATEGY 3: If no good path direction, look ahead further in the path
+        var lookaheadDirection = GetLookaheadDirection(path, startIndex, playerPos);
+        if (lookaheadDirection.HasValue)
+        {
+            LogMovementDebug($"[DIRECTION] ✅ Using lookahead direction: ({lookaheadDirection.Value.X:F1}, {lookaheadDirection.Value.Y:F1})");
+            return lookaheadDirection.Value;
+        }
+        
+        // FALLBACK: Use destination direction (last resort)
+        LogMovementDebug($"[DIRECTION] ⚠️ Fallback to destination direction");
+        return destination - playerPos;
     }
     
     /// <summary>
-    /// Find nearest significant path point ahead of current index
+    /// Get direction based on nearby path waypoints (follow the actual Radar path)
     /// </summary>
-    private System.Numerics.Vector2? FindNearestPathPointAhead(List<Vector2i> path, int startIndex, System.Numerics.Vector2 playerPos)
+    private System.Numerics.Vector2? GetPathDirection(List<Vector2i> path, int startIndex, System.Numerics.Vector2 playerPos)
     {
-        // Look ahead in path for a point that's at least some minimum distance away
-        var minDistance = 20f; // Minimum distance to consider a point "significant"
+        // Look at next 5-10 waypoints to determine path direction
+        var endIndex = Math.Min(startIndex + 10, path.Count);
+        var validPoints = new List<System.Numerics.Vector2>();
         
-        for (int i = Math.Max(startIndex, 0); i < path.Count; i++)
+        for (int i = Math.Max(startIndex, 0); i < endIndex; i++)
         {
-            var pathPoint = new System.Numerics.Vector2(path[i].X, path[i].Y);
-            var distance = System.Numerics.Vector2.Distance(playerPos, pathPoint);
+            var waypoint = new System.Numerics.Vector2(path[i].X, path[i].Y);
+            var distance = System.Numerics.Vector2.Distance(playerPos, waypoint);
             
-            if (distance >= minDistance)
+            // Include waypoints that are reasonably ahead of us
+            if (distance >= 20f && distance <= Settings.MovementSettings.PursuitRadius.Value * 2f)
             {
-                LogMovementDebug($"[NEAREST PATH] Found significant point at index {i}: ({pathPoint.X:F0}, {pathPoint.Y:F0}), distance: {distance:F1}");
-                return pathPoint;
+                validPoints.Add(waypoint);
             }
         }
         
-        LogMovementDebug($"[NEAREST PATH] No significant points found ahead");
+        if (validPoints.Count == 0)
+        {
+            LogMovementDebug($"[PATH DIRECTION] No valid waypoints found in range");
+            return null;
+        }
+        
+        // Use the furthest valid waypoint as our target direction
+        var targetWaypoint = validPoints.Last();
+        var direction = targetWaypoint - playerPos;
+        
+        LogMovementDebug($"[PATH DIRECTION] Target waypoint: ({targetWaypoint.X:F0}, {targetWaypoint.Y:F0}), {validPoints.Count} valid points");
+        return direction;
+    }
+    
+    /// <summary>
+    /// Look further ahead in the path when near waypoints are too close
+    /// </summary>
+    private System.Numerics.Vector2? GetLookaheadDirection(List<Vector2i> path, int startIndex, System.Numerics.Vector2 playerPos)
+    {
+        // Look much further ahead - up to 20-30 waypoints
+        var lookaheadDistance = Math.Min(30, path.Count - startIndex);
+        
+        for (int i = 5; i <= lookaheadDistance; i += 5)
+        {
+            var lookaheadIndex = Math.Min(startIndex + i, path.Count - 1);
+            var waypoint = new System.Numerics.Vector2(path[lookaheadIndex].X, path[lookaheadIndex].Y);
+            var distance = System.Numerics.Vector2.Distance(playerPos, waypoint);
+            
+            if (distance >= Settings.MovementSettings.PursuitRadius.Value * 0.3f)
+            {
+                LogMovementDebug($"[LOOKAHEAD] Found good waypoint at index {lookaheadIndex}: ({waypoint.X:F0}, {waypoint.Y:F0}), distance: {distance:F1}");
+                return waypoint - playerPos;
+            }
+        }
+        
+        LogMovementDebug($"[LOOKAHEAD] No suitable lookahead waypoint found");
         return null;
     }
+    
+
     
     /// <summary>
     /// Validate that target point is reasonable (on screen, not too close, etc.)
