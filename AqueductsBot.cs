@@ -1257,7 +1257,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         LogMovementDebug($"[PATH INTERSECTION] Target at ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {currentDistance:F1}");
         
         // Check if the path intersection point is visible on screen
-        var testWorldPos = new Vector3(targetPoint.Value.X * 250f / 23f, targetPoint.Value.Y * 250f / 23f, 0);
+        // Use SAME coordinate system as visual circle (direct coordinates, no scaling)
+        var testWorldPos = new Vector3(targetPoint.Value.X, targetPoint.Value.Y, 0);
         var testScreenPos = GameController.IngameState.Camera.WorldToScreen(testWorldPos);
         var gameWindow = GameController.Window.GetWindowRectangle();
         var margin = 100f;
@@ -1284,7 +1285,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                  if (testIntersection.HasValue)
                  {
                      // Test if this intersection is visible
-                     var testWorld = new Vector3(testIntersection.Value.X * 250f / 23f, testIntersection.Value.Y * 250f / 23f, 0);
+                     // Use SAME coordinate system as visual circle (direct coordinates, no scaling)
+                     var testWorld = new Vector3(testIntersection.Value.X, testIntersection.Value.Y, 0);
                      var testScreen = GameController.IngameState.Camera.WorldToScreen(testWorld);
                      var testIsVisible = testScreen.X >= margin && testScreen.X <= gameWindow.Width - margin && 
                                         testScreen.Y >= margin && testScreen.Y <= gameWindow.Height - margin;
@@ -1323,7 +1325,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         }
         
         // Convert world position to screen coordinates for clicking
-        var worldPos = new Vector3(targetPoint.Value.X * 250f / 23f, targetPoint.Value.Y * 250f / 23f, 0);
+        // Use SAME coordinate system as visual circle (direct coordinates, no scaling)
+        var worldPos = new Vector3(targetPoint.Value.X, targetPoint.Value.Y, 0);
         var screenPosSharp = GameController.IngameState.Camera.WorldToScreen(worldPos);
         var screenPos = new Vector2(screenPosSharp.X, screenPosSharp.Y);
         
