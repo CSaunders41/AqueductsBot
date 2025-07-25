@@ -1210,11 +1210,35 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 return;
             }
             
-            // Target final destination directly as fallback
-            var destination = _currentPath[_currentPath.Count - 1];
-            targetPoint = new System.Numerics.Vector2(destination.X, destination.Y);
-            var fallbackDistance = System.Numerics.Vector2.Distance(playerWorldPos, targetPoint.Value);
-            LogMovementDebug($"[PERIMETER] 🔧 Using destination fallback: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {fallbackDistance:F1}");
+            // MAINTAIN PERIMETER DISTANCE: Try to find ANY on-screen perimeter point
+            var emergencyPerimeterPoint = FindOnScreenPerimeterPoint(playerWorldPos, pursuitRadius);
+            if (emergencyPerimeterPoint.HasValue)
+            {
+                targetPoint = emergencyPerimeterPoint.Value;
+                var perimeterDistance = System.Numerics.Vector2.Distance(playerWorldPos, targetPoint.Value);
+                LogMovementDebug($"[PERIMETER] 🔧 Using emergency perimeter fallback: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {perimeterDistance:F1}");
+            }
+            else
+            {
+                // Last resort - but still try to maintain reasonable distance
+                var destination = _currentPath[_currentPath.Count - 1];
+                var destinationDirection = destination - new Vector2i((int)playerWorldPos.X, (int)playerWorldPos.Y);
+                var destinationDistance = new System.Numerics.Vector2(destinationDirection.X, destinationDirection.Y).Length();
+                
+                if (destinationDistance < pursuitRadius * 0.5f)
+                {
+                    // Destination too close - project it out to at least half pursuit radius
+                    var normalizedDestDir = System.Numerics.Vector2.Normalize(new System.Numerics.Vector2(destinationDirection.X, destinationDirection.Y));
+                    var adjustedTarget = playerWorldPos + (normalizedDestDir * pursuitRadius * 0.6f);
+                    targetPoint = adjustedTarget;
+                    LogMovementDebug($"[PERIMETER] 🔧 Using projected destination: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {pursuitRadius * 0.6f:F1}");
+                }
+                else
+                {
+                    targetPoint = new System.Numerics.Vector2(destination.X, destination.Y);
+                    LogMovementDebug($"[PERIMETER] 🔧 Using destination fallback: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {destinationDistance:F1}");
+                }
+            }
         }
         else
         {
@@ -2964,13 +2988,23 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         LogMovementDebug($"[PERIMETER] Direction: ({targetDirection.X:F1}, {targetDirection.Y:F1}) → Normalized: ({normalizedDirection.X:F3}, {normalizedDirection.Y:F3})");
         LogMovementDebug($"[PERIMETER] ✅ Target at ({perimeterPoint.X:F0}, {perimeterPoint.Y:F0}), distance: {pursuitRadius:F1} (exact)");
         
-        // 3. VALIDATE TARGET POINT
+        // 3. VALIDATE AND ADJUST TARGET POINT
         if (IsTargetPointValid(perimeterPoint))
         {
             return perimeterPoint;
         }
         
-        LogMovementDebug($"[PERIMETER] ❌ Target point failed validation");
+        LogMovementDebug($"[PERIMETER] ⚠️ Target off-screen, finding on-screen perimeter point");
+        
+        // Find alternative direction that keeps us on screen at perimeter distance
+        var onScreenPerimeterPoint = FindOnScreenPerimeterPoint(playerWorldPos, pursuitRadius);
+        if (onScreenPerimeterPoint.HasValue)
+        {
+            LogMovementDebug($"[PERIMETER] ✅ On-screen perimeter target: ({onScreenPerimeterPoint.Value.X:F0}, {onScreenPerimeterPoint.Value.Y:F0}), distance: {pursuitRadius:F1}");
+            return onScreenPerimeterPoint.Value;
+        }
+        
+        LogMovementDebug($"[PERIMETER] ❌ No on-screen perimeter point found");
         return null;
     }
     
@@ -3254,5 +3288,49 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         {
             LogMessage(message);
         }
+    }
+
+    /// <summary>
+    /// Find a point on the pursuit circle perimeter that's visible on screen
+    /// </summary>
+    private System.Numerics.Vector2? FindOnScreenPerimeterPoint(System.Numerics.Vector2 playerPos, float radius)
+    {
+        // Try different angles around the circle to find one that's on screen
+        var gameWindow = GameController.Window.GetWindowRectangle();
+        var margin = 100f;
+        
+        // Test 8 cardinal/intercardinal directions
+        var directions = new[]
+        {
+            new System.Numerics.Vector2(1, 0),    // East
+            new System.Numerics.Vector2(0.707f, 0.707f),  // Northeast  
+            new System.Numerics.Vector2(0, 1),    // North
+            new System.Numerics.Vector2(-0.707f, 0.707f), // Northwest
+            new System.Numerics.Vector2(-1, 0),   // West
+            new System.Numerics.Vector2(-0.707f, -0.707f), // Southwest
+            new System.Numerics.Vector2(0, -1),   // South
+            new System.Numerics.Vector2(0.707f, -0.707f)   // Southeast
+        };
+        
+        foreach (var direction in directions)
+        {
+            var testPoint = playerPos + (direction * radius);
+            
+            // Test if this point is on screen
+            var worldPos = new Vector3(testPoint.X * 250f / 23f, testPoint.Y * 250f / 23f, 0);
+            var screenPos = GameController.IngameState.Camera.WorldToScreen(worldPos);
+            
+            var isOnScreen = screenPos.X >= margin && screenPos.X <= gameWindow.Width - margin && 
+                            screenPos.Y >= margin && screenPos.Y <= gameWindow.Height - margin;
+            
+            if (isOnScreen)
+            {
+                LogMovementDebug($"[ON-SCREEN PERIMETER] Found direction ({direction.X:F3}, {direction.Y:F3}) → ({testPoint.X:F0}, {testPoint.Y:F0}) at screen ({screenPos.X:F0}, {screenPos.Y:F0})");
+                return testPoint;
+            }
+        }
+        
+        LogMovementDebug($"[ON-SCREEN PERIMETER] No direction found within screen bounds");
+        return null;
     }
 }
