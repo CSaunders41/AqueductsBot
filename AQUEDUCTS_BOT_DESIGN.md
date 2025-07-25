@@ -349,10 +349,12 @@ case BotState.WaitingForAqueducts:
 
 ## Immediate Next Steps (REVISED PRIORITIES)
 
-### Priority 1: Fix Movement System ⚠️ **CRITICAL**
-1. **Debug Circle Intersection Logic**: Fix `FindLineCircleIntersection` math
-2. **Improve Fallback Logic**: Ensure fallback maintains minimum pursuit radius distance
-3. **Add Intersection Debugging**: Better visualization of where intersections should occur
+### ✅ **COMPLETED: Perimeter Movement System Implementation**
+1. **✅ Replaced Circle Intersection**: Implemented perimeter projection algorithm (`FindPerimeterTarget()`)
+2. **✅ Direction Calculation**: Smart direction toward path/destination (`DeterminePathDirection()`)  
+3. **✅ Perimeter Targeting**: Always clicks at exact pursuit radius distance
+4. **✅ Eliminated Complex Fallback Logic**: Simple destination fallback only
+5. **✅ Reduced Code Complexity**: 200+ lines → 100 lines, much cleaner logic
 
 ### ✅ **COMPLETED FIXES**
 4. **~~Fix UI Circle Display~~**: ✅ **COMPLETED** - `ShowPlayerCircle` moved to MovementSettings with PursuitRadius
@@ -463,9 +465,10 @@ UI settings audit revealed multiple "developed but not connected" features. Regu
 3. **Auto-Stop Limits Working** - Max runs and runtime limits now functional
 4. **Settings Cleanup** - Removed 4 unused settings, reorganized categories
 
-### 🔧 **Known Issue Remaining**
-- **Movement Stuck-Clicking** - Bot targets points too close to player (~25 units instead of ~300)
-- **Root Cause** - Circle intersection algorithm failing, fallback logic needs improvement
+### ✅ **RESOLVED: Critical Design Flaw Fixed**
+- **~~Movement Stuck-Clicking~~** - **FIXED**: Perimeter system always targets at exact pursuit radius distance
+- **~~Root Cause~~** - **SOLVED**: Replaced broken circle intersection with perimeter projection
+- **✅ Implementation Complete** - **Perimeter Projection System**: Always clicks at circle perimeter in path direction (see `PERIMETER_MOVEMENT_DESIGN.md`)
 
 ### 🎯 **Test Focus Areas**
 1. **UI Functionality** - Verify circle toggle/resize works in Movement Settings

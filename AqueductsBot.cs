@@ -1190,41 +1190,41 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
 
         var playerWorldPos = new System.Numerics.Vector2(playerPos.GridPos.X, playerPos.GridPos.Y);
 
-        // RADIUS-BASED NAVIGATION: Use pure pursuit algorithm instead of waypoint chasing
-        var expectedRadius = Settings.MovementSettings.PursuitRadius.Value;
-        LogMovementDebug($"[PURSUIT START] Looking for intersection with radius {expectedRadius:F1} from path index {_currentPathIndex}");
+        // PERIMETER-BASED NAVIGATION: Always click at pursuit circle perimeter
+        var pursuitRadius = Settings.MovementSettings.PursuitRadius.Value;
+        LogMovementDebug($"[PERIMETER START] Finding perimeter target with radius {pursuitRadius:F1} from path index {_currentPathIndex}");
         
-        var targetPoint = FindPathIntersectionWithRadius(_currentPath, _currentPathIndex);
+        var targetPoint = FindPerimeterTarget(_currentPath, _currentPathIndex);
         
         if (!targetPoint.HasValue)
         {
-            LogMovementDebug("[PURSUIT] ❌ CRITICAL: Even aggressive fallback failed - advancing manually along path");
+            LogMovementDebug("[PERIMETER] ❌ CRITICAL: Perimeter targeting failed - trying fallback");
             
-            // Manual advancement: skip ahead in the path and try again
-            _currentPathIndex = Math.Min(_currentPathIndex + 5, _currentPath.Count - 1);
+            // Simple fallback - advance path index and target destination directly
+            _currentPathIndex = Math.Min(_currentPathIndex + 3, _currentPath.Count - 1);
             
             if (_currentPathIndex >= _currentPath.Count - 1)
             {
-                LogMessage("[PURSUIT] 📍 Reached end of path manually");
+                LogMessage("[PERIMETER] 📍 Reached end of path");
                 _currentState = BotState.AtAreaExit;
                 return;
             }
             
-            // Try to get a simple waypoint as target
-            var waypoint = _currentPath[_currentPathIndex];
-            targetPoint = new System.Numerics.Vector2(waypoint.X, waypoint.Y);
-            var distanceToFallback = System.Numerics.Vector2.Distance(playerWorldPos, targetPoint.Value);
-            LogMovementDebug($"[PURSUIT] 🔧 Using manual waypoint {_currentPathIndex}: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {distanceToFallback:F1}");
+            // Target final destination directly as fallback
+            var destination = _currentPath[_currentPath.Count - 1];
+            targetPoint = new System.Numerics.Vector2(destination.X, destination.Y);
+            var fallbackDistance = System.Numerics.Vector2.Distance(playerWorldPos, targetPoint.Value);
+            LogMovementDebug($"[PERIMETER] 🔧 Using destination fallback: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {fallbackDistance:F1}");
         }
         else
         {
             var actualDistance = System.Numerics.Vector2.Distance(playerWorldPos, targetPoint.Value);
-            LogMovementDebug($"[PURSUIT SUCCESS] Found intersection at ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {actualDistance:F1}, expected: {expectedRadius:F1}");
+            LogMovementDebug($"[PERIMETER SUCCESS] ✅ Target at perimeter: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {actualDistance:F1}, expected: {pursuitRadius:F1}");
             
-            // CRITICAL CHECK: If the intersection is way too close, something is wrong
-            if (actualDistance < expectedRadius * 0.5f)
+            // Validation: Distance should match pursuit radius exactly (within small tolerance)
+            if (Math.Abs(actualDistance - pursuitRadius) > 5f)
             {
-                LogMovementDebug($"[PURSUIT WARNING] 🚨 Intersection too close ({actualDistance:F1} < {expectedRadius * 0.5f:F1}) - path may be ending or algorithm failing");
+                LogMovementDebug($"[PERIMETER WARNING] ⚠️ Distance mismatch: expected {pursuitRadius:F1}, got {actualDistance:F1}");
             }
         }
 
@@ -1339,7 +1339,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             LogMovementDebug($"[CLICK VALIDATION] Player screen: ({playerScreenPos.Value.X:F0}, {playerScreenPos.Value.Y:F0})");
             LogMovementDebug($"[CLICK VALIDATION] Final target screen: ({screenPos.X:F0}, {screenPos.Y:F0})");
             LogMovementDebug($"[CLICK VALIDATION] Screen distance: {screenDistance:F1} pixels");
-            LogMovementDebug($"[CLICK VALIDATION] World distance: {distanceToTarget:F1} units (expected: ~{Settings.MovementSettings.PursuitRadius.Value:F1})");
+            LogMovementDebug($"[CLICK VALIDATION] World distance: {distanceToTarget:F1} units (expected: {Settings.MovementSettings.PursuitRadius.Value:F1} - perimeter target)");
             
             // Additional safety check - if screen distance is way too large, something is wrong
             if (screenDistance > 1200) // Increased from 800 to 1200 pixels - less restrictive
@@ -2935,202 +2935,129 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     }
 
     /// <summary>
-    /// Find where the path intersects with a circle around the player (Pure Pursuit Algorithm)
-    /// This provides much smoother navigation than chasing exact waypoints
+    /// Find target point at pursuit circle perimeter in direction of path/destination
+    /// This ensures consistent click distance and eliminates path segment size dependencies
     /// </summary>
-    private System.Numerics.Vector2? FindPathIntersectionWithRadius(List<Vector2i> path, int startIndex = 0)
+    private System.Numerics.Vector2? FindPerimeterTarget(List<Vector2i> path, int startIndex = 0)
     {
         var playerPos = GetPlayerPosition();
         if (playerPos == null || path.Count == 0) return null;
         
         var playerWorldPos = new System.Numerics.Vector2(playerPos.GridPos.X, playerPos.GridPos.Y);
-        var basePursuitRadius = Settings.MovementSettings.PursuitRadius.Value;
+        var pursuitRadius = Settings.MovementSettings.PursuitRadius.Value;
         
-        // DEBUG: Show actual settings values
-        LogMovementDebug($"[SETTINGS DEBUG] 🔧 Pursuit radius setting: {basePursuitRadius} (min: {Settings.MovementSettings.PursuitRadius.Min}, max: {Settings.MovementSettings.PursuitRadius.Max})");
+        LogMovementDebug($"[PERIMETER] Player at ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}), radius: {pursuitRadius:F1}");
         
-        // INTELLIGENT RADIUS SCALING: Scale radius based on remaining path length and segment sizes
-        var remainingWaypoints = path.Count - startIndex;
+        // 1. DETERMINE TARGET DIRECTION
+        var targetDirection = DeterminePathDirection(path, startIndex, playerWorldPos);
         
-        // Calculate average segment length in remaining path
-        float totalPathLength = 0f;
-        int segmentCount = 0;
-        for (int i = Math.Max(startIndex, 1); i < Math.Min(startIndex + 20, path.Count); i++)
+        if (targetDirection.Length() < 0.1f)
         {
-            var segLen = System.Numerics.Vector2.Distance(
-                new System.Numerics.Vector2(path[i-1].X, path[i-1].Y),
-                new System.Numerics.Vector2(path[i].X, path[i].Y));
-            totalPathLength += segLen;
-            segmentCount++;
+            LogMovementDebug($"[PERIMETER] ❌ No valid direction found");
+            return null;
         }
         
-        var avgSegmentLength = segmentCount > 0 ? totalPathLength / segmentCount : 1f;
-        var cumulativePathLength = totalPathLength;
+        // 2. PROJECT TO PERIMETER
+        var normalizedDirection = System.Numerics.Vector2.Normalize(targetDirection);
+        var perimeterPoint = playerWorldPos + (normalizedDirection * pursuitRadius);
         
-        // Scale radius based on path characteristics
-        var dynamicRadius = basePursuitRadius;
+        LogMovementDebug($"[PERIMETER] Direction: ({targetDirection.X:F1}, {targetDirection.Y:F1}) → Normalized: ({normalizedDirection.X:F3}, {normalizedDirection.Y:F3})");
+        LogMovementDebug($"[PERIMETER] ✅ Target at ({perimeterPoint.X:F0}, {perimeterPoint.Y:F0}), distance: {pursuitRadius:F1} (exact)");
         
-        // If remaining path is very short, scale radius down dramatically
-        if (remainingWaypoints <= 15 && cumulativePathLength < basePursuitRadius * 0.3f)
+        // 3. VALIDATE TARGET POINT
+        if (IsTargetPointValid(perimeterPoint))
         {
-            dynamicRadius = Math.Max(cumulativePathLength * 0.8f, avgSegmentLength * 5f);
-            LogMovementDebug($"[RADIUS SCALING] 🔽 Very short path remaining - scaled radius: {basePursuitRadius:F1} → {dynamicRadius:F1} (path length: {cumulativePathLength:F1})");
-        }
-        // If segments are very small compared to radius, scale down proportionally  
-        else if (avgSegmentLength < basePursuitRadius * 0.02f)
-        {
-            dynamicRadius = Math.Max(avgSegmentLength * 20f, basePursuitRadius * 0.1f);
-            LogMovementDebug($"[RADIUS SCALING] 🔽 Tiny segments detected - scaled radius: {basePursuitRadius:F1} → {dynamicRadius:F1} (avg segment: {avgSegmentLength:F1})");
-        }
-        // Near end of path, increase radius for better targeting
-        else if (remainingWaypoints <= 10)
-        {
-            dynamicRadius = basePursuitRadius * 1.5f;
-            LogMovementDebug($"[RADIUS SCALING] 🔼 Near path end - increased radius: {basePursuitRadius:F1} → {dynamicRadius:F1}");
+            return perimeterPoint;
         }
         
-        LogMovementDebug($"[PURSUIT DEBUG] Player at ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}), looking from index {startIndex}/{path.Count}, radius {dynamicRadius:F0} (base: {basePursuitRadius:F0}, remaining: {remainingWaypoints})");
-        
-        // Debug: Show the next few waypoints we're looking at
-        LogMovementDebug($"[WAYPOINT DEBUG] Current path index: {startIndex}, next 5 waypoints:");
-        for (int debugI = startIndex; debugI < Math.Min(startIndex + 5, path.Count); debugI++)
-        {
-            var wp = path[debugI];
-            var wpDistance = System.Numerics.Vector2.Distance(playerWorldPos, new System.Numerics.Vector2(wp.X, wp.Y));
-            LogMovementDebug($"  [{debugI}] ({wp.X}, {wp.Y}) distance: {wpDistance:F1}");
-        }
-        
-        // Look ahead from current position in path
-        System.Numerics.Vector2? bestIntersection = null;
-        float bestDistance = 0f;
-        int segmentsChecked = 0;
-        int intersectionsFound = 0;
-        
-        LogMovementDebug($"[PURSUIT DEBUG] Starting main intersection loop from index {Math.Max(startIndex, 1)} to {path.Count - 1}");
-        
-        for (int i = Math.Max(startIndex, 1); i < path.Count; i++)
-        {
-            var currentPoint = new System.Numerics.Vector2(path[i - 1].X, path[i - 1].Y);
-            var nextPoint = new System.Numerics.Vector2(path[i].X, path[i].Y);
-            
-            // Skip very short segments to avoid numerical issues
-            var segmentLength = System.Numerics.Vector2.Distance(currentPoint, nextPoint);
-            if (segmentLength < 0.5f) continue; // Lowered from 2f to 0.5f to allow short path segments
-            
-            segmentsChecked++;
-            
-            // Find intersection of line segment with circle around player
-            var intersection = FindLineCircleIntersection(currentPoint, nextPoint, playerWorldPos, dynamicRadius);
-            
-            LogMovementDebug($"[INTERSECTION] Segment {i}: ({currentPoint.X:F0},{currentPoint.Y:F0}) → ({nextPoint.X:F0},{nextPoint.Y:F0}), length: {segmentLength:F1}, intersection: {(intersection.HasValue ? $"({intersection.Value.X:F0},{intersection.Value.Y:F0})" : "None")}");
-            
-            if (intersection.HasValue)
-            {
-                intersectionsFound++;
-                var distanceToIntersection = System.Numerics.Vector2.Distance(playerWorldPos, intersection.Value);
-                
-                LogMovementDebug($"[PURSUIT DEBUG] Intersection {intersectionsFound} at segment {i}: ({intersection.Value.X:F0}, {intersection.Value.Y:F0}), distance: {distanceToIntersection:F1}");
-                
-                // Accept intersections within a reasonable range (more lenient for end of path)
-                var tolerance = Settings.ConfigurationSettings.CircleIntersectionTolerance.Value;
-                var minRadius = dynamicRadius * tolerance; 
-                var maxRadius = dynamicRadius * (2.0f - tolerance); // Inversely related for balance
-                
-                LogMovementDebug($"[PURSUIT DEBUG] Tolerance: {tolerance:F2}, bounds: {minRadius:F1} <= {distanceToIntersection:F1} <= {maxRadius:F1}");
-                
-                if (distanceToIntersection >= minRadius && distanceToIntersection <= maxRadius)
-                {
-                    LogMovementDebug($"[PURSUIT] 🎯 ACCEPTED intersection at ({intersection.Value.X:F0}, {intersection.Value.Y:F0}) with distance {distanceToIntersection:F1}");
-                    return intersection.Value;
-                }
-                else
-                {
-                    LogMovementDebug($"[PURSUIT DEBUG] ❌ REJECTED intersection - outside bounds");
-                }
-            }
-        }
-        
-        LogMovementDebug($"[PURSUIT DEBUG] SUMMARY: Checked {segmentsChecked} segments, found {intersectionsFound} total intersections, none within tolerance bounds");
-        
-        // AGGRESSIVE FALLBACK LOGIC: Always find a target!
-        LogMessage($"[PURSUIT DEBUG] No circle intersection found, trying fallback options...");
-        
-        // END-OF-PATH SPECIAL HANDLING: If very close to end, target appropriately  
-        if (remainingWaypoints <= 5)
-        {
-            var finalPoint = new System.Numerics.Vector2(path[path.Count - 1].X, path[path.Count - 1].Y);
-            var finalDistance = System.Numerics.Vector2.Distance(playerWorldPos, finalPoint);
-            
-            // If final point is very close, look for a point that's at least a reasonable distance away
-            if (finalDistance < basePursuitRadius * 0.1f)
-            {
-                // Find the furthest reachable point in remaining path
-                var bestPoint = finalPoint;
-                var maxReachableDistance = finalDistance;
-                
-                for (int i = startIndex; i < path.Count; i++)
-                {
-                    var testPoint = new System.Numerics.Vector2(path[i].X, path[i].Y);
-                    var testDistance = System.Numerics.Vector2.Distance(playerWorldPos, testPoint);
-                    if (testDistance > maxReachableDistance)
-                    {
-                        bestPoint = testPoint;
-                        maxReachableDistance = testDistance;
-                    }
-                }
-                
-                LogMovementDebug($"[PURSUIT] 🎯 Path end - found best reachable point ({bestPoint.X:F0}, {bestPoint.Y:F0}), distance {maxReachableDistance:F1}");
-                return bestPoint;
-            }
-            else
-            {
-                LogMovementDebug($"[PURSUIT] 🎯 Near path end - targeting final destination ({finalPoint.X:F0}, {finalPoint.Y:F0}), distance {finalDistance:F1}");
-                return finalPoint;
-            }
-        }
-        
-        // Option 1: Look for any point that's far enough ahead - use pursuit radius as minimum
-        var minimumTargetDistance = basePursuitRadius * 0.8f; // At least 80% of pursuit radius
-        for (int distance = 3; distance <= 20; distance += 3) // Increased granularity
-        {
-            int fallbackIndex = Math.Min(startIndex + distance, path.Count - 1);
-            if (fallbackIndex <= startIndex) continue;
-            
-            var fallbackPoint = new System.Numerics.Vector2(path[fallbackIndex].X, path[fallbackIndex].Y);
-            var fallbackDistance = System.Numerics.Vector2.Distance(playerWorldPos, fallbackPoint);
-            
-            if (fallbackDistance >= minimumTargetDistance) // Use pursuit radius as minimum distance
-            {
-                LogMovementDebug($"[PURSUIT] ⚡ Using distance-based fallback: index {fallbackIndex}, point ({fallbackPoint.X:F0}, {fallbackPoint.Y:F0}), distance {fallbackDistance:F1} (min: {minimumTargetDistance:F1})");
-                return fallbackPoint;
-            }
-        }
-        
-        // Option 2: Use the next valid point in the path, but enforce minimum distance
-        var absoluteMinimumDistance = Math.Max(basePursuitRadius * 0.5f, 50f); // At least half pursuit radius or 50 units
-        for (int i = startIndex + 1; i < path.Count; i++)
-        {
-            var point = new System.Numerics.Vector2(path[i].X, path[i].Y);
-            var distance = System.Numerics.Vector2.Distance(playerWorldPos, point);
-            
-            if (distance >= absoluteMinimumDistance)
-            {
-                LogMovementDebug($"[PURSUIT] 🔧 Emergency fallback: index {i}, point ({point.X:F0}, {point.Y:F0}), distance {distance:F1} (min: {absoluteMinimumDistance:F1})");
-                return point;
-            }
-        }
-        
-        // Option 3: Last resort - use the final destination
-        if (path.Count > 0)
-        {
-            var lastPoint = new System.Numerics.Vector2(path[path.Count - 1].X, path[path.Count - 1].Y);
-            var lastDistance = System.Numerics.Vector2.Distance(playerWorldPos, lastPoint);
-            LogMessage($"[PURSUIT] 🚨 Last resort fallback: final destination ({lastPoint.X:F0}, {lastPoint.Y:F0}), distance {lastDistance:F1}");
-            return lastPoint;
-        }
-        
-        LogMessage($"[PURSUIT] ❌ CRITICAL: No fallback found at all!");
+        LogMovementDebug($"[PERIMETER] ❌ Target point failed validation");
         return null;
+    }
+    
+    /// <summary>
+    /// Determine the direction from player toward path/destination
+    /// </summary>
+    private System.Numerics.Vector2 DeterminePathDirection(List<Vector2i> path, int startIndex, System.Numerics.Vector2 playerPos)
+    {
+        // STRATEGY 1: Direction toward destination (end of path)
+        var destination = new System.Numerics.Vector2(path[path.Count - 1].X, path[path.Count - 1].Y);
+        var destinationDirection = destination - playerPos;
+        var destinationDistance = destinationDirection.Length();
+        
+        LogMovementDebug($"[DIRECTION] Destination: ({destination.X:F0}, {destination.Y:F0}), distance: {destinationDistance:F1}");
+        
+        // If close to destination, use destination direction
+        if (destinationDistance < Settings.MovementSettings.PursuitRadius.Value * 2f)
+        {
+            LogMovementDebug($"[DIRECTION] ✅ Using destination direction (close to end)");
+            return destinationDirection;
+        }
+        
+        // STRATEGY 2: Direction toward nearest path point ahead of current position
+        var nearestPathPoint = FindNearestPathPointAhead(path, startIndex, playerPos);
+        if (nearestPathPoint.HasValue)
+        {
+            var pathDirection = nearestPathPoint.Value - playerPos;
+            var pathDistance = pathDirection.Length();
+            
+            LogMovementDebug($"[DIRECTION] Nearest path point: ({nearestPathPoint.Value.X:F0}, {nearestPathPoint.Value.Y:F0}), distance: {pathDistance:F1}");
+            
+            // STRATEGY 3: Weighted combination - prefer path direction when far from destination
+            var pathWeight = Math.Min(destinationDistance / (Settings.MovementSettings.PursuitRadius.Value * 4f), 1f);
+            var destinationWeight = 1f - pathWeight;
+            
+            var combinedDirection = (pathDirection * pathWeight) + (destinationDirection * destinationWeight);
+            
+            LogMovementDebug($"[DIRECTION] ✅ Combined direction (path weight: {pathWeight:F2}, dest weight: {destinationWeight:F2})");
+            return combinedDirection;
+        }
+        
+        // FALLBACK: Just use destination direction
+        LogMovementDebug($"[DIRECTION] ✅ Using destination direction (fallback)");
+        return destinationDirection;
+    }
+    
+    /// <summary>
+    /// Find nearest significant path point ahead of current index
+    /// </summary>
+    private System.Numerics.Vector2? FindNearestPathPointAhead(List<Vector2i> path, int startIndex, System.Numerics.Vector2 playerPos)
+    {
+        // Look ahead in path for a point that's at least some minimum distance away
+        var minDistance = 20f; // Minimum distance to consider a point "significant"
+        
+        for (int i = Math.Max(startIndex, 0); i < path.Count; i++)
+        {
+            var pathPoint = new System.Numerics.Vector2(path[i].X, path[i].Y);
+            var distance = System.Numerics.Vector2.Distance(playerPos, pathPoint);
+            
+            if (distance >= minDistance)
+            {
+                LogMovementDebug($"[NEAREST PATH] Found significant point at index {i}: ({pathPoint.X:F0}, {pathPoint.Y:F0}), distance: {distance:F1}");
+                return pathPoint;
+            }
+        }
+        
+        LogMovementDebug($"[NEAREST PATH] No significant points found ahead");
+        return null;
+    }
+    
+    /// <summary>
+    /// Validate that target point is reasonable (on screen, not too close, etc.)
+    /// </summary>
+    private bool IsTargetPointValid(System.Numerics.Vector2 targetPoint)
+    {
+        // Check if target is within reasonable screen bounds
+        var worldPos = new Vector3(targetPoint.X * 250f / 23f, targetPoint.Y * 250f / 23f, 0);
+        var screenPos = GameController.IngameState.Camera.WorldToScreen(worldPos);
+        var gameWindow = GameController.Window.GetWindowRectangle();
+        
+        var margin = 100f;
+        var isOnScreen = screenPos.X >= margin && screenPos.X <= gameWindow.Width - margin && 
+                        screenPos.Y >= margin && screenPos.Y <= gameWindow.Height - margin;
+        
+        LogMovementDebug($"[VALIDATION] Screen pos: ({screenPos.X:F0}, {screenPos.Y:F0}), on screen: {isOnScreen}");
+        
+        return isOnScreen;
     }
     
     /// <summary>
