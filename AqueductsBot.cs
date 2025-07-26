@@ -3020,10 +3020,12 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             
             // Convert world position to screen position using ExileCore's Graphics
             var camera = GameController.Game.IngameState.Camera;
-            var targetScreenPos = camera.WorldToScreen(new Vector3(_lastTargetWorldPos.Value.X, _lastTargetWorldPos.Value.Y, 0));
+            // 🎯 COORDINATE FIX: Convert grid coordinates to world coordinates before WorldToScreen
+            var targetScreenPos = camera.WorldToScreen(new Vector3(_lastTargetWorldPos.Value.X * GRID_TO_WORLD_MULTIPLIER, _lastTargetWorldPos.Value.Y * GRID_TO_WORLD_MULTIPLIER, 0));
             
             // Draw a red circle at the target point using Graphics.DrawLine (small circle)
-            DrawEllipseToWorld(new Vector3(_lastTargetWorldPos.Value.X, _lastTargetWorldPos.Value.Y, 0), 8, 16, 3, Color.Red);
+            // 🎯 COORDINATE FIX: Convert grid coordinates to world coordinates for drawing
+            DrawEllipseToWorld(new Vector3(_lastTargetWorldPos.Value.X * GRID_TO_WORLD_MULTIPLIER, _lastTargetWorldPos.Value.Y * GRID_TO_WORLD_MULTIPLIER, 0), 8, 16, 3, Color.Red);
             
             // Draw crosshair using Graphics.DrawLine
             var crosshairSize = 12;
@@ -3321,8 +3323,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         }
         
         // Convert world position to screen coordinates for clicking
-        // Use SAME coordinate system as visual circle (direct coordinates, no scaling)
-        var worldPos = new Vector3(targetPoint.Value.X, targetPoint.Value.Y, 0);
+        // 🎯 COORDINATE FIX: Convert grid coordinates to world coordinates before WorldToScreen
+        var worldPos = new Vector3(targetPoint.Value.X * GRID_TO_WORLD_MULTIPLIER, targetPoint.Value.Y * GRID_TO_WORLD_MULTIPLIER, 0);
         var screenPosSharp = GameController.IngameState.Camera.WorldToScreen(worldPos);
         var screenPos = new Vector2(screenPosSharp.X, screenPosSharp.Y);
         
