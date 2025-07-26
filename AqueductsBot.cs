@@ -1602,7 +1602,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var screenPosSharp = GameController.IngameState.Camera.WorldToScreen(worldPos);
             var screenPos = new Vector2(screenPosSharp.X, screenPosSharp.Y);
             
-            LogMessage($"[DEBUG INTERSECTION] Grid to world: ({intersectionPoint.Value.X:F1}, {intersectionPoint.Value.Y:F1}) → ({worldPos.X:F1}, {worldPos.Y:F1})");\n            LogMessage($"[DEBUG INTERSECTION] World to screen: ({worldPos.X:F1}, {worldPos.Y:F1}) → ({screenPos.X:F1}, {screenPos.Y:F1})");
+            LogMessage($"[DEBUG INTERSECTION] Grid to world: ({intersectionPoint.Value.X:F1}, {intersectionPoint.Value.Y:F1}) → ({worldPos.X:F1}, {worldPos.Y:F1})");
+            LogMessage($"[DEBUG INTERSECTION] World to screen: ({worldPos.X:F1}, {worldPos.Y:F1}) → ({screenPos.X:F1}, {screenPos.Y:F1})");
             
             // 5. Validate screen coordinates are reasonable
             var gameWindow = GameController.Window.GetWindowRectangle();
