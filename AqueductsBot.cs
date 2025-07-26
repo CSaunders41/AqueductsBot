@@ -17,6 +17,7 @@ using Vector2 = System.Numerics.Vector2;
 using Vector3 = System.Numerics.Vector3;
 using System.IO;
 using System.Linq;
+using System.Drawing; // For Graphics in GetDpiScale
 
 namespace AqueductsBot;
 
@@ -1837,105 +1838,99 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     {
         try
         {
-            // Using exact approach from working AreWeThereYet bot
-            LogMessage($"[MOUSE] Clicking at coordinates ({x}, {y}) using working bot method");
+            var windowRect = GameController.Window.GetWindowRectangle();
+            var dpiScale = GetDpiScale();
+            int absoluteX = (int)(x * dpiScale + windowRect.X);
+            int absoluteY = (int)(y * dpiScale + windowRect.Y);
+            LogMovementDebug($"[CLICK] Adjusted for DPI {dpiScale:F2}: Game ({x}, {y}) → Absolute ({absoluteX}, {absoluteY})");
+
+            var screenPos = new System.Numerics.Vector2(absoluteX, absoluteY);
             
-            // Step 1: Move cursor to position (like working bot)
-            SetCursorPos(x, y);
+            if (screenPos == _lastClickScreenPos)
+            {
+                _duplicateClickCount++;
+                if (_duplicateClickCount >= MAX_DUPLICATE_CLICKS)
+                {
+                    LogMovementDebug("[DUPLICATE CLICK] Too many clicks at same position - triggering stuck recovery");
+                    HandleStuckSituation();
+                    _duplicateClickCount = 0;
+                    return;
+                }
+            }
+            else
+            {
+                _duplicateClickCount = 0;
+            }
+            _lastClickScreenPos = screenPos;
+
+            if (!EnsureGameWindowFocused()) 
+            {
+                LogMovementDebug("[CLICK] Failed to focus game window");
+                return;
+            }
+
+            var playerPosBefore = GetPlayerPosition()?.GridPos;
             
-            // Step 2: Wait (like working bot's WaitTime)
-            Thread.Sleep(40); // Match working bot's 40ms delay
+            SetCursorPos(absoluteX, absoluteY);
             
-            // Step 3: Mouse down (exact same API call as working bot)
-            mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+            INPUT[] inputs = new INPUT[2];
+            inputs[0] = CreateMouseInput(MOUSEEVENTF_LEFTDOWN, 0, 0);
+            inputs[1] = CreateMouseInput(MOUSEEVENTF_LEFTUP, 0, 0);
+            SendInput(2, inputs, Marshal.SizeOf(typeof(INPUT)));
             
-            // Step 4: Hold down briefly (like working bot)
-            Thread.Sleep(40); // Match working bot's hold time
+            Thread.Sleep(100);
             
-            // Step 5: Mouse up (exact same API call as working bot)
-            mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-            
-            // Step 6: Final delay (like working bot)
-            Thread.Sleep(100); // Match working bot's final delay
-            
-            LogMessage("[MOUSE] Click sequence completed using working bot method");
+            var playerPosAfter = GetPlayerPosition()?.GridPos;
+            if (playerPosBefore.HasValue && playerPosAfter.HasValue && playerPosBefore.Value == playerPosAfter.Value)
+            {
+                LogMovementDebug($"[INPUT FAILURE] Character did not move after clicking at ({x}, {y})");
+            }
         }
         catch (Exception ex)
         {
             LogError($"Error clicking at ({x}, {y}): {ex.Message}");
         }
     }
-    
-    // Remove the complex SendInput method since working bot uses simple mouse_event
-    private void ClickWithSendInput(int x, int y)
+
+    private INPUT CreateMouseInput(uint flags, int dx, int dy)
     {
-        // This method is no longer needed - working bot uses mouse_event
-        LogMessage("[MOUSE] SendInput method disabled - using working bot approach instead");
+        return new INPUT
+        {
+            Type = INPUT_MOUSE,
+            Data = new INPUTUNION 
+            { 
+                Mouse = new MOUSEINPUT 
+                { 
+                    Flags = flags, 
+                    Dx = dx, 
+                    Dy = dy,
+                    MouseData = 0,
+                    Time = 0,
+                    ExtraInfo = IntPtr.Zero 
+                } 
+            }
+        };
     }
-    
-    private void PressKey(Keys key)
+
+    private bool EnsureGameWindowFocused()
     {
-        try
+        IntPtr poeWindow = FindWindow(null, "Path of Exile");
+        if (poeWindow == IntPtr.Zero) return false;
+        
+        if (GetForegroundWindow() != poeWindow)
         {
-            byte vkCode = (byte)key;
-            LogMessage($"[KEYBOARD] Pressing key {key} (VK Code: {vkCode})");
-            
-            // Method 1: Try keybd_event
-            keybd_event(vkCode, 0, 0, 0); // Key down
-            Thread.Sleep(50); // Hold key briefly
-            keybd_event(vkCode, 0, KEYEVENTF_KEYUP_SENDINPUT, 0); // Key up
-            
-            LogMessage($"[KEYBOARD] Key press sequence completed for {key}");
+            SetForegroundWindow(poeWindow);
+            Thread.Sleep(50);
         }
-        catch (Exception ex)
-        {
-            LogError($"Error pressing key {key}: {ex.Message}");
-        }
+        
+        return GetForegroundWindow() == poeWindow;
     }
-    
-    private void PressAndHoldKey(Keys key)
+
+    private float GetDpiScale()
     {
-        try
+        using (var graphics = Graphics.FromHwnd(IntPtr.Zero))
         {
-            byte vkCode = (byte)key;
-            LogMessage($"[KEYBOARD] *** TESTING KEY PRESS WITH PROPER WINDOW FOCUS FOR {key} ***");
-            
-            // CRITICAL: Set focus to Path of Exile window before pressing key
-            LogMessage("[KEYBOARD] Step 1: Finding Path of Exile window...");
-            IntPtr poeWindow = FindWindow(null, "Path of Exile");
-            if (poeWindow == IntPtr.Zero)
-            {
-                LogMessage("[KEYBOARD] Path of Exile window not found, trying alternative names...");
-                poeWindow = FindWindow("POEWindowClass", null);
-            }
-            
-            if (poeWindow != IntPtr.Zero)
-            {
-                LogMessage($"[KEYBOARD] Step 2: Found PoE window handle: {poeWindow}");
-                LogMessage("[KEYBOARD] Step 3: Setting window focus...");
-                
-                // Bring window to foreground and set focus
-                SetForegroundWindow(poeWindow);
-                Thread.Sleep(50); // Small delay for focus to take effect
-                
-                LogMessage("[KEYBOARD] Step 4: Window focus set - now pressing key");
-            }
-            else
-            {
-                LogMessage("[KEYBOARD] WARNING: Could not find Path of Exile window - key press may fail");
-            }
-            
-            // Now press the key with the exact AreWeThereYet method
-            LogMessage($"[KEYBOARD] Step 5: Pressing {key} with EXTENDEDKEY flags...");
-            keybd_event(vkCode, 0, 0x0001, 0); // Key down with EXTENDEDKEY
-            Thread.Sleep(20);
-            keybd_event(vkCode, 0, 0x0003, 0); // Key up with EXTENDEDKEY | KEYUP
-            
-            LogMessage($"[KEYBOARD] *** KEY PRESS COMPLETED FOR {key} WITH PROPER FOCUS - CHECK CHARACTER MOVEMENT! ***");
-        }
-        catch (Exception ex)
-        {
-            LogError($"Error pressing and holding key {key}: {ex.Message}");
+            return graphics.DpiX / 96f;
         }
     }
     
@@ -2027,7 +2022,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     }
     
     // Alternative keyboard input method using SendInput (more reliable)
-    [DllImport("user32.dll")]
+    [DllImport("user32.dll", SetLastError = true)]
     private static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
     
     [DllImport("user32.dll")]
@@ -2938,7 +2933,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             
             // Skip very short segments to avoid numerical issues
             var segmentLength = System.Numerics.Vector2.Distance(currentPoint, nextPoint);
-            if (segmentLength < 0.5f) continue; // Lowered from 2f to 0.5f to allow short path segments
+            if (segmentLength < Settings.ConfigurationSettings.MinSegmentLength.Value) continue;
             
             // Find intersection of line segment with circle around player
             var intersection = FindLineCircleIntersection(currentPoint, nextPoint, playerWorldPos, radius);
@@ -3260,7 +3255,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     // Duplicate click detection
     private System.Numerics.Vector2 _lastClickScreenPos = System.Numerics.Vector2.Zero;
     private int _duplicateClickCount = 0;
-    private const int MAX_DUPLICATE_CLICKS = 2;
+    private const int MAX_DUPLICATE_CLICKS = 3;
     
     // Circle drawing debug tracking
     private DateTime _lastCircleErrorLog = DateTime.MinValue;
@@ -3304,27 +3299,22 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
 
     private void LogMovementDebug(string message)
     {
-        // TEMP DEBUG: Always write to file to help diagnose the issue
-        try
-        {
-            lock (_movementDebugLock)
-            {
-                var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
-                var settingStatus = Settings.DebugSettings.SaveMovementDebugToFile.Value ? "ENABLED" : "DISABLED";
-                var fullMessage = $"[{timestamp}] [SaveToFile:{settingStatus}] {message}{Environment.NewLine}";
-                File.AppendAllText(_movementDebugFilePath, fullMessage);
-            }
-        }
-        catch (Exception ex)
-        {
-            // If file logging fails, continue without file logging
-            LogMessage($"[FILE LOG ERROR] Could not write to movement debug file: {ex.Message}");
-        }
-        
-        // Also log to console if debug messages are enabled
         if (Settings.DebugSettings.DebugMode.Value)
-        {
             LogMessage(message);
+
+        if (!Settings.DebugSettings.SaveMovementDebugToFile.Value) return;
+
+        lock (_movementDebugLock)
+        {
+            var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
+            _movementDebugBuffer.Add($"[{timestamp}] {message}");
+
+            if (DateTime.Now.Subtract(_lastFileWrite).TotalSeconds >= 1)
+            {
+                File.AppendAllText(_movementDebugFilePath, string.Join(Environment.NewLine, _movementDebugBuffer) + Environment.NewLine);
+                _movementDebugBuffer.Clear();
+                _lastFileWrite = DateTime.Now;
+            }
         }
     }
 
@@ -3399,5 +3389,469 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         
         LogMovementDebug($"[ON-SCREEN PERIMETER] ❌ No direction found within screen bounds even with radius reduction");
         return null;
+    }
+
+    private bool IsPlayerStuck()
+    {
+        var currentPos = GetPlayerPosition()?.GridPos;
+        if (currentPos == null) return false;
+
+        var currentPosNum = new System.Numerics.Vector2(currentPos.Value.X, currentPos.Value.Y);
+        _stuckPositionHistory.Add(currentPosNum);
+        if (_stuckPositionHistory.Count > Settings.MovementSettings.StuckDetectionThreshold.Value)
+            _stuckPositionHistory.RemoveAt(0);
+
+        if (_stuckPositionHistory.Count < Settings.MovementSettings.StuckDetectionThreshold.Value)
+            return false;
+
+        var avgPos = new System.Numerics.Vector2(
+            _stuckPositionHistory.Average(p => p.X),
+            _stuckPositionHistory.Average(p => p.Y)
+        );
+        var maxDistance = _stuckPositionHistory.Max(p => System.Numerics.Vector2.Distance(p, avgPos));
+        return maxDistance < Settings.MovementSettings.MovementPrecision.Value;
+    }
+
+    private void MoveAlongPath()
+    {
+        if (IsPlayerStuck())
+        {
+            HandleStuckSituation();
+            return;
+        }
+        if (_currentPath == null || _currentPath.Count == 0)
+        {
+            LogMessage("[PATH] ❌ No current path to follow");
+            _currentState = BotState.WaitingForAqueducts;
+            return;
+        }
+
+        var playerPos = GetPlayerPosition();
+        if (playerPos == null)
+        {
+            LogMessage("[POSITION] ❌ Cannot get player position");
+            return;
+        }
+
+        var playerWorldPos = new System.Numerics.Vector2(playerPos.GridPos.X, playerPos.GridPos.Y);
+
+        // PERIMETER-BASED NAVIGATION: Always click at pursuit circle perimeter
+        var pursuitRadius = Settings.MovementSettings.PursuitRadius.Value;
+        LogMovementDebug($"[PERIMETER START] Finding perimeter target with radius {pursuitRadius:F1} from path index {_currentPathIndex}");
+        
+        var targetPoint = FindPerimeterTarget(_currentPath, _currentPathIndex);
+        
+        if (!targetPoint.HasValue)
+        {
+            LogMovementDebug("[PERIMETER] ❌ CRITICAL: Perimeter targeting failed - trying fallback");
+            
+            // Simple fallback - advance path index and target destination directly
+            _currentPathIndex = Math.Min(_currentPathIndex + 3, _currentPath.Count - 1);
+            
+            if (_currentPathIndex >= _currentPath.Count - 1)
+            {
+                LogMessage("[PERIMETER] 📍 Reached end of path");
+                _currentState = BotState.AtAreaExit;
+                return;
+            }
+            
+            // MAINTAIN PERIMETER DISTANCE: Try to find ANY on-screen perimeter point
+            var emergencyPerimeterPoint = FindOnScreenPerimeterPoint(playerWorldPos, pursuitRadius);
+            if (emergencyPerimeterPoint.HasValue)
+            {
+                targetPoint = emergencyPerimeterPoint.Value;
+                var perimeterDistance = System.Numerics.Vector2.Distance(playerWorldPos, targetPoint.Value);
+                LogMovementDebug($"[PERIMETER] 🔧 Using emergency perimeter fallback: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {perimeterDistance:F1}");
+            }
+            else
+            {
+                // Last resort - but still try to maintain reasonable distance
+                var destination = _currentPath[_currentPath.Count - 1];
+                var destinationDirection = destination - new Vector2i((int)playerWorldPos.X, (int)playerWorldPos.Y);
+                var destinationDistance = new System.Numerics.Vector2(destinationDirection.X, destinationDirection.Y).Length();
+                
+                if (destinationDistance < pursuitRadius * 0.5f)
+                {
+                    // Destination too close - project it out to at least half pursuit radius
+                    var normalizedDestDir = System.Numerics.Vector2.Normalize(new System.Numerics.Vector2(destinationDirection.X, destinationDirection.Y));
+                    var adjustedTarget = playerWorldPos + (normalizedDestDir * pursuitRadius * 0.6f);
+                    targetPoint = adjustedTarget;
+                    LogMovementDebug($"[PERIMETER] 🔧 Using projected destination: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {pursuitRadius * 0.6f:F1}");
+                }
+                else
+                {
+                    targetPoint = new System.Numerics.Vector2(destination.X, destination.Y);
+                    LogMovementDebug($"[PERIMETER] 🔧 Using destination fallback: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {destinationDistance:F1}");
+                }
+            }
+        }
+        else
+        {
+            var actualDistance = System.Numerics.Vector2.Distance(playerWorldPos, targetPoint.Value);
+            LogMovementDebug($"[PERIMETER SUCCESS] ✅ Target at perimeter: ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {actualDistance:F1}, expected: {pursuitRadius:F1}");
+            
+            // Validation: Distance should match pursuit radius exactly (within small tolerance)
+            if (Math.Abs(actualDistance - pursuitRadius) > 5f)
+            {
+                LogMovementDebug($"[PERIMETER WARNING] ⚠️ Distance mismatch: expected {pursuitRadius:F1}, got {actualDistance:F1}");
+            }
+        }
+
+        // 🎯 VALIDATE PATH INTERSECTION IS CAMERA-VISIBLE
+        var currentDistance = System.Numerics.Vector2.Distance(playerWorldPos, targetPoint.Value);
+        LogMovementDebug($"[PATH INTERSECTION] Target at ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {currentDistance:F1}");
+        
+        // Check if the path intersection point is visible on screen
+        // Use SAME coordinate system as visual circle (direct coordinates, no scaling)
+        var testWorldPos = new Vector3(targetPoint.Value.X, targetPoint.Value.Y, 0);
+        var testScreenPos = GameController.IngameState.Camera.WorldToScreen(testWorldPos);
+        var gameWindow = GameController.Window.GetWindowRectangle();
+        var margin = 100f;
+        var isVisible = testScreenPos.X >= margin && testScreenPos.X <= gameWindow.Width - margin && 
+                       testScreenPos.Y >= margin && testScreenPos.Y <= gameWindow.Height - margin;
+        
+        if (!isVisible)
+        {
+            LogMovementDebug($"[PATH INTERSECTION] ⚠️ Intersection off-screen at ({testScreenPos.X:F0}, {testScreenPos.Y:F0}) - finding camera-visible intersection");
+            
+                         // Try to find a path intersection with progressively smaller radii until we get one that's visible
+             var baseRadius = Settings.MovementSettings.PursuitRadius.Value;
+             System.Numerics.Vector2? visibleIntersection = null;
+             
+             LogMovementDebug($"[CAMERA AWARE] 🔍 Original intersection off-screen, trying smaller radii from {baseRadius:F1}");
+             
+             for (float radiusMultiplier = 0.8f; radiusMultiplier >= 0.3f; radiusMultiplier -= 0.1f)
+             {
+                 var testRadius = baseRadius * radiusMultiplier;
+                 LogMovementDebug($"[CAMERA AWARE] Testing radius {testRadius:F1} (multiplier: {radiusMultiplier:F1})");
+                 
+                 var testIntersection = FindPathIntersectionWithSpecificRadius(_currentPath, _currentPathIndex, testRadius);
+                 
+                 if (testIntersection.HasValue)
+                 {
+                     // Test if this intersection is visible
+                     // Use SAME coordinate system as visual circle (direct coordinates, no scaling)
+                     var testWorld = new Vector3(testIntersection.Value.X, testIntersection.Value.Y, 0);
+                     var testScreen = GameController.IngameState.Camera.WorldToScreen(testWorld);
+                     var testIsVisible = testScreen.X >= margin && testScreen.X <= gameWindow.Width - margin && 
+                                        testScreen.Y >= margin && testScreen.Y <= gameWindow.Height - margin;
+                     
+                     LogMovementDebug($"[CAMERA AWARE] Intersection at ({testIntersection.Value.X:F0}, {testIntersection.Value.Y:F0}), screen: ({testScreen.X:F0}, {testScreen.Y:F0}), visible: {testIsVisible}");
+                     
+                     if (testIsVisible)
+                     {
+                         visibleIntersection = testIntersection;
+                         LogMovementDebug($"[CAMERA AWARE] ✅ SELECTED visible intersection with radius {testRadius:F1}: ({testIntersection.Value.X:F0}, {testIntersection.Value.Y:F0})");
+                         break;
+                     }
+                     else
+                     {
+                         LogMovementDebug($"[CAMERA AWARE] ❌ Intersection still not visible, trying smaller radius");
+                     }
+                 }
+                 else
+                 {
+                     LogMovementDebug($"[CAMERA AWARE] ❌ No intersection found with radius {testRadius:F1}");
+                 }
+             }
+            
+            if (visibleIntersection.HasValue)
+            {
+                targetPoint = visibleIntersection.Value;
+            }
+            else
+            {
+                LogMovementDebug($"[PATH INTERSECTION] ⚠️ No camera-visible intersection found, keeping original target");
+            }
+        }
+        else
+        {
+            LogMovementDebug($"[PATH INTERSECTION] ✅ Intersection is camera-visible");
+        }
+        
+        // Convert world position to screen coordinates for clicking
+        // Use SAME coordinate system as visual circle (direct coordinates, no scaling)
+        var worldPos = new Vector3(targetPoint.Value.X, targetPoint.Value.Y, 0);
+        var screenPosSharp = GameController.IngameState.Camera.WorldToScreen(worldPos);
+        var screenPos = new Vector2(screenPosSharp.X, screenPosSharp.Y);
+        
+        // 🖥️ CRITICAL: VALIDATE SCREEN COORDINATES BEFORE CLICKING
+        var finalGameWindow = GameController.Window.GetWindowRectangle();
+        var isWithinGameWindow = screenPos.X >= 0 && screenPos.X <= finalGameWindow.Width && 
+                                screenPos.Y >= 0 && screenPos.Y <= finalGameWindow.Height;
+        
+        LogMovementDebug($"[SCREEN VALIDATION] Game window: {finalGameWindow.Width}x{finalGameWindow.Height}");
+        LogMovementDebug($"[SCREEN VALIDATION] Target screen: ({screenPos.X:F0}, {screenPos.Y:F0})");
+        LogMovementDebug($"[SCREEN VALIDATION] Within window: {isWithinGameWindow}");
+        
+        if (!isWithinGameWindow)
+        {
+            LogMovementDebug($"[SCREEN VALIDATION] ⚠️ Target outside game window! Clamping to safe bounds.");
+            
+            // Clamp to safe area within game window (with margin for safety)
+            var clampMargin = 50f;
+            var safeX = Math.Max(clampMargin, Math.Min(finalGameWindow.Width - clampMargin, screenPos.X));
+            var safeY = Math.Max(clampMargin, Math.Min(finalGameWindow.Height - clampMargin, screenPos.Y));
+            
+            LogMovementDebug($"[SCREEN VALIDATION] ✅ Clamped: ({screenPos.X:F0}, {screenPos.Y:F0}) → ({safeX:F0}, {safeY:F0})");
+            screenPos = new Vector2(safeX, safeY);
+        }
+        else
+        {
+            LogMovementDebug($"[SCREEN VALIDATION] ✅ Target within game window bounds");
+        }
+        
+        var distanceToTarget = System.Numerics.Vector2.Distance(playerWorldPos, targetPoint.Value);
+        
+        // 📏 FINAL VALIDATION: Log exactly where we're clicking relative to player and circle
+        var playerScreenPos = GetPlayerScreenPosition();
+        if (playerScreenPos.HasValue)
+        {
+            var screenDistance = Vector2.Distance(screenPos, playerScreenPos.Value);
+            LogMovementDebug($"[CLICK VALIDATION] Player screen: ({playerScreenPos.Value.X:F0}, {playerScreenPos.Value.Y:F0})");
+            LogMovementDebug($"[CLICK VALIDATION] Final target screen: ({screenPos.X:F0}, {screenPos.Y:F0})");
+            LogMovementDebug($"[CLICK VALIDATION] Screen distance: {screenDistance:F1} pixels");
+            LogMovementDebug($"[CLICK VALIDATION] World distance: {distanceToTarget:F1} units (expected: {Settings.MovementSettings.PursuitRadius.Value:F1} - perimeter target)");
+            
+            // Additional safety check - if screen distance is way too large, something is wrong
+            if (screenDistance > 1200) // Increased from 800 to 1200 pixels - less restrictive
+            {
+                LogMovementDebug($"[CLICK VALIDATION] ❌ BLOCKED: Screen distance too large ({screenDistance:F1} > 1200 pixels) - coordinate issue!");
+                return; // Skip this movement to prevent off-screen clicking
+            }
+            LogMovementDebug($"[CLICK VALIDATION] ✅ Screen distance check passed ({screenDistance:F1} <= 1200 pixels)");
+        }
+        
+        // Update path progress tracking
+        UpdatePathProgress(targetPoint.Value, distanceToTarget);
+        
+        // STUCK DETECTION: Force advancement if targeting same point repeatedly
+        var targetDistance = System.Numerics.Vector2.Distance(_lastTargetPoint, targetPoint.Value);
+        var remainingPathWaypoints = _currentPath.Count - _currentPathIndex - 1;
+        
+        if (targetDistance < 5f) // Same target (within 5 units)
+        {
+            _stuckTargetCount++;
+            
+            // DYNAMIC STUCK THRESHOLD: Be more sensitive near end of path
+            var baseStuckThreshold = Settings.MovementSettings.StuckDetectionThreshold.Value;
+            var stuckThreshold = remainingPathWaypoints <= 5 ? Math.Max(baseStuckThreshold - 2, 3) : baseStuckThreshold;
+            
+            if (_stuckTargetCount >= stuckThreshold)
+            {
+                LogMovementDebug($"[STUCK DETECTION] 🚨 Stuck on same target for {_stuckTargetCount} attempts (threshold: {stuckThreshold}) - forcing advancement!");
+                LogMovementDebug($"[STUCK DEBUG] 📍 Player position hasn't changed from ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}) - character may be physically blocked!");
+                
+                // SMART ADVANCEMENT: Less aggressive near end of path  
+                var baseAdvancement = (int)(Settings.MovementSettings.PathAdvancementDistance.Value / 25f); // Convert pixels to waypoint steps
+                var forceAdvancement = remainingPathWaypoints <= 5 ? Math.Max(baseAdvancement / 2, 3) : baseAdvancement;
+                _currentPathIndex = Math.Min(_currentPathIndex + forceAdvancement, _currentPath.Count - 1);
+                _stuckTargetCount = 0;
+                _lastPathAdvancement = DateTime.Now;
+                
+                LogMovementDebug($"[FORCED ADVANCEMENT] 📍 Forced advance by {forceAdvancement} to path index {_currentPathIndex}/{_currentPath.Count}");
+                
+                // If we're at the very end after forced advancement, check for completion
+                if (_currentPathIndex >= _currentPath.Count - 1)
+                {
+                    var distanceToFinalDestination = System.Numerics.Vector2.Distance(playerWorldPos, new System.Numerics.Vector2(_currentPath[_currentPath.Count - 1].X, _currentPath[_currentPath.Count - 1].Y));
+                    if (distanceToFinalDestination < 30f)
+                    {
+                        LogMessage($"[STUCK RESOLUTION] 🎉 Forced to path end and close enough ({distanceToFinalDestination:F1} < 30) - completing path!");
+                        _currentState = BotState.AtAreaExit;
+                        return;
+                    }
+                }
+            }
+        }
+        else
+        {
+            _stuckTargetCount = 0; // Reset if we have a new target
+        }
+        _lastTargetPoint = targetPoint.Value;
+        
+        LogMessage($"[PURSUIT] 🎯 Moving to intersection point ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {distanceToTarget:F1}");
+
+        // IMPROVED ADVANCEMENT: Advance based on progress along path direction, not just proximity
+        bool shouldAdvance = false;
+        string advanceReason = "";
+        
+        // Method 1: Close to target (original logic)
+        if (distanceToTarget < 30f)
+        {
+            shouldAdvance = true;
+            advanceReason = $"close to target (distance: {distanceToTarget:F1} < 30)";
+        }
+        // Method 2: Player has moved past the current path segment (NEW!)
+        else if (_currentPathIndex + 1 < _currentPath.Count)
+        {
+            var currentWaypoint = new System.Numerics.Vector2(_currentPath[_currentPathIndex].X, _currentPath[_currentPathIndex].Y);
+            var nextWaypoint = new System.Numerics.Vector2(_currentPath[_currentPathIndex + 1].X, _currentPath[_currentPathIndex + 1].Y);
+            
+            // Calculate if player has moved "past" the current path segment
+            var pathDirection = nextWaypoint - currentWaypoint;
+            var playerDirection = playerWorldPos - currentWaypoint;
+            
+            // Use dot product to see if player is ahead of the current waypoint along the path
+            var pathSegmentLength = pathDirection.Length();
+            var normalizedPathDirection = pathSegmentLength > 0 ? pathDirection / pathSegmentLength : System.Numerics.Vector2.Zero;
+            var dot = System.Numerics.Vector2.Dot(normalizedPathDirection, playerDirection);
+            
+            if (dot > pathSegmentLength * 0.5f) // Player is more than halfway past this waypoint
+            {
+                shouldAdvance = true;
+                advanceReason = $"moved past waypoint (progress: {dot:F1}/{pathSegmentLength:F1})";
+            }
+        }
+        
+        if (shouldAdvance)
+        {
+            LogMovementDebug($"[PURSUIT] ✅ Advancing path - {advanceReason}");
+            
+            // IMPROVED END-OF-PATH HANDLING: Be more conservative near the end
+            var remainingWaypoints = _currentPath.Count - _currentPathIndex - 1;
+            int advancementAmount;
+            
+            if (remainingWaypoints <= 3)
+            {
+                // Very close to end - minimal advancement to avoid overshooting
+                advancementAmount = 1;
+                LogMessage($"[PATH ADVANCEMENT] 🎯 Near path end ({remainingWaypoints} remaining) - advancing cautiously by {advancementAmount}");
+            }
+            else if (remainingWaypoints <= 10)
+            {
+                // Approaching end - moderate advancement
+                advancementAmount = distanceToTarget < 15f ? 3 : 2;
+                LogMessage($"[PATH ADVANCEMENT] 🎯 Approaching path end ({remainingWaypoints} remaining) - advancing by {advancementAmount}");
+            }
+            else
+            {
+                // Normal advancement for middle of path
+                advancementAmount = distanceToTarget < 15f ? 5 : 3;
+                LogMessage($"[PATH ADVANCEMENT] 📍 Normal advancement ({remainingWaypoints} remaining) - advancing by {advancementAmount}");
+            }
+            
+            var newIndex = Math.Min(_currentPathIndex + advancementAmount, _currentPath.Count - 1);
+            
+            // Check if we're actually at the final destination
+            if (newIndex >= _currentPath.Count - 1 && distanceToTarget < 25f)
+            {
+                LogMessage($"[PATH COMPLETION] 🎉 Reached final destination! Distance: {distanceToTarget:F1} < 25");
+                _currentState = BotState.AtAreaExit;
+                return;
+            }
+            
+            _currentPathIndex = newIndex;
+            LogMovementDebug($"[PATH ADVANCEMENT] 📍 Advanced path index to {_currentPathIndex}/{_currentPath.Count} (advanced by {advancementAmount}) - {advanceReason}");
+            _lastIntersectionPoint = targetPoint.Value;
+            
+            // Still try to move to get even closer if not extremely close
+            if (distanceToTarget > 8f) // Reduced threshold for final movements
+            {
+                // Execute movement to get closer
+                LogMessage($"[MOVEMENT] 🎮 Fine-tuning: cursor to ({screenPos.X:F0}, {screenPos.Y:F0}) + press T");
+                ClickAt((int)screenPos.X, (int)screenPos.Y);
+                PressAndHoldKey(Keys.T);
+                _lastMovementTime = DateTime.Now;
+            }
+            return;
+        }
+
+        // 🔍 DEBUG: Check all movement blocking conditions
+        LogMovementDebug($"[MOVEMENT DEBUG] 🔍 Checking movement conditions:");
+        LogMovementDebug($"[MOVEMENT DEBUG] - Distance to target: {distanceToTarget:F1}");
+        LogMovementDebug($"[MOVEMENT DEBUG] - Should advance: {shouldAdvance}");
+        
+        // Check if we should skip movement due to being too close for micro-adjustments
+        if (distanceToTarget < 10f)
+        {
+            LogMovementDebug($"[PURSUIT] ⏸️ BLOCKED: Very close to target ({distanceToTarget:F1} < 10), skipping movement");
+            return;
+        }
+        LogMovementDebug($"[MOVEMENT DEBUG] ✅ Distance check passed ({distanceToTarget:F1} >= 10)");
+
+        // Calculate movement delay based on distance
+        var movementDelay = CalculateImprovedMovementDelay(distanceToTarget);
+        
+        // Check movement delay timing
+        var timeSinceLastMovement = (DateTime.Now - _lastMovementTime).TotalMilliseconds;
+        LogMovementDebug($"[MOVEMENT DEBUG] - Movement delay: {movementDelay}ms");
+        LogMovementDebug($"[MOVEMENT DEBUG] - Time since last movement: {timeSinceLastMovement:F0}ms");
+        
+        if (timeSinceLastMovement < movementDelay)
+        {
+            var remainingDelay = movementDelay - timeSinceLastMovement;
+            LogMovementDebug($"[MOVEMENT] ⏳ BLOCKED: Waiting {remainingDelay:F0}ms before next movement (last: {timeSinceLastMovement:F0}ms ago)");
+            return;
+        }
+        LogMovementDebug($"[MOVEMENT DEBUG] ✅ Timing check passed ({timeSinceLastMovement:F0}ms >= {movementDelay}ms)");
+
+        // Execute the movement
+        _lastMovementTime = DateTime.Now;
+        
+        // 🖥️ FINAL SAFETY CHECK: Verify coordinates before clicking
+        LogMovementDebug($"[MOVEMENT] 🎮 EXECUTING MOVEMENT: cursor to ({screenPos.X:F0}, {screenPos.Y:F0}) + press T (distance: {distanceToTarget:F1})");
+        
+        if (Settings.DebugSettings.ShowMovementDebug.Value)
+        {
+            LogMovementDebug($"[MOVEMENT DEBUG] 📍 Player at ({playerWorldPos.X:F0}, {playerWorldPos.Y:F0}) → Target ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0})");
+        }
+        
+        // Additional sanity check on final screen coordinates
+        if (screenPos.X < -1000 || screenPos.X > 5000 || screenPos.Y < -1000 || screenPos.Y > 5000)
+        {
+            LogMovementDebug($"[MOVEMENT] ❌ BLOCKED: Insane screen coordinates ({screenPos.X:F0}, {screenPos.Y:F0}) - ABORTING CLICK!");
+            return; // Don't click with crazy coordinates
+        }
+        LogMovementDebug($"[MOVEMENT DEBUG] ✅ Final coordinate check passed ({screenPos.X:F0}, {screenPos.Y:F0})");
+        
+        // Store target position for visual display
+        _lastTargetWorldPos = targetPoint.Value;
+        
+        // DUPLICATE CLICK DETECTION
+        var currentScreenPos = new System.Numerics.Vector2(screenPos.X, screenPos.Y);
+        var clickTolerance = 10f; // 10 pixel tolerance for "same" click
+        var isSameClick = System.Numerics.Vector2.Distance(currentScreenPos, _lastClickScreenPos) <= clickTolerance;
+        
+        if (isSameClick)
+        {
+            _duplicateClickCount++;
+            LogMovementDebug($"[DUPLICATE DETECTION] 🚨 Same click location detected! Count: {_duplicateClickCount}/{MAX_DUPLICATE_CLICKS}");
+            
+            if (_duplicateClickCount >= MAX_DUPLICATE_CLICKS)
+            {
+                LogMovementDebug($"[DUPLICATE DETECTION] ⚠️ MAX DUPLICATES REACHED - FORCING PATH ADVANCEMENT!");
+                
+                // Force advance the path significantly to break the loop
+                var oldIndex = _currentPathIndex;
+                _currentPathIndex = Math.Min(_currentPathIndex + 10, _currentPath.Count - 1);
+                
+                LogMovementDebug($"[FORCED ADVANCEMENT] 📍 Advanced path from {oldIndex} to {_currentPathIndex} due to duplicate clicks");
+                
+                // Reset duplicate detection
+                _duplicateClickCount = 0;
+                _lastClickScreenPos = System.Numerics.Vector2.Zero;
+                
+                // Don't execute the click, just return to recalculate with new path index
+                LogMovementDebug($"[DUPLICATE DETECTION] ❌ SKIPPING CLICK - Recalculating with advanced path");
+                return;
+            }
+        }
+        else
+        {
+            // Different click location, reset counter
+            _duplicateClickCount = 0;
+            LogMovementDebug($"[DUPLICATE DETECTION] ✅ New click location - resetting duplicate counter");
+        }
+        
+        // Update last click position
+        _lastClickScreenPos = currentScreenPos;
+        
+        LogMovementDebug($"[MOVEMENT] ✅ SAFE CLICK: Executing click at ({screenPos.X:F0}, {screenPos.Y:F0})");
+        ClickAt((int)screenPos.X, (int)screenPos.Y);
+        PressAndHoldKey(Keys.T);
+
+        // Update stuck detection
+        UpdateStuckDetection(playerWorldPos);
     }
 }
