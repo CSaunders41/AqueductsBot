@@ -109,6 +109,11 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     private DateTime _lastMovementTime = DateTime.MinValue;
     private List<System.Numerics.Vector2> _stuckPositionHistory = new List<System.Numerics.Vector2>();
     
+    // 🎯 COORDINATE SYSTEM FIX: Grid to World conversion constants
+    private const int TILE_TO_GRID_CONVERSION = 23;
+    private const int TILE_TO_WORLD_CONVERSION = 250;
+    private const float GRID_TO_WORLD_MULTIPLIER = TILE_TO_WORLD_CONVERSION / (float)TILE_TO_GRID_CONVERSION;
+    
     // WAYPOINT STABILITY: Prevent rapid re-evaluation
     private DateTime _lastWaypointSkip = DateTime.MinValue;
     private int _lastOptimizedWaypoint = -1;
@@ -1292,10 +1297,10 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             var targetPoint = _currentPath[checkIndex];
             
             // Convert to screen coordinates
-            // Use SAME coordinate system as visual circle (direct coordinates, no scaling)
+            // 🎯 COORDINATE FIX: Convert grid coordinates to world coordinates before WorldToScreen
             var worldPos = new Vector3(
-                targetPoint.X,
-                targetPoint.Y,
+                targetPoint.X * GRID_TO_WORLD_MULTIPLIER,
+                targetPoint.Y * GRID_TO_WORLD_MULTIPLIER,
                 0
             );
             
@@ -1592,11 +1597,12 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             }
             
             // 4. Convert world coordinates to screen coordinates
-            var worldPos = new Vector3(intersectionPoint.Value.X, intersectionPoint.Value.Y, 0);
+            // 🎯 COORDINATE FIX: Convert grid coordinates to world coordinates before WorldToScreen
+            var worldPos = new Vector3(intersectionPoint.Value.X * GRID_TO_WORLD_MULTIPLIER, intersectionPoint.Value.Y * GRID_TO_WORLD_MULTIPLIER, 0);
             var screenPosSharp = GameController.IngameState.Camera.WorldToScreen(worldPos);
             var screenPos = new Vector2(screenPosSharp.X, screenPosSharp.Y);
             
-            LogMessage($"[DEBUG INTERSECTION] World to screen: ({worldPos.X:F1}, {worldPos.Y:F1}) → ({screenPos.X:F1}, {screenPos.Y:F1})");
+            LogMessage($"[DEBUG INTERSECTION] Grid to world: ({intersectionPoint.Value.X:F1}, {intersectionPoint.Value.Y:F1}) → ({worldPos.X:F1}, {worldPos.Y:F1})");\n            LogMessage($"[DEBUG INTERSECTION] World to screen: ({worldPos.X:F1}, {worldPos.Y:F1}) → ({screenPos.X:F1}, {screenPos.Y:F1})");
             
             // 5. Validate screen coordinates are reasonable
             var gameWindow = GameController.Window.GetWindowRectangle();
@@ -3246,8 +3252,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         LogMovementDebug($"[PATH INTERSECTION] Target at ({targetPoint.Value.X:F0}, {targetPoint.Value.Y:F0}), distance: {currentDistance:F1}");
         
         // Check if the path intersection point is visible on screen
-        // Use SAME coordinate system as visual circle (direct coordinates, no scaling)
-        var testWorldPos = new Vector3(targetPoint.Value.X, targetPoint.Value.Y, 0);
+        // 🎯 COORDINATE FIX: Convert grid coordinates to world coordinates before WorldToScreen
+        var testWorldPos = new Vector3(targetPoint.Value.X * GRID_TO_WORLD_MULTIPLIER, targetPoint.Value.Y * GRID_TO_WORLD_MULTIPLIER, 0);
         var testScreenPos = GameController.IngameState.Camera.WorldToScreen(testWorldPos);
         var gameWindow = GameController.Window.GetWindowRectangle();
         var margin = 100f;
@@ -3274,8 +3280,8 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                  if (testIntersection.HasValue)
                  {
                      // Test if this intersection is visible
-                     // Use SAME coordinate system as visual circle (direct coordinates, no scaling)
-                     var testWorld = new Vector3(testIntersection.Value.X, testIntersection.Value.Y, 0);
+                     // 🎯 COORDINATE FIX: Convert grid coordinates to world coordinates before WorldToScreen
+                     var testWorld = new Vector3(testIntersection.Value.X * GRID_TO_WORLD_MULTIPLIER, testIntersection.Value.Y * GRID_TO_WORLD_MULTIPLIER, 0);
                      var testScreen = GameController.IngameState.Camera.WorldToScreen(testWorld);
                      var testIsVisible = testScreen.X >= margin && testScreen.X <= gameWindow.Width - margin && 
                                         testScreen.Y >= margin && testScreen.Y <= gameWindow.Height - margin;
