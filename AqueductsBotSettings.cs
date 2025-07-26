@@ -104,6 +104,9 @@ public class DebugSettings
     
     [Menu("Save Movement Debug To File", "Save movement and pathfinding debug messages to a log file")]
     public ToggleNode SaveMovementDebugToFile { get; set; } = new ToggleNode(false);
+    
+    [Menu("Debug Intersection Hotkey", "Hotkey to move mouse to pursuit circle & radar path intersection for debugging")]
+    public HotkeyNode DebugIntersectionHotkey { get; set; } = new HotkeyNode(Keys.F3);
 }
 
 [Submenu]

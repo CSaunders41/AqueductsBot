@@ -297,6 +297,13 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                 EmergencyStop();
             }
             
+            // NEW: Debug intersection hotkey
+            if (Settings.DebugSettings.DebugIntersectionHotkey.PressedOnce())
+            {
+                LogImportant($"[DEBUG HOTKEY] {Settings.DebugSettings.DebugIntersectionHotkey.Value} pressed - Finding pursuit circle intersection...");
+                DebugIntersectionPoint();
+            }
+            
             // NEW: Add comma (start) and period (stop) hotkeys for easy control
             // Use state tracking to prevent multiple triggers
             bool commaPressed = Input.IsKeyDown(Keys.Oemcomma);
@@ -578,6 +585,16 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         {
             DebugCoordinateSystem();
         }
+        
+        ImGui.SameLine();
+        if (ImGui.Button("🔍 Debug Intersection"))
+        {
+            DebugIntersectionPoint();
+        }
+        
+        // Add helpful text about the debug intersection feature
+        ImGui.Text($"Debug Intersection: Press {Settings.DebugSettings.DebugIntersectionHotkey.Value} or click button above");
+        ImGui.TextColored(new System.Numerics.Vector4(0.7f, 0.7f, 0.7f, 1), "Moves mouse to where pursuit circle intersects with radar path");
         
         // Third row - File access and diagnostics
         if (ImGui.Button("📁 Open Movement Log"))
@@ -1502,6 +1519,144 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         using (var graphics = System.Drawing.Graphics.FromHwnd(IntPtr.Zero))
         {
             return graphics.DpiX / 96f;
+        }
+    }
+    
+    private void DebugIntersectionPoint()
+    {
+        try
+        {
+            LogMessage("=== DEBUG INTERSECTION POINT START ===");
+            
+            // 1. Validate we have the necessary components
+            var player = GameController.Game.IngameState.Data.LocalPlayer;
+            if (player?.GetComponent<Positioned>() is not Positioned playerPos)
+            {
+                LogMessage("[DEBUG INTERSECTION] ERROR: Cannot get player position");
+                return;
+            }
+            
+            if (_currentPath == null || _currentPath.Count == 0)
+            {
+                LogMessage("[DEBUG INTERSECTION] ERROR: No current radar path available");
+                LogMessage("[DEBUG INTERSECTION] TIP: Start the bot or ensure you're in Aqueducts with an active path");
+                return;
+            }
+            
+            var render = player.GetComponent<Render>();
+            if (render == null)
+            {
+                LogMessage("[DEBUG INTERSECTION] ERROR: Cannot get player render component");
+                return;
+            }
+            
+            // 2. Get player position and pursuit radius  
+            var playerWorldPos = new System.Numerics.Vector2(playerPos.GridPos.X, playerPos.GridPos.Y);
+            var pursuitRadius = Settings.MovementSettings.PursuitRadius.Value;
+            
+            LogMessage($"[DEBUG INTERSECTION] Player at world: ({playerWorldPos.X:F1}, {playerWorldPos.Y:F1})");
+            LogMessage($"[DEBUG INTERSECTION] Pursuit radius: {pursuitRadius:F1}");
+            LogMessage($"[DEBUG INTERSECTION] Current path has {_currentPath.Count} waypoints, current index: {_currentPathIndex}");
+            
+            // 3. Find the intersection point using the same method as the bot
+            var intersectionPoint = FindPathIntersectionWithSpecificRadius(_currentPath, _currentPathIndex, pursuitRadius);
+            
+            if (!intersectionPoint.HasValue)
+            {
+                LogMessage("[DEBUG INTERSECTION] ❌ NO INTERSECTION FOUND!");
+                LogMessage("[DEBUG INTERSECTION] This means the current radar path doesn't cross the pursuit circle");
+                LogMessage("[DEBUG INTERSECTION] Possible reasons:");
+                LogMessage("[DEBUG INTERSECTION] - Path is too far away");
+                LogMessage("[DEBUG INTERSECTION] - Path segments are too short");  
+                LogMessage("[DEBUG INTERSECTION] - Current path index is too far along");
+                
+                // Try to find ANY intersection with a larger radius as a fallback
+                LogMessage("[DEBUG INTERSECTION] Trying with 2x radius as fallback...");
+                var fallbackIntersection = FindPathIntersectionWithSpecificRadius(_currentPath, 0, pursuitRadius * 2f);
+                if (fallbackIntersection.HasValue)
+                {
+                    LogMessage($"[DEBUG INTERSECTION] ✅ FALLBACK: Found intersection at 2x radius: ({fallbackIntersection.Value.X:F1}, {fallbackIntersection.Value.Y:F1})");
+                    intersectionPoint = fallbackIntersection;
+                }
+                else
+                {
+                    LogMessage("[DEBUG INTERSECTION] ❌ No intersection even with 2x radius - path may be completely disconnected");
+                    return;
+                }
+            }
+            else
+            {
+                var distanceFromPlayer = System.Numerics.Vector2.Distance(playerWorldPos, intersectionPoint.Value);
+                LogMessage($"[DEBUG INTERSECTION] ✅ FOUND intersection at: ({intersectionPoint.Value.X:F1}, {intersectionPoint.Value.Y:F1})");
+                LogMessage($"[DEBUG INTERSECTION] Distance from player: {distanceFromPlayer:F1} (expected: {pursuitRadius:F1})");
+            }
+            
+            // 4. Convert world coordinates to screen coordinates
+            var worldPos = new Vector3(intersectionPoint.Value.X, intersectionPoint.Value.Y, 0);
+            var screenPosSharp = GameController.IngameState.Camera.WorldToScreen(worldPos);
+            var screenPos = new Vector2(screenPosSharp.X, screenPosSharp.Y);
+            
+            LogMessage($"[DEBUG INTERSECTION] World to screen: ({worldPos.X:F1}, {worldPos.Y:F1}) → ({screenPos.X:F1}, {screenPos.Y:F1})");
+            
+            // 5. Validate screen coordinates are reasonable
+            var gameWindow = GameController.Window.GetWindowRectangle();
+            var isOnScreen = screenPos.X >= 0 && screenPos.X <= gameWindow.Width && 
+                           screenPos.Y >= 0 && screenPos.Y <= gameWindow.Height;
+            
+            LogMessage($"[DEBUG INTERSECTION] Game window: {gameWindow.Width}x{gameWindow.Height}");
+            LogMessage($"[DEBUG INTERSECTION] Screen position valid: {isOnScreen}");
+            
+            if (!isOnScreen)
+            {
+                LogMessage("[DEBUG INTERSECTION] ⚠️ WARNING: Intersection point is off-screen!");
+                LogMessage("[DEBUG INTERSECTION] This could indicate a coordinate system issue");
+            }
+            
+            // 6. Move mouse cursor to the intersection point (with window offset)
+            var windowRect = GameController.Window.GetWindowRectangle();
+            int absoluteX = (int)(screenPos.X + windowRect.X);
+            int absoluteY = (int)(screenPos.Y + windowRect.Y);
+            
+            LogMessage($"[DEBUG INTERSECTION] Moving cursor to absolute screen: ({absoluteX}, {absoluteY})");
+            LogMessage($"[DEBUG INTERSECTION] (Game coords: ({screenPos.X:F1}, {screenPos.Y:F1}) + Window offset: ({windowRect.X}, {windowRect.Y}))");
+            
+            bool moveResult = SetCursorPos(absoluteX, absoluteY);
+            LogMessage($"[DEBUG INTERSECTION] SetCursorPos result: {moveResult}");
+            
+            // 7. Verify cursor actually moved to the right place
+            Thread.Sleep(100); // Give time for cursor to move
+            if (GetCursorPos(out POINT actualCursor))
+            {
+                LogMessage($"[DEBUG INTERSECTION] Actual cursor position: ({actualCursor.X}, {actualCursor.Y})");
+                LogMessage($"[DEBUG INTERSECTION] Expected cursor position: ({absoluteX}, {absoluteY})");
+                
+                int deltaX = Math.Abs(actualCursor.X - absoluteX);
+                int deltaY = Math.Abs(actualCursor.Y - absoluteY);
+                
+                if (deltaX <= 2 && deltaY <= 2)
+                {
+                    LogMessage("[DEBUG INTERSECTION] ✅ SUCCESS: Cursor moved to correct position!");
+                }
+                else
+                {
+                    LogMessage($"[DEBUG INTERSECTION] ⚠️ WARNING: Cursor position mismatch - Delta: ({deltaX}, {deltaY})");
+                }
+            }
+            
+            // 8. Also store this for visual display (same as regular movement)
+            _lastTargetWorldPos = intersectionPoint.Value;
+            
+            LogMessage("=== DEBUG INTERSECTION POINT COMPLETE ===");
+            LogMessage("The mouse cursor should now be positioned at the intersection of:");
+            LogMessage($"- The GREEN pursuit circle (radius: {pursuitRadius:F1}) around your character");
+            LogMessage("- The current RADAR path waypoints");
+            LogMessage("This is where the bot would normally click to move!");
+            
+        }
+        catch (Exception ex)
+        {
+            LogError($"[DEBUG INTERSECTION] CRITICAL ERROR: {ex.Message}");
+            LogError($"[DEBUG INTERSECTION] Stack trace: {ex.StackTrace}");
         }
     }
     
