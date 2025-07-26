@@ -119,6 +119,13 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     private int _stuckTargetCount = 0;
     private System.Numerics.Vector2 _lastTargetPoint = System.Numerics.Vector2.Zero;
     
+    // Fields for click tracking and logging buffer
+    private System.Numerics.Vector2 _lastClickScreenPos = System.Numerics.Vector2.Zero;
+    private int _duplicateClickCount = 0;
+    private const int MAX_DUPLICATE_CLICKS = 3;
+    private readonly List<string> _movementDebugBuffer = new List<string>();
+    private DateTime _lastFileWrite = DateTime.MinValue;
+    
     /// <summary>
     /// Update progress tracking along the current path
     /// </summary>
@@ -1461,13 +1468,13 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         return new INPUT
         {
             Type = INPUT_MOUSE,
-            Data = new INPUTUNION 
+            Data = new MOUSEKEYBDINPUT 
             { 
                 Mouse = new MOUSEINPUT 
                 { 
                     Flags = flags, 
-                    Dx = dx, 
-                    Dy = dy,
+                    X = dx, 
+                    Y = dy,
                     MouseData = 0,
                     Time = 0,
                     ExtraInfo = IntPtr.Zero 
@@ -1555,7 +1562,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
             LogMessage($"[KEYBOARD TEST] Active window: {windowTitle}");
             
             LogMessage("[KEYBOARD TEST] Method 1: keybd_event");
-            PressKey(movementKey);
+            PressAndHoldKey(movementKey);
             
             Thread.Sleep(1000);
             
@@ -1661,6 +1668,27 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     {
         public int X;
         public int Y;
+    }
+    
+    private void PressAndHoldKey(Keys key)
+    {
+        try
+        {
+            byte vkCode = (byte)key;
+            LogMessage($"[KEYBOARD] Pressing key {key} (VK Code: {vkCode}) with keybd_event");
+            
+            // Key down
+            keybd_event(vkCode, 0, 0, 0);
+            Thread.Sleep(50); // Hold key briefly
+            // Key up
+            keybd_event(vkCode, 0, KEYEVENTF_KEYUP_SENDINPUT, 0);
+            
+            LogMessage($"[KEYBOARD] Key press sequence completed for {key}");
+        }
+        catch (Exception ex)
+        {
+            LogError($"Error pressing key {key}: {ex.Message}");
+        }
     }
     
     private void PressKeyAlternative(Keys key)
@@ -1997,7 +2025,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
                         
                         // Try both methods
                         LogMessage("[MOVEMENT TEST] Testing standard keybd_event method...");
-                        PressKey(movementKey);
+                        PressAndHoldKey(movementKey);
                         
                         Thread.Sleep(500);
                         
@@ -2816,10 +2844,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     // Add target point visualization
     private System.Numerics.Vector2? _lastTargetWorldPos = null;
     
-    // Duplicate click detection
-    private System.Numerics.Vector2 _lastClickScreenPos = System.Numerics.Vector2.Zero;
-    private int _duplicateClickCount = 0;
-    private const int MAX_DUPLICATE_CLICKS = 3;
+
     
     // Circle drawing debug tracking
     private DateTime _lastCircleErrorLog = DateTime.MinValue;
