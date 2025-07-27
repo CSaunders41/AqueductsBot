@@ -2872,7 +2872,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         var screenPos = GameController.IngameState.Camera.WorldToScreen(worldPos);
         var gameWindow = GameController.Window.GetWindowRectangle();
         
-        var margin = 100f;
+        var margin = 25f; // Reduced from 100f - was too restrictive and rejecting valid coordinates
         var isOnScreen = screenPos.X >= margin && screenPos.X <= gameWindow.Width - margin && 
                         screenPos.Y >= margin && screenPos.Y <= gameWindow.Height - margin;
         
@@ -3077,7 +3077,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
     private System.Numerics.Vector2? FindOnScreenPerimeterPoint(System.Numerics.Vector2 playerPos, float radius)
     {
         var gameWindow = GameController.Window.GetWindowRectangle();
-        var margin = 100f;
+        var margin = 25f; // Reduced from 100f - was too restrictive and rejecting valid coordinates
         
         // Test 8 cardinal/intercardinal directions at MULTIPLE radii
         var directions = new[]
@@ -3259,7 +3259,7 @@ public class AqueductsBot : BaseSettingsPlugin<AqueductsBotSettings>
         var testWorldPos = new Vector3(targetPoint.Value.X * GRID_TO_WORLD_MULTIPLIER, targetPoint.Value.Y * GRID_TO_WORLD_MULTIPLIER, 0);
         var testScreenPos = GameController.IngameState.Camera.WorldToScreen(testWorldPos);
         var gameWindow = GameController.Window.GetWindowRectangle();
-        var margin = 100f;
+        var margin = 25f; // Reduced from 100f - was too restrictive and rejecting valid coordinates like (587, 45)
         var isVisible = testScreenPos.X >= margin && testScreenPos.X <= gameWindow.Width - margin && 
                        testScreenPos.Y >= margin && testScreenPos.Y <= gameWindow.Height - margin;
         
